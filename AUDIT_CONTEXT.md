@@ -374,6 +374,36 @@ The dataset's recorded windows support internal completeness checks. A player-si
 
 Both statistical passes retain their replay inputs. Bootstrap reproducibility is verified in this release and is not an outstanding production prerequisite.
 
+
+### Load-bearing premises
+
+Every premise the verdict rests on, the artifact that witnesses it, and the question that decides how much scrutiny it needs: whether the captured data could have contradicted it. A premise the data cannot contradict carries a witness from outside this repository's own pipeline, or is marked ASSUMED. Agreement between the audit's own checks is not evidence for a premise the data cannot see.
+
+| Premise | Witness artifact | Could the captured data contradict it? |
+|---|---|---|
+| The RNG is HMAC-SHA256 with a hex-decoded key over `clientSeed:nonce:cursor`. The modulo-bias rejection guard is ASSUMED and listed as a separate premise below | `data/mines-master-6900bets.json` | Yes — all 6,900 mine layouts reproduce bit for bit from the raw revealed seeds (Step 5); a single wrong constant breaks every round at once |
+| Mines are placed by a sequential Fisher-Yates draw, the cursor advancing per mine index over a shrinking range from 25 down to 1 | `data/mines-master-6900bets.json` | Yes — every layout and every reveal outcome recomputes, with 0 disagreements across the population |
+| The commitment convention is SHA-256 over the UTF-8 server-seed hex string | `data/mines-master-6900bets.json` | Yes — 138 of 138 revealed seeds hash to their recorded commitments; a different convention fails all 138 |
+| The next-seed pre-commitment chain is intact | `data/mines-master-6900bets.json` | Yes — 137 of 137 successive links reconcile, together with the pre-capture link that fixes the first epoch's commitment |
+| The multiplier is `(1 − houseEdge) × ∏ (25−i)/(25−m−i)` | `data/mines-master-6900bets.json` | Yes — all 3,104 winning rounds credit the exact product of stake and multiplier, with a maximum residual at the eighth-decimal floor |
+| The house edge is exactly 1.00% | `data/mines-master-6900bets.json` | Partial — 25 of the 300 legal `(m,k)` cells are exercised by captured rounds, every one of them at 99.0000% with the credited amount equal to `stake × 0.99 × fair`. The remaining 275 cells are formula-only: the closed-form identity is checked across the whole grid in Step 10 and anchored by the Step 13 enumeration, but the capture cannot witness them |
+| The operator applies a modulo-bias rejection guard equivalent to the reference implementation | ASSUMED — the branch is unexercised by this dataset. Across roughly 172,500 draws the expected number of rejections is of order zero and none occurred, so no captured round distinguishes a guarded server from an unguarded one | **No** |
+| The advertised 10000× ceiling is enforced at settlement | ASSUMED — no captured round approaches it; the largest win is far below. The ceiling is read from the operator's own game-settings records and is not exercised in any captured settlement | **No** |
+| A credited win can be reconciled against a wallet balance change | ASSUMED — the capture records the credited amount but no wallet balance field to difference it against | **No** |
+| The `qa` build is the production build | ASSUMED — nothing in this package establishes it, and nothing is claimed about production | **No** |
+
+### Model anchors
+
+Every modelled headline number and the independent anchor that guards it. The reference value comes from outside the engine's own method, which is what makes it an anchor rather than the suite agreeing with itself.
+
+| Modelled figure | Anchor method | Tolerance | Enforcing step |
+|---|---|---|---|
+| Win probability `C(25−m,k)/C(25,k)`, the basis of the 99.0000% RTP | Exhaustive enumeration of the `k`-subsets of the 25 tiles, compared by integer equality against `C(25,k)` and `C(25−m,k)`. A coefficient error is inexpressible in a literal tally | Exact integers, no tolerance | `tests/steps/anti-circularity.ts` (Step 13 — Anti-Circularity) |
+| Credited-payout residual against the exact product | Direct measurement of `betAmount × exact − winningAmount` over every winning round, gated just above the representable floor | 2e-8, against a floor of 1e-8 | `tests/steps/payouts.ts` (Step 8 — Payout Math) |
+| The flat 99.0000% RTP identity | The closed form `winProbability × multiplier = 1 − edge`, anchored by the same subset enumeration rather than by the payout code | 1e-9 | `tests/steps/payouts.ts` (Step 10 — House Edge / RTP Audit), with Step 13 |
+
+**Residual, declared.** The oracle and the engine share one reading of the rules — 25 tiles, sequential placement, the product form of the multiplier — so a misreading of the rules themselves would move both together and the anchors above cannot see it. What narrows it is the Step 13 enumeration: it is a literal count over subsets that shares no arithmetic with the closed form, so an error in the closed form is inexpressible in it. A second residual, named: only 25 of the 300 legal cells are exercised by captured rounds, so for the other 275 the RTP identity is established by grid arithmetic rather than by observation. There is no published third-party RTP for this operator, so the anchor class here is enumeration plus settled-round reproduction rather than comparison against an external reference table. Certification remains provisional pending the production capture.
+
 ## Anonymous production verification
 
 ### Purpose and access
