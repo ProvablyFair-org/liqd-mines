@@ -1,0 +1,44 @@
+# .pf-declared-constants — figures cited in the report that no artifact in THIS repo emits,
+# with the reason each one is legitimate. Read by audit-framework/checks/check-prose.sh (P2),
+# whose default position is correct: a number in prose that no pipeline step produced is a
+# fabrication risk until someone says otherwise, in writing, here.
+#
+# Everything that CAN be emitted, is. Adding a line here is the last resort, not the first —
+# the settlement-floor deficit, the reference multiplier grid, the client-seed controls, the
+# pooled SE and the convergence band were all moved into outputs/audit-figures.json rather
+# than whitelisted. What remains is figures from OUTSIDE this dataset and one textbook
+# constant.
+#
+# ── Figures from a PRIOR capture (July 2026), quoted for comparison ──────────────────────
+# That capture is not shipped in this repo — it predates the operator's payout fix, and its
+# dataset is not an artifact of this audit. Every one of these appears in prose explicitly
+# labelled "a prior capture"; none of them is evidence for the current verdict.
+98.7767
+98.78
+98.28
+99.00
+95.60
+#
+# ── Counterexamples supplied by external reviewers (2026-09-09 QA round) ─────────────────
+# Reproduced in the report to state precisely what a claim does NOT cover. These were computed
+# by the reviewer, not by this pipeline, and are attributed as such in the text. Emitting them
+# would mean shipping the reviewer's counterexample construction as audit code, which would be
+# worse — it would read as our own finding.
+# 156.25 = naive per-tile chi-squared at m=24, N=1e6 under the reviewer's biased construction
+#          (rtp-analysis.md, the P1-5 correction)
+156.25
+# 0.635  = tile-25 lag-1 autocorrelation in the reviewer's 50,000-round construction that leaves
+#          every scored statistic unchanged (rtp-analysis.md / findings.md F16, the P1-2 scope note)
+0.635
+#
+# ── Textbook constants ───────────────────────────────────────────────────────────────────
+# 1.96 = two-sided standard-normal critical value at alpha = 0.05, used as the UNCORRECTED
+#        serial screen in src/simulate.ts. Not a measurement.
+1.96
+#
+# ── Unit-scaled restatements of an emitted figure ────────────────────────────────────────
+# 5.15 = "approximately 5.15 million x", the exact multiplier at m=12,k=13. The precise value
+#        IS emitted (outputs/audit-figures.json -> referenceGrid, multiplierExact 5148...);
+#        the prose rounds it to two significant decimals in millions, which the checker reads
+#        as the bare number 5.15.
+5.15

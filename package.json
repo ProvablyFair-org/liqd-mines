@@ -1,0 +1,30 @@
+{
+  "name": "mines-audit",
+  "version": "1.0.0",
+  "license": "MIT",
+  "private": true,
+  "description": "Provably fair audit \u2014 LIQD.com Mines",
+  "scripts": {
+    "test": "node test.js && node verify.js",
+    "verify": "ts-node tests/verify.ts",
+    "figures": "ts-node src/write-figures.ts",
+    "simulate": "ts-node src/simulate.ts",
+    "deep-replay": "ts-node src/deep-replay.ts",
+    "mutations": "ts-node tests/mutations.ts",
+    "mutate": "ts-node tests/mutations.ts",
+    "forgeries": "ts-node tests/forgeries.ts",
+    "report": "PF_EMIT=1 ts-node tests/verify.ts",
+    "test:toolchain": "mocha && npm run simulate && npm run figures && npm run verify && npm run mutations && npm run forgeries",
+    "verify:standalone": "node verify.js",
+    "build": "node scripts/build-standalone.mjs",
+    "build:check": "node scripts/build-standalone.mjs --check",
+    "bootstrap-replay": "python3 scripts/replay-bootstrap.py"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10",
+    "@types/node": "^22",
+    "mocha": "^11",
+    "ts-node": "^10",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,279 @@
+{
+  "generatedAt": "2026-09-12T07:25:59.935Z",
+  "artifact": "outputs/simulation-results.json",
+  "artifactGeneratedAt": "2026-08-05T16:41:40.964Z",
+  "roundsPerConfig": 1000000,
+  "rowsInArtifact": 24,
+  "rowsReplayed": 24,
+  "roundsReplayed": 24000000,
+  "scope": "full",
+  "differences": [],
+  "perRow": [
+    {
+      "mineCount": 1,
+      "serverSeed": "63fc78b13a53d4b2faf3bc519f48a55a",
+      "clientSeed": "6cf0aa27275148da436016ed16f244b6",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 41846
+    },
+    {
+      "mineCount": 2,
+      "serverSeed": "cb3ab15e840d09b1643fb90ff63fccea",
+      "clientSeed": "18e146808a0e3b48d5d764ea3ba7d87a",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 41252
+    },
+    {
+      "mineCount": 3,
+      "serverSeed": "011592002afc1586016761845037e7d5",
+      "clientSeed": "9ba0b5f14328edfc7c966f609bf4fc6d",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 41908
+    },
+    {
+      "mineCount": 4,
+      "serverSeed": "970071cbc411979d9d18b47c9d5f776c",
+      "clientSeed": "9ba8a6b0c0ab653c2d73e6a3c8455140",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 42452
+    },
+    {
+      "mineCount": 5,
+      "serverSeed": "1f1da0da5907129a0043f5ac8a12b5ee",
+      "clientSeed": "097bf01483879668f626781b35b297c2",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 43016
+    },
+    {
+      "mineCount": 6,
+      "serverSeed": "618de0fde18b359456271b19de6597eb",
+      "clientSeed": "8bbff09ce2a8320a6b9758895f7e3dfd",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 45311
+    },
+    {
+      "mineCount": 7,
+      "serverSeed": "ab56a66ab12bd9f6956245209c5548c5",
+      "clientSeed": "8f745a831abfde1263052b1edb6a8890",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 44229
+    },
+    {
+      "mineCount": 8,
+      "serverSeed": "baa68bc58ae007ba47d793b16884d1f1",
+      "clientSeed": "8e84f55d0d925b8d7e1039f1b6c62df7",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 45853
+    },
+    {
+      "mineCount": 9,
+      "serverSeed": "cbcec3e3e001e62c259f300f6cc16a26",
+      "clientSeed": "fcc506bc6aca6eaecb9323709d69348d",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 47440
+    },
+    {
+      "mineCount": 10,
+      "serverSeed": "724b1581945fd5440fbd2268aa30d156",
+      "clientSeed": "24b6707336ec80968adfb5c43dc13a2e",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 42966
+    },
+    {
+      "mineCount": 11,
+      "serverSeed": "858185ec604122dd0b4f413d0e81f859",
+      "clientSeed": "290c97083f46ab586cf6778ef7d270cb",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 42676
+    },
+    {
+      "mineCount": 12,
+      "serverSeed": "a9ed2fc877db957b3a16282cc69f5c76",
+      "clientSeed": "f0ece2f031009d2dbebf7b76071de663",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 42887
+    },
+    {
+      "mineCount": 13,
+      "serverSeed": "9979c2b1d79de53b2770fe52b558e225",
+      "clientSeed": "0a879d3c888739d8df261842ea6f375f",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 44477
+    },
+    {
+      "mineCount": 14,
+      "serverSeed": "4cdc09f41437d3465ad30e8624548b1b",
+      "clientSeed": "3dfd571c6a7f2f3397fed57d9df31a52",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 45919
+    },
+    {
+      "mineCount": 15,
+      "serverSeed": "536dd42007f0af40ab7a0ca28f502e04",
+      "clientSeed": "195e3f773c9e880c9d3bef3a8dbd1761",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 45966
+    },
+    {
+      "mineCount": 16,
+      "serverSeed": "c8a7fb1156e81c267d825077c92d9972",
+      "clientSeed": "9e37cfcd9d3679a811ef46460e877d88",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 44410
+    },
+    {
+      "mineCount": 17,
+      "serverSeed": "fe93ffee9bbaea5a4d4d60090ae8e79b",
+      "clientSeed": "a04c7fddcd6e36be1b22d3094a7edbc2",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 43424
+    },
+    {
+      "mineCount": 18,
+      "serverSeed": "057ea73e736edb228ef3d77465e5f4e5",
+      "clientSeed": "a6d19331d9e5e6d50b305598c21f8330",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 43040
+    },
+    {
+      "mineCount": 19,
+      "serverSeed": "81a52f72b2c387180659a3f6c2bdad36",
+      "clientSeed": "bf5f7f807604d5d96dc95a88f2fd7073",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 43017
+    },
+    {
+      "mineCount": 20,
+      "serverSeed": "e3541354133946e38f82f99cc589183a",
+      "clientSeed": "a0a285add8178eefa6d1ecd86d060e7f",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 43385
+    },
+    {
+      "mineCount": 21,
+      "serverSeed": "e893e4e4ffa52e63f9cdd4cfca8f5a23",
+      "clientSeed": "84c387c7fc0c4acc10abb5783d6d0aba",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 43747
+    },
+    {
+      "mineCount": 22,
+      "serverSeed": "381fbb1237e715cbb0205e0b6f45e3b1",
+      "clientSeed": "ca9e0427a3931f41b39cbaf3cc0280a2",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 44001
+    },
+    {
+      "mineCount": 23,
+      "serverSeed": "918b9367b0e03c01fa0f504e70d0a60c",
+      "clientSeed": "a34f5f87c857edb597d4fa081a1705fd",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 43924
+    },
+    {
+      "mineCount": 24,
+      "serverSeed": "890bb04b4e6d196c819acedcff6c14c9",
+      "clientSeed": "4f946df59a86a0ff793431fb1a4fd3a6",
+      "nonceRange": [
+        0,
+        999999
+      ],
+      "differences": 0,
+      "elapsedMs": 43788
+    }
+  ],
+  "elapsedMs": 1050938,
+  "result": "PASS"
+}

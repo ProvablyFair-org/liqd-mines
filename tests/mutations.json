@@ -1,0 +1,231 @@
+[
+  {
+    "name": "M00 winProbability off-by-one (C(26-m,k) instead of C(25-m,k))",
+    "file": "src/config.ts",
+    "find": "return combination(GRID - mineCount, tilesRevealed) / combination(GRID, tilesRevealed);",
+    "replace": "return combination(GRID - mineCount + 1, tilesRevealed) / combination(GRID, tilesRevealed);",
+    "runner": "verify",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 13,
+    "expectStatus": "FAIL",
+    "guard": "Step 13 counting anchor (integer-equality subset tally) must reject a corrupted closed form"
+  },
+  {
+    "name": "M01 HOUSE_EDGE 0.01 -> 0.02 (doubled edge)",
+    "file": "src/config.ts",
+    "find": "export const HOUSE_EDGE = 0.01;",
+    "replace": "export const HOUSE_EDGE = 0.02;",
+    "runner": "verify",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 8,
+    "expectStatus": "FAIL",
+    "guard": "Step 8 exact-floor8 identity must reject a doubled house edge. Until 2026-09-09 it did NOT: floor8CreditUnits spelled the retention factor as the BigInt literal `99n/100n`, so the arm reported 0 violations under this mutation while the floating-point residual arm beside it counted 3,104 errors — the strictest test in the suite was measuring a constant the audit had stopped using. The factor is now EDGE_NUM/EDGE_DEN, derived from HOUSE_EDGE, and the arm reports 3,104 violations here."
+  },
+  {
+    "name": "M02 HOUSE_EDGE 0.01 -> 0.0100001 (edge shifted in the 5th decimal)",
+    "file": "src/config.ts",
+    "find": "export const HOUSE_EDGE = 0.01;",
+    "replace": "export const HOUSE_EDGE = 0.0100001;",
+    "runner": "verify",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 8,
+    "expectStatus": "FAIL",
+    "guard": "Step 8 must reject an edge shift 1000x smaller than the doubled-edge case. Both the 2e-8 band and the BigInt floor8 identity are load-bearing — and the identity only became load-bearing on 2026-09-09, when EDGE_NUM was given a 1e-8 scale so a 5th-decimal shift moves the numerator instead of rounding back onto 99. Measured after the fix: 3,104 floor8 violations."
+  },
+  {
+    "name": "M03 exact multiplier drops the (1 - edge) factor entirely",
+    "file": "src/config.ts",
+    "find": "  return p * (1 - HOUSE_EDGE);",
+    "replace": "  return p;",
+    "runner": "verify",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 8,
+    "expectStatus": "FAIL",
+    "guard": "Step 8 must reject a reference that pays the fair (0%-edge) multiplier"
+  },
+  {
+    "name": "M04 minesMultiplierExact(4,2) -> NaN (reviewer mutation R: NaN in our OWN reference)",
+    "file": "src/config.ts",
+    "find": "export function minesMultiplierExact(mineCount: number, tilesRevealed: number): number {\n  let p = 1;",
+    "replace": "export function minesMultiplierExact(mineCount: number, tilesRevealed: number): number {\n  if (mineCount === 4 && tilesRevealed === 2) return NaN;\n  let p = 1;",
+    "runner": "verify",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 10,
+    "expectStatus": "FAIL",
+    "guard": "Step 10 full-grid sweep must HARD-FAIL on a non-finite reference cell. Math.abs(NaN - 0.99) > 1e-9 is FALSE, so before 2026-09-09 this printed '300/300 clean' and the suite returned 21/21 Full Pass"
+  },
+  {
+    "name": "M05 minesMultiplierExact(4,2) -> 1 (reviewer mutation O: a 70% reference cell)",
+    "file": "src/config.ts",
+    "find": "export function minesMultiplierExact(mineCount: number, tilesRevealed: number): number {\n  let p = 1;",
+    "replace": "export function minesMultiplierExact(mineCount: number, tilesRevealed: number): number {\n  if (mineCount === 4 && tilesRevealed === 2) return 1;\n  let p = 1;",
+    "runner": "verify",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 10,
+    "expectStatus": "FLAG",
+    "guard": "Step 10 must FLAG (not hard-fail) a formula DEVIATION at a cell no captured bet ever won — a different fault class from a NaN (M04, which hard-fails Step 10). That discrimination is the point of this entry and it is what expectStep/expectStatus assert. The overall VERDICT is nonetheless NOT PROVABLY FAIR, through a different step: corrupting the reference formula also makes outputs/audit-figures.json disagree with its own recomputation, which Step 19 hard-fails. That is correct — a repo whose committed figure artifact is not what its code produces should not ship — and it is stronger than the reviewer acceptance line written before that artifact existed. Step 10 FLAG is the assertion; the verdict is a consequence."
+  },
+  {
+    "name": "M06 minesMultiplierExact(1,1) -> NaN (a LIVE-witnessed cell)",
+    "file": "src/config.ts",
+    "find": "export function minesMultiplierExact(mineCount: number, tilesRevealed: number): number {\n  let p = 1;",
+    "replace": "export function minesMultiplierExact(mineCount: number, tilesRevealed: number): number {\n  if (mineCount === 1 && tilesRevealed === 1) return NaN;\n  let p = 1;",
+    "runner": "verify",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 8,
+    "expectStatus": "FAIL",
+    "guard": "Step 8's per-bet residual test is NaN-blind without an explicit finite guard: `Math.abs(NaN) > 2e-8` is false, so the bet scored as an EXACT payout"
+  },
+  {
+    "name": "M07 displayed multiplier floored to 1 decimal instead of 2",
+    "file": "src/config.ts",
+    "find": "  return (100n * r.num) / r.den;",
+    "replace": "  return ((10n * r.num) / r.den) * 10n;",
+    "runner": "verify",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 7,
+    "expectStatus": "FAIL",
+    "guard": "Step 7 must reject a display-multiplier reference that no longer matches the operator's floored field. Re-expressed 2026-09-10 (QA-03): the mutation used to edit the float form `Math.floor(multExact * 100) / 100`, which no longer exists — the floor is now exact integer division. Flooring to one decimal instead of two is the same defect in the new arithmetic."
+  },
+  {
+    "name": "M08 GRID 25 -> 26 (wrong board size)",
+    "file": "src/config.ts",
+    "find": "export const GRID = 25;",
+    "replace": "export const GRID = 26;",
+    "runner": "verify",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 5,
+    "expectStatus": "FAIL",
+    "guard": "Step 5 mine-layout recomputation must reject a shuffle over the wrong tile count"
+  },
+  {
+    "name": "M09 HMAC salt order swapped (clientSeed:nonce:cursor -> nonce:clientSeed:cursor)",
+    "file": "src/rng.ts",
+    "find": "  return `${clientSeed}:${nonce}:${cursor}`;",
+    "replace": "  return `${nonce}:${clientSeed}:${cursor}`;",
+    "runner": "verify",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 5,
+    "expectStatus": "FAIL",
+    "guard": "Step 5 must reject a re-ordered HMAC message; this is the single edit that would silently invalidate every layout claim in the report"
+  },
+  {
+    "name": "M10 commitment hashes the DECODED bytes instead of the hex string",
+    "file": "src/rng.ts",
+    "find": "  return createHash('sha256').update(serverSeedHexString, 'utf8').digest('hex');",
+    "replace": "  return createHash('sha256').update(Buffer.from(serverSeedHexString, 'hex')).digest('hex');",
+    "runner": "verify",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 1,
+    "expectStatus": "FAIL",
+    "guard": "Step 1 must reject the wrong commitment convention — hex-string-vs-raw-bytes is the classic provably-fair transcription error"
+  },
+  {
+    "name": "M11 Fisher-Yates cursor pinned to 0 (every draw uses the same HMAC message)",
+    "file": "src/rng.ts",
+    "find": "    const randomMine = currentMine + generateProvablyFairNumber(serverSeed, clientSeed, nonce, currentMine, range);",
+    "replace": "    const randomMine = currentMine + generateProvablyFairNumber(serverSeed, clientSeed, nonce, 0, range);",
+    "runner": "verify",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 5,
+    "expectStatus": "FAIL",
+    "guard": "Step 5 must reject a shuffle whose cursor does not advance (the sequential-Fisher-Yates claim in rng-algorithm-analysis.md rests on this)"
+  },
+  {
+    "name": "M13 firstMineTile decoupled from the shuffle (Step 17's re-derivation broken)",
+    "file": "src/rng.ts",
+    "find": "  return 1 + generateProvablyFairNumber(serverSeed, clientSeed, nonce, 0, GRID);",
+    "replace": "  return 1 + generateProvablyFairNumber(serverSeed, clientSeed, nonce, 1, GRID);",
+    "runner": "verify",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 17,
+    "expectStatus": "FAIL",
+    "guard": "Proves Step 17's Pass-2 binding is LOAD-BEARING: the chi-squared statistics in the simulation artifact are genuinely re-derived from the dataset's revealed serverSeeds, not merely read"
+  },
+  {
+    "name": "M14 floor8 credit numerator shifted down 1% at the USE site (a 1% under-credit in the reference)",
+    "file": "tests/steps/payouts.ts",
+    "find": "  let num = EDGE_NUM, den = EDGE_DEN;\n  for (let i = 0; i < k; i++) { num *= BigInt(GRID - i); den *= BigInt(GRID - mineCount - i); }",
+    "replace": "  let num = EDGE_NUM - 1000000n, den = EDGE_DEN;\n  for (let i = 0; i < k; i++) { num *= BigInt(GRID - i); den *= BigInt(GRID - mineCount - i); }",
+    "runner": "verify",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 8,
+    "expectStatus": "FAIL",
+    "guard": "Step 8's BigInt rational floor8 identity must be the thing that fires, independently of the floating-point 2e-8 residual band next to it. Retargeted 2026-09-09: the numerator used to be a literal `99n` inside tests/steps/payouts.ts (and duplicated at two more sites), which is exactly the defect item H-H closed — it is now derived once from HOUSE_EDGE as EDGE_NUM, so the mutation moves with it."
+  },
+  {
+    "name": "M16 mocha fixture serverSeed nibble changed (8b2f -> 8b2e)",
+    "file": "tests/mines/rngTests.ts",
+    "find": "'8b2fc7e909d2fff439692f648a9df0ba'",
+    "replace": "'8b2ec7e909d2fff439692f648a9df0ba'",
+    "runner": "mocha",
+    "expect": "failing",
+    "guard": "Mocha reference vectors — the hardcoded capture vectors must be genuine; a suite that stays green with a corrupted fixture is testing nothing. (No scored Step applies: this runner prints no step lines.)"
+  },
+  {
+    "name": "M17 sameMines always true (layout comparison neutered)",
+    "file": "src/rng.ts",
+    "find": "  return Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((x, i) => x === b[i]);",
+    "replace": "  return true;",
+    "runner": "verify",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 6,
+    "expectStatus": "FAIL",
+    "guard": "Step 6 is the step that notices. A neutered comparator makes Step 5 pass VACUOUSLY (0 mismatches over 6,900 bets, because nothing is compared) — it is the whole-dataset wrong-client-seed control in Step 6 that collapses, because every substituted seed now \"reproduces\" the layout. This entry exists to prove that control is load-bearing and not decoration."
+  },
+  {
+    "name": "M18 inverseCriticalZ returns 0 (the derived Bonferroni z-critical destroyed)",
+    "file": "src/stats.ts",
+    "find": "  return t - (c0 + c1 * t + c2 * t * t) / (1 + d1 * t + d2 * t * t + d3 * t * t * t);",
+    "replace": "  return 0;",
+    "runner": "verify",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 16,
+    "expectStatus": "FAIL",
+    "guard": "Step 16 derives its FWER thresholds from alpha and MINE_COUNTS rather than reading bonferroniZCritical out of the artifact. Destroying the derivation must therefore break the step — if it did not, the threshold being read from the artifact would be indistinguishable from it being derived."
+  },
+  {
+    "name": "M22 EXPECTED_BETS re-derived from the dataset instead of pinned (the H-G regression)",
+    "file": "src/pins.ts",
+    "find": "export const EXPECTED_BETS = 6900;",
+    "replace": "export const EXPECTED_BETS = 6850;",
+    "runner": "verify",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 11,
+    "expectStatus": "FAIL",
+    "guard": "Step 11 must hard-FAIL when the pinned population no longer matches the delivered capture, and Step 12 with it. This proves the population pin is what those steps actually assert against: moving the pin off the capture must break the audit, because if it did not the constant would be decoration and the population would once again be whatever the dataset's own header said it was. Origin: QA round 3 item H-G and framework gate-population D1/D2, where dropping a trailing epoch and doctoring the header to agree returned Conditional Pass, exit 0."
+  },
+  {
+    "name": "M23 EXPECTED_EPOCH_SIZE moved off 50",
+    "file": "src/pins.ts",
+    "find": "export const EXPECTED_EPOCH_SIZE = 50;",
+    "replace": "export const EXPECTED_EPOCH_SIZE = 49;",
+    "runner": "verify",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 12,
+    "expectStatus": "FAIL",
+    "guard": "Step 12 must assert the epoch size against the CODE constant, and the three pins must stay mutually consistent (EXPECTED_SEEDS x EXPECTED_EPOCH_SIZE == EXPECTED_BETS). Before 2026-09-09 the epoch size was a bare literal 50 compared against seeds.length — both operands from inside the file being scored."
+  },
+  {
+    "name": "M26 EDGE_NUM shifted one 1e-8 unit off (1 - HOUSE_EDGE)",
+    "file": "src/config.ts",
+    "find": "export const EDGE_NUM = BigInt(Math.round((1 - HOUSE_EDGE) * 1e8));       // 99_000_000n at 1%",
+    "replace": "export const EDGE_NUM = BigInt(Math.round((1 - HOUSE_EDGE) * 1e8)) + 1n;",
+    "runner": "verify",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 10,
+    "expectStatus": "FAIL",
+    "guard": "Step 10 must hard-FAIL when the BigInt retention factor does not exactly represent the audited edge — the factor Step 8's floor8 credit identity divides by. Deliberately scored in a step rather than thrown at import: a run that dies in module initialisation prints no verdict, and NOT RUN is not CAUGHT."
+  },
+  {
+    "name": "M30 QA-03 display multiplier reverts to float multiply-then-floor",
+    "file": "src/config.ts",
+    "find": "  const cents = minesMultiplierDisplayCents(mineCount, tilesRevealed);\n  return cents === null ? NaN : Number(cents) / 100;",
+    "replace": "  return Math.floor(minesMultiplierExact(mineCount, tilesRevealed) * 100) / 100;",
+    "runner": "verify",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 19,
+    "expectStatus": "FAIL",
+    "guard": "The defect QA-03 closed, re-armed as a registry entry. `Math.floor(multExact * 100)` understates 31 of the 300 reference cells by a cent — at m=1,k=10 the exact multiplier is 33/20 = 1.65 but the binary64 product lands on 1.6499999999999997 and floors to 1.64. Step 7 CANNOT see it: the 31 affected cells are all at reveal depths the capture never won at, so every captured `multiplier` field agrees under either arithmetic (3,104/3,104, measured). The guard that fires is Step 19, which re-derives outputs/audit-figures.json and compares it to the copy on disk — the reference grid is IN that artifact, so a change to the grid arithmetic is a change to the evidence. That is the point of the entry: it names the step that actually catches a defect the payout steps are blind to, so nobody later assumes Step 7 was covering this."
+  }
+]

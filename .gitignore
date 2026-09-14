@@ -1,0 +1,13 @@
+node_modules/
+dist/
+outputs/*.json
+# `npm run verify` writes THIS RUN's results here and never into the committed paths (D1).
+# It is a run record, not audit evidence.
+outputs/run/
+!outputs/.gitkeep
+!outputs/verification-results.json
+!outputs/simulation-results.json
+!outputs/audit-figures.json
+!outputs/deep-replay-report.json
+!outputs/simulation-provenance.json
+!outputs/bootstrap-replay-report.json

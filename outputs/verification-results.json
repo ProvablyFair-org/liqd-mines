@@ -1,0 +1,172 @@
+{
+  "generatedAt": "2026-09-12T08:06:47.111Z",
+  "totalBets": 6900,
+  "totalSeeds": 138,
+  "datasetSha256": "c7c2e8a930549e11e3e564a962aea0ca2875b6eb94bc1f4347cc703bc410b222",
+  "artifactHashes": {
+    "dataset": {
+      "file": "data/mines-master-6900bets.json",
+      "expected": "c7c2e8a930549e11e3e564a962aea0ca2875b6eb94bc1f4347cc703bc410b222",
+      "actual": "c7c2e8a930549e11e3e564a962aea0ca2875b6eb94bc1f4347cc703bc410b222",
+      "match": true,
+      "sha256": "c7c2e8a930549e11e3e564a962aea0ca2875b6eb94bc1f4347cc703bc410b222"
+    },
+    "simulation": {
+      "file": "outputs/simulation-results.json",
+      "sha256": "0a00e0ca057eba353ff49c0b8dabd3c3b76a71dbe1f1d009a277be717103e2c7",
+      "generatedAt": "2026-09-12T07:52:19.902242+00:00"
+    }
+  },
+  "steps": [
+    {
+      "step": 1,
+      "name": "Seed Hash Integrity",
+      "status": "PASS",
+      "detail": "138/138 revealed seeds checked against the pinned population of 138 (src/pins.ts EXPECTED_SEEDS, a code constant — not the dataset's own count); SHA-256(utf8(serverSeed)) == hashedServerSeed; 0 mismatches"
+    },
+    {
+      "step": 2,
+      "name": "Next-Seed Pre-Commitment Chain",
+      "status": "PASS",
+      "detail": "137/137 transitions: nextHashedServerSeed == next epoch's hashedServerSeed (chain INTACT); pre-capture link: reveal→commitment OK, chains into epoch 0 OK"
+    },
+    {
+      "step": 3,
+      "name": "Hash Consistency Within Epoch",
+      "status": "PASS",
+      "detail": "138/138 epochs (pinned in src/pins.ts, not counted from the dataset): all bets within each epoch share the same hashedServerSeed; 0 violations"
+    },
+    {
+      "step": 4,
+      "name": "Nonce Audit",
+      "status": "PASS",
+      "detail": "138/138 epochs: single client seed each, nonces unique, and the recorded nonces fill the epoch's declared window [nonceStart, nonceEnd] exactly (both bounds read from the epoch's seed record — nonceStart 0, nonceEnd 49 throughout this capture — not hard-coded and not inferred from the bets). nonceStart/nonceEnd are the CAPTURE's own record of the window it served, not an operator-side counter: this establishes that the bet rows are complete against that record, not that no other nonce was ever served (selective orphaning — see AUDIT_CONTEXT.md#nonce-coverage). No interior gaps in any epoch."
+    },
+    {
+      "step": 5,
+      "name": "Mine-Layout Recomputation",
+      "status": "PASS",
+      "detail": "6900/6900 bets recomputed against the pinned population (src/pins.ts EXPECTED_BETS, a code constant — not bets.length, which would make this figure true of any capture); revealMines(serverSeed, clientSeed, nonce, mineCount) == mineTiles (draw order); 0 mismatches; 0 skipped (unrevealed seeds)"
+    },
+    {
+      "step": 6,
+      "name": "Client Seed Influence",
+      "status": "PASS",
+      "detail": "whole-dataset controls over 6900/6900 bets (denominator pinned in src/pins.ts): empty clientSeed reproduces 7/6900 (0.10%, 7 at mineCount 1 — single-tile chance collisions); wrong clientSeed ('wrong-client-seed-test') reproduces 9/6900 (0.13%); 6891/6900 bets change under a wrong seed"
+    },
+    {
+      "step": 7,
+      "name": "Displayed Multiplier Field (floored, cosmetic)",
+      "status": "PASS",
+      "detail": "6900/6900 bets checked; 3104 wins: displayed multiplier == floor2(exact) at 1e-9 (0 mismatches); 2662 wins where the displayed field is below the exact reference multiplier; reported settlement amounts are checked separately in Step 8; 3796 losses: no payout — multiplier 0/absent and winningAmount == 0 (0 violations); reference-formula integrity: 0 wins where minesMultiplier/minesMultiplierExact returned a non-finite value (a NaN/Infinity in the auditor's own reference makes every comparison here vacuous — hard fail, not a mismatch)"
+    },
+    {
+      "step": 8,
+      "name": "Payout Math + Win-Condition (wins: betAmount × EXACT multiplier == winningAmount; losses: 0; label ⇔ mine opened)",
+      "status": "PASS",
+      "detail": "6900/6900 bets at 2e-8 (expected total pinned in src/pins.ts EXPECTED_BETS, a code constant — not seeds×50 read from the dataset) (credit floored at the 8th decimal): 3104 wins matching the exact-multiplier settlement within the stated residual tolerance, 0 wins matching only the displayed-multiplier payout candidate, 0 errors; exact floor8 identity (winningAmount == floor8(stake × multExact) in BigInt rational arithmetic, 0 tolerance — rejects ±1e-8 over/under-credit): 0 violations; on-grid check applied BEFORE any rounding (winningAmount × 1e8 must already be an integer — a ninth decimal cannot be held in a 1e-8 ledger and must not be rounded onto the grid by the identity above): 0 off-grid credits; reference-formula integrity: 0 wins where minesMultiplierExact returned a non-finite value (hard fail — the auditor's reference is corrupt, not the operator's payout); money-field integrity: 0 bets whose betAmount is not a finite number, 0 whose winningAmount is not — hard fail, because a NaN entering the turnover total makes every ratio computed from it vacuous rather than wrong; credit-floor residuals: max 8.571e-9, 1214 wins below the unrounded value, total shortfall $5.868e-6 on $2670.00 staked (2.2e-9 of turnover); win-condition consistency (won ⇔ no mine opened): 0 label violations"
+    },
+    {
+      "step": 9,
+      "name": "Config Completeness (Phase A: 24 mineCounts × 200)",
+      "status": "PASS",
+      "detail": "Phase A: 24/24 mineCounts present, each with 200 bets (4800/4800 total)"
+    },
+    {
+      "step": 10,
+      "name": "House Edge / RTP Audit (closed-form identity, per-config, anti-circular)",
+      "status": "PASS",
+      "detail": "Closed-form identity theoreticalRTP(m,k) = winProbability(m,k) × minesMultiplierExact(m,k) (winProbability = pure C(25-m,k)/C(25,k) combinatorics), checked for m=1..24 at k=1 and Phase-E depths (m=3, k=1..5) — 28/28 cases: RTP range 99.0000%–99.0000%, mean 99.0000% — a clean 99.0000% for every (m,k) (closed-form edge exactly 1.00%), because the exact multiplier makes the CLOSED FORM identically (1 − edge) — the settlement floor can reduce the return, quantified next. Full-grid reference sweep: all 300/300 legal (m,k) cells (k=1..25−m) evaluate to 99.0000% within 1e-9 (0 off), range 99.0000%–99.0000% — this checks the reference formula at every reachable depth, NOT the operator (25/300 cells are live-witnessed via Step 8; 275 formula-only; additional settlement coverage is planned for production). Settlement floor: the identity above is the THEORETICAL leg; the amount actually credited is floor8(stake × multExact), so settled RTP is at most (1 − edge), with equality when no fractional settlement unit is discarded. Worst case over all 300 cells at the capture's smallest stake ($0.10, DERIVED from the 2 distinct betAmount values in the pinned bets — $0.10, $10.00 — not read from meta.phases; the header's own smallest amount is $0.10 and the two agree): m=2,k=3 loses 6.600e-8 of turnover → settled RTP 98.9999934%, i.e. 99.0000% to four decimals. Edge-rational integrity: EDGE_NUM/EDGE_DEN = 99000000/100000000 exactly represents (1 − HOUSE_EDGE) = 0.99 — the BigInt factor the floor8 credit identity in Step 8 divides by. A factor that only approximates the audited edge makes that identity measure a different edge, silently. Reference-formula integrity: 0 cells returned a non-finite value — a NaN/Infinity here is NOT an \"off 99%\" deviation (which FLAGs); it means the auditor's own reference is corrupt and every comparison built on it is vacuous, so it hard-FAILS. This is the uncapped reference calculation; Step 8 independently checks the recorded winningAmount at captured winning configurations. The displayed multiplier field is still floored — cosmetic (Step 7)."
+    },
+    {
+      "step": 11,
+      "name": "Phase Labels",
+      "status": "PASS",
+      "detail": "Phases present: A, B, C, D, E (A=4800 B=1000 C=200 D=500 E=400); plan A=4800 B=1000 C=200 D=500 E=400 (src/pins.ts EXPECTED_PHASE_BETS, Σ=6900); total 6900/6900 bets and 138/138 seed records, both against CODE constants in src/pins.ts — not against meta.plannedTotal or any other field of the dataset being scored. The published population and phase plan are fixed in source independently of the dataset header."
+    },
+    {
+      "step": 12,
+      "name": "Epoch Size",
+      "status": "PASS",
+      "detail": "138/138 epochs and 138/138 seed records (src/pins.ts EXPECTED_SEEDS); min=50, max=50 bets per epoch against EXPECTED_EPOCH_SIZE 50; 138 × 50 = 6900 must equal EXPECTED_BETS 6900. The source constants fix the expected seed and bet population."
+    },
+    {
+      "step": 13,
+      "name": "Anti-Circularity (Combinatorial Win Probability)",
+      "status": "PASS",
+      "detail": "winProbability(m,k) = C(25-m,k)/C(25,k), pure combinatorics — no operator data (24/24 mineCounts, 300 (m,k) pairs). k=1 outcome space Σ (safe+mine) = 1.0 exactly (max dev 0.000e+0, m=1); combinatorial form == product Π(25-m-i)/(25-i) over all reachable m,k (max dev 2.220e-16, m=1,k=4); counting anchor: 110 (m,k) cases enumerated subset-by-subset, integer equality with C(25,k) and C(25-m,k) — 0 mismatches; reference-formula integrity: 0 non-finite results — a NaN deviation satisfies every `>` comparison it appears in, so it is counted, not silently skipped."
+    },
+    {
+      "step": 14,
+      "name": "Phase D — Client Seed Variation",
+      "status": "PASS",
+      "detail": "500 bets, 10 distinct client seeds (10 pfaudit-*); mine-layout recomputation: 500/500 match (500/500 recomputed)"
+    },
+    {
+      "step": 15,
+      "name": "Phase E — Multi-Reveal Verification",
+      "status": "PASS",
+      "detail": "400 multi-reveal bets: all mineCount 3 / reveals 5; 400/400 mine layouts recomputed; 216/216 winning multipliers == minesMultiplier(3, openTiles.length) at 1e-9 (reveal depths tested: 5; 0 non-finite reference values — a NaN in the auditor's own formula hard-fails rather than scoring as agreement); outcome split: 216 cashed out at depth 5, 38 hit a mine on the 5th reveal (254 opened all five), 146 busted at depths 1–4"
+    },
+    {
+      "step": 16,
+      "name": "Simulation — Pass 1 (First-Draw · Joint · Serial, FWER)",
+      "status": "PASS",
+      "detail": "24 configurations × 1,000,000 rounds = 24,000,000 rounds. Approximate statistical thresholds use Bonferroni α/24=4.167e-4. First-drawn tile uniformity: 0/24 unadjusted rejections, 0/24 adjusted. Pairwise co-occurrence: 0/23 unadjusted rejections, 0/23 adjusted; max|z|=3.72, per-pair critical=4.83 after adjustment across pairs and configurations. First-drawn-tile serial checks: 1/24 unadjusted rejections, 0/24 adjusted; lag-one |z| critical=3.53. Mean simulated RTP 98.9427%; reference 99.0000%. Artifact checks: key-path inventory: 61/61 leaf paths classified (37 attested, 2 bound, 10 bounded-only, 1 bootstrap-p-value path with validation reported in Step 17, 3 replay-input paths, 8 unattested); 0 statistic/p-value mismatches; 0 RTP/convergence mismatches; 0 first-draw and 0 runs lower-tail rejections; 0 unsupported or contradictory rows; 0 supported exact-mean rows. Convergence: 24/24 initial 1,000-round checkpoints recomputed, 0 faults; RTP deviation up to 2.38 modeled SE at m=23. FALSE-ALARM ACCOUNTING: 8 scored rejection arms have total NOMINAL level 6.9680%; this is NOT an upper bound or a calibrated combined rate. At n=1000, m=24, the 5-SE screen rejects wins ≤ 9 or ≥ 71; its exact binomial rejection probability is 3.702523820906e-6, compared with nominal 5.742100266382e-7. The Bernstein union upper bound 2.4286e-3 covers the convergence-screen family only. See outputs/audit-figures.json → falseAlarmAccounting for the individual arms. Default verification recomputes the initial checkpoints and checks deeper summaries for consistency. Full Pass-1 statistics require npm run deep-replay, using the retained row seeds. A self-consistent deep-summary forgery can pass ordinary verification; this coverage boundary is exercised by declared survivor S01. Serial statistics concern first-drawn tiles, not every form of layout dependence."
+    },
+    {
+      "step": 17,
+      "name": "Simulation — Pass 2 Cherry-Pick Test",
+      "status": "PASS",
+      "detail": "138 revealed dataset seeds × 10,000 nonces; early window 0..49. Recalculated early/late statistics and late p-values: 0 mismatching rows; epoch and mine-count mismatches: 0, 0. Flags derived from earlyBootstrapP < 0.05 and latePValue >= 0.05: 4; nominal expectation 6.555, binomial survival 0.89757317; 0 stored-flag mismatches. Bootstrap replay: 10,000 replicates per mine count rebuilt from the recorded master seed under 'mines-seed-derivation-v1'; 138/138 p-values checked, 0 mismatches. Unsupported, partial or malformed replay metadata fails verification. This first-draw diagnostic does not prove unbiased seed selection. Mitigation against selecting a server seed for a known client input requires a binding server commitment before learning an unpredictable client seed, with both inputs bound to the round. Player control alone does not establish those conditions."
+    },
+    {
+      "step": 18,
+      "name": "Bet-Size Invariance",
+      "status": "PASS",
+      "detail": "200/200 Phase C hands at $10.00 (mineCount 3) recompute their mine layout in draw order — 0 mismatch. the reference engine revealMines(serverSeed, clientSeed, nonce, mineCount) is wager-free by construction, and the served layouts at $10.00 match it exactly as the $0.10 hands do (stakes present: $0.1, $10) — all sampled layouts agree with the same wager-free reference at both recorded stakes. This is sample layout parity; it does not establish universal backend independence from wager amount"
+    },
+    {
+      "step": 19,
+      "name": "Artifact Integrity (dataset pin + derived figures)",
+      "status": "PASS",
+      "detail": "SHA-256 of data/mines-master-6900bets.json = c7c2e8a930549e11… matches the pin c7c2e8a930549e11… (loader aborts on mismatch before any step runs); outputs/audit-figures.json re-derived from src/config.ts + the pinned dataset + the simulation artifact and compared field-for-field against the copy on disk (generatedAt excluded): match Default verification preserves published figures and writes run results under outputs/run. Explicit report generation replaces published figures only if this step passes."
+    },
+    {
+      "step": 20,
+      "name": "Reveal-Sequence Consistency",
+      "status": "PASS",
+      "detail": "3104 wins — 0 opened a mine (must be 0); 3796 losses — 0 did not bust on exactly the final opened tile with no earlier mine (must be 0)"
+    },
+    {
+      "step": 21,
+      "name": "Reveal-Position Independence",
+      "status": "PASS",
+      "detail": "400 multi-reveal (Phase E) rounds span 107 distinct opened-tile sets and 25/25 board positions as a first pick; all 400/400 layouts still recompute (0 mismatch) regardless of which positions were opened — a layout-parity check over a swept first-pick window (first = ((nonce+1) mod 25)+1), not a statistical independence test"
+    }
+  ],
+  "info": [
+    {
+      "label": "Live RTP",
+      "detail": "99.5361% ($2670.00 wagered, $2657.61 returned over 6900 bets, mixed configs — informational, not authoritative)"
+    },
+    {
+      "label": "maxOdds cap exposure (theoretical, from operator settings)",
+      "detail": "3844/6900 settles carry currentGameSettings (single value; maxOdds 10000). 44 reachable (m,k) cells have exact multiplier > 10000 across 18/24 mineCounts; deepest examples: m=21,k=4 → 12523.5×, m=20,k=5 → 52598.7× (capped path RTP 18.8%); hypothetical lowest-RTP capped cell m=12,k=13: exact 5.148e+6× capped to 10000× → path RTP 0.19%. These returns assume payment capped at maxOdds; the enforcement mechanism was not observed. No recorded winning multiplier approaches the cap. See AUDIT_CONTEXT.md#payout-limits."
+    },
+    {
+      "label": "Lag-1 autocorr (win/loss)",
+      "detail": "r₁=0.3548 — unconditional win/loss correlation in a capture grouped by game configuration. Different configuration win probabilities can contribute to this value. This calculation does not separate configuration effects from within-configuration dependence. Pass 1 evaluates serial statistics of the reference generator; it does not establish the cause of this captured correlation."
+    },
+    {
+      "label": "Live win rate",
+      "detail": "3104/6900 = 44.99% (mixed mineCounts/reveals — informational)"
+    }
+  ],
+  "summary": {
+    "passed": 21,
+    "flags": 0,
+    "hardFail": 0,
+    "verdict": "PROVABLY FAIR — Full Pass"
+  }
+}

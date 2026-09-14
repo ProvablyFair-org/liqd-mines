@@ -1,0 +1,134 @@
+[
+  {
+    "name": "M12 modulo-bias rejection removed (maxFair = 2^32)",
+    "file": "src/rng.ts",
+    "find": "  const maxFair = Math.floor(0x1_0000_0000 / range) * range;",
+    "replace": "  const maxFair = 0x1_0000_0000;",
+    "runner": "verify",
+    "expect": "PROVABLY FAIR \u2014 Full Pass",
+    "expectStep": 5,
+    "expectStatus": "FAIL",
+    "why": "DECLARED SURVIVOR, and this is the honest face of MANIFEST premise 1. CORRECTED 2026-09-10 (QA-12): this note used to say the branch was never taken 'in any of the 172,500 draws the capture contains, nor in the 24,000,000 Pass-1 rounds'. The first half is measured and stands \u2014 the capture census is 0 rejections in 172,500 draws against an expectation of 2.024e-4, and a Poisson approximation puts the chance that a capture THIS SIZE ever witnesses the branch at about 0.02024%, which is small and NOT zero: 'this capture did not' is a measurement, 'no capture could' is not a claim anyone is entitled to. The second half was wrong. The Pass-1 seed space DOES exercise it, and the vector is now a unit test (tests/mines/qaRegressionTests.ts, QA-12): serverSeed 1f1da0da5907129a0043f5ac8a12b5ee, clientSeed 097bf01483879668f626781b35b297c2, nonce 760455, cursor 12, range 13 \u2014 the seed pair of the committed Pass-1 mineCount=5 row. maxFair there is 4294967287; the first chunk is 4294967288 and IS rejected; the second chunk 412214211 yields 6, where deleting the branch would yield 1. Cursor 12 is past the first 5 tiles, so that round's mine layout [24,4,25,9,16] is IDENTICAL either way while the full 25-tile permutation is not \u2014 which is exactly why this mutation still survives a layout-scoped verifier and why the survival is a scope fact, not an absence-of-rejection fact. The branch remains ASSUMED as OPERATOR behaviour \u2014 read from the client bundle, never witnessed on their side, and no client-side capture can witness it \u2014 see rng-algorithm-analysis.md and findings.md F16. Declared here \u2014 in tests/survivors.json, run and printed by the same gate \u2014 rather than quietly omitted, because a registry that hides its survivors reports a coverage it does not have."
+  },
+  {
+    "name": "M15 Step 16 theoreticalRTP read from the artifact instead of recomputed (the P0-1 regression)",
+    "file": "tests/steps/simulation.ts",
+    "find": "    const dev = Math.abs(r.theoreticalRTP - theoreticalRTP(r.mineCount, 1));",
+    "replace": "    const dev = Math.abs(r.theoreticalRTP - r.theoreticalRTP);",
+    "runner": "verify",
+    "expect": "PROVABLY FAIR \u2014 Full Pass",
+    "expectStep": 16,
+    "expectStatus": "FAIL",
+    "why": "DECLARED SURVIVOR BY CONSTRUCTION. This entry mutates the GUARD, not the audited system, and the committed artifact is honest \u2014 so with the guard weakened the honest artifact still passes. It is kept here as documentation of the exact circularity the P0-1 fix removed (comparing an artifact field to itself), and it is exercised for real by tests/forgeries.ts A05, which hands the weakened predicate an artifact where every theoreticalRTP is 0.5."
+  },
+  {
+    "name": "M19 Step 19 treats an ABSENT audit-figures.json as a pass (the H-A regression)",
+    "file": "tests/steps/standardization.ts",
+    "find": "      !pinOk || figState === 'mismatch' || figState === 'unparseable' || figState === 'absent'",
+    "replace": "      !pinOk || figState === 'mismatch' || figState === 'unparseable'",
+    "runner": "verify",
+    "expect": "PROVABLY FAIR \u2014 Full Pass",
+    "expectStep": 19,
+    "expectStatus": "FAIL",
+    "why": "Proves the absent-artifact arm of Step 19 is load-bearing rather than decorative. With the arm disabled the delivered repo STILL passes (the file is present), so this entry is paired with forgery A18, which deletes the file: A18 is the counterexample, this is the assertion that the code path A18 exercises is the one written here. Origin: QA round 3 item H-A \u2014 `rm outputs/audit-figures.json && npm run verify` printed [PASS] Step 19 and 21/21 Full Pass."
+  },
+  {
+    "name": "M20 statistic/p-value reconciliation removed from Step 16 (the H-C regression)",
+    "file": "tests/steps/simulation.ts",
+    "find": "    && pvOk && rtpDeriveOk && plausibilityOk",
+    "replace": "    && rtpDeriveOk && plausibilityOk",
+    "runner": "verify",
+    "expect": "PROVABLY FAIR \u2014 Full Pass",
+    "expectStep": 16,
+    "expectStatus": "FAIL",
+    "why": "DECLARED SURVIVOR BY CONSTRUCTION \u2014 it mutates the GUARD, not the audited system, and the committed artifact is honest, so removing the check leaves an honest artifact passing. It is exercised for real by forgeries A20/A21/A22, which hand the weakened predicate a row whose chi-squared says 500 and whose p-value says 0.7787. Listed in mutations.json rather than survivors.json because `expect` here is the clean verdict and the entry documents WHICH predicate the forgeries depend on."
+  },
+  {
+    "name": "M21 simRTP no longer re-derived from its own convergence checkpoint (the H-D cross-check)",
+    "file": "tests/steps/simulation.ts",
+    "find": "    const derived = (cp.wins / roundsPerConfig) * mult1;",
+    "replace": "    const derived = r.simRTP;",
+    "runner": "verify",
+    "expect": "PROVABLY FAIR \u2014 Full Pass",
+    "expectStep": 16,
+    "expectStatus": "FAIL",
+    "why": "DECLARED SURVIVOR BY CONSTRUCTION \u2014 the classic self-comparison (compare a field to itself), kept as documentation of the circularity this cross-check removes. Exercised for real by forgeries A23/A24: a Pass 1 whose every simRTP equals its own theoreticalRTP sits inside every 5-sigma band by construction, and only a cross-check against a DIFFERENT attested quantity (the final convergence wins) can see it."
+  },
+  {
+    "name": "M24 Step 10 reads the settlement-floor stake from meta.phases again (the H-F regression)",
+    "file": "tests/steps/payouts.ts",
+    "find": "  const minStake = betStakes.length > 0 ? betStakes[0] : 0;",
+    "replace": "  const minStake = headerStakes.length > 0 ? Math.min(...headerStakes) : 0;",
+    "runner": "verify",
+    "expect": "PROVABLY FAIR \u2014 Full Pass",
+    "expectStep": 10,
+    "expectStatus": "FAIL",
+    "why": "DECLARED SURVIVOR BY CONSTRUCTION \u2014 on the honest dataset the header and the bets agree, so reading either gives $0.10 and the run stays clean. That is exactly why the defect survived review: it is invisible until the header lies. Exercised for real by forgery D18, which sets every meta.phases amount to 1000 and re-pins; before the fix Step 10 PASSED while printing \"at the capture's smallest stake ($1000.00, read from meta.phases)\" \u2014 a sentence quoted verbatim in four chapters."
+  },
+  {
+    "name": "M25 turnover accumulator drops its finiteness guard (the H-E regression)",
+    "file": "tests/steps/payouts.ts",
+    "find": "    } else {\n      totalStaked += stakeNum;\n    }",
+    "replace": "    }\n    totalStaked += stakeNum;",
+    "runner": "verify",
+    "expect": "PROVABLY FAIR \u2014 Full Pass",
+    "expectStep": 8,
+    "expectStatus": "FAIL",
+    "why": "DECLARED SURVIVOR BY CONSTRUCTION \u2014 every betAmount in the honest dataset is finite, so summing them unguarded gives the same total. Exercised for real by forgery D17, which makes one loss row's betAmount the string \"not-a-number\": before the fix the suite printed \"$NaN wagered\" in the Live RTP line and still exited as a pass, because every comparison a NaN reaches is false."
+  },
+  {
+    "name": "M28 QA-01 support screen disabled entirely (plausibilityOk forced true)",
+    "file": "tests/steps/simulation.ts",
+    "find": "  const plausibilityOk = lowerBon === 0 && runsLowerBon === 0 && degenerate === 0;",
+    "replace": "  const plausibilityOk = true;",
+    "runner": "verify",
+    "expect": "PROVABLY FAIR \u2014 Full Pass",
+    "expectStep": 16,
+    "expectStatus": "FAIL",
+    "why": "DECLARED SURVIVOR BY CONSTRUCTION \u2014 it mutates the GUARD, and the committed artifact is honest, so with the screen off an honest artifact still passes. Exercised for real by forgeries A25 (every simRTP forced equal to its theoreticalRTP with the convergence counts left genuine) and A23. Registered on 2026-09-10 when the screen was REWRITTEN under QA-01: the previous version rejected any exactly-equal simRTP outright, which made it reject a genuine million-round replay (server f4661fd0\u2026, client e944296a\u2026, m=1: 960,000 wins out of 1,000,000 \u2014 exactly the fair expectation, and the modal outcome of that binomial). The screen now asks whether the value is outside the SUPPORT of the integer counts that produce it, or contradicted by the row's own counts. This entry exists so that the arm cannot quietly become decoration a second time."
+  },
+  {
+    "name": "M29 QA-05 deterministic bootstrap replay dropped from Step 17",
+    "file": "tests/steps/simulation.ts",
+    "find": "    && recomputeOk && monoViolations === 0 && bootMCOk && scalarsOk && bootReplayOk",
+    "replace": "    && recomputeOk && monoViolations === 0 && bootMCOk && scalarsOk",
+    "runner": "verify",
+    "expect": "PROVABLY FAIR \u2014 Full Pass",
+    "expectStep": 17,
+    "expectStatus": "FAIL",
+    "why": "Removing bootstrap verification leaves honest replayable inputs passing. Forgery A27 exercises a legal-lattice p-value alteration; A28\u2013A30 exercise invalid or partial replay metadata. Those forged inputs must be rejected by the unmodified verifier."
+  },
+  {
+    "name": "M27 EDGE_NUM rebuilt at 1e2 scale instead of 1e8 (numerically identical at a 1% edge)",
+    "file": "src/config.ts",
+    "find": "export const EDGE_NUM = BigInt(Math.round((1 - HOUSE_EDGE) * 1e8));       // 99_000_000n at 1%",
+    "replace": "export const EDGE_NUM = BigInt(Math.round((1 - HOUSE_EDGE) * 100)) * 1000000n;",
+    "runner": "verify",
+    "expect": "PROVABLY FAIR \u2014 Full Pass",
+    "expectStep": 10,
+    "expectStatus": "FAIL",
+    "why": "DECLARED SURVIVOR BY CONSTRUCTION, and the most instructive one here. At HOUSE_EDGE = 0.01 the 1e2-scaled form yields exactly 99000000/100000000 \u2014 the same rational \u2014 so nothing in the suite can tell the two apart and the run is clean. The damage is invisible until the edge moves: at HOUSE_EDGE = 0.0100001, Math.round(0.9899999 * 100) rounds straight back to 99 and mutation M02 (edge shifted in the 5th decimal) would go back to reporting 0 floor8 violations, which is the H-H defect returning under a different spelling. Kept here so the reason EDGE_SCALE is 1e8 rather than 1e2 is recorded as an executed counterexample rather than as a comment nobody re-derives."
+  },
+  {
+    "name": "M31 QA-05b fail-closed rule reverted \u2014 invalid or absent replay metadata disables the check again",
+    "file": "tests/steps/simulation.ts",
+    "find": "  const bootReplayOk = claimsReplay\n    ? (replayMetaOk && bootReplayAvailable && bootPMismatches === 0 && bootReplayed === results2.length)\n    : legacyExceptionOk;",
+    "replace": "  const bootReplayOk = !bootReplayAvailable || (bootPMismatches === 0 && bootReplayed === results2.length);",
+    "runner": "verify",
+    "expect": "PROVABLY FAIR \u2014 Full Pass",
+    "expectStep": 17,
+    "expectStatus": "FAIL",
+    "why": "A fail-open replay guard can still accept honest inputs, so this source mutation is not detectable from those inputs alone. Forged invalid and partial replay metadata are exercised by A28\u2013A30 and must fail under the unmodified verifier."
+  },
+  {
+    "name": "M32 QA-05b legacy exception no longer pinned to one artifact",
+    "file": "tests/steps/simulation.ts",
+    "find": "  const legacyExceptionOk = !claimsReplay && legacyPinOk;",
+    "replace": "  const legacyExceptionOk = !claimsReplay;",
+    "runner": "verify",
+    "expect": "PROVABLY FAIR \u2014 Full Pass",
+    "expectStep": 17,
+    "expectStatus": "FAIL",
+    "why": "The published artifact uses complete replay metadata, so the compatibility branch is inactive on honest inputs. Removing its pin therefore survives this source-mutation case. Metadata-free acceptance is limited to the frozen compatibility fixture; deleting metadata from the published replayable artifact must fail Step 17."
+  }
+]

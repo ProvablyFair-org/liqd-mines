@@ -1,0 +1,62 @@
+# .pf-assumptions — the terms this audit marks ASSUMED, one anchored regex per line.
+#
+# Read by audit-framework/checks/check-prose.sh (P1): each phrase below is grepped across every
+# chapter, and any mention NOT sitting next to a qualifier (ASSUMED / not witnessed / unexercised
+# / specified from / cannot be / PROVISIONAL / …) is reported. That is the automated form of the
+# sweep that found this repo's worst round-2 defect — findings.md asserting "genuine Fisher-Yates
+# with modulo-bias rejection" as *proven* while three other chapters correctly called it ASSUMED.
+# It survived a human sweep by two independent reviewers and was mechanical to catch.
+#
+# The rule this encodes: a term qualified ASSUMED anywhere must be qualified EVERYWHERE. A claim
+# is only as strong as its weakest statement of itself, and a reader who lands on the unqualified
+# sentence has been told something the evidence does not support.
+#
+# One phrase per line; lines starting with # are comments.
+
+# ── Premise 1: the maxFair modulo-bias rejection branch ─────────────────────────────────
+# Specified from the client bundle. The expected number of rejection events across the
+# capture's 172,500 draws is 2.024e-4 and 0 occurred (measured — outputs/audit-figures.json
+# -> moduloBiasRejectionCensus), so a no-rejection implementation reproduces all 6,900 layouts
+# identically. A capture this size would witness the branch with probability ~0.02% — SMALL,
+# NOT ZERO. "This capture did not" is a measurement; "no capture could" is not, and no mention
+# may say the latter (QA-12, 2026-09-10).
+# Simulation cannot witness it as OPERATOR behaviour either — Pass 1 runs the AUDITOR's
+# implementation, which reproduces whatever the auditor wrote. It DOES exercise the branch in
+# the auditor's code: nonce 760455 / cursor 12 / range 13 on the committed m=5 Pass-1 row
+# rejects chunk 4294967288 and takes 412214211 -> 6 (deleting the branch gives 1). No mention
+# may claim the 24,000,000 simulated rounds contained no rejection. Every mention must say so.
+modulo-bias rejection
+#
+# THE PARAPHRASES. Added 2026-09-09 after a reviewer found FIVE sites stating the branch as
+# proven operator behaviour — game-logic-verifiability, glossary (twice), system-architecture —
+# every one of which evaded the check above by never using the tracked phrase. A rule that only
+# catches the wording we happened to think of is a rule that catches nothing: the claim is what
+# is tracked, not the spelling. These are the constructions that assert the branch:
+maxFair
+rejects any chunk
+every tile is exactly equally likely
+below the modulo-bias ceiling
+
+# ── Premise 1b: the cursor + 1_000_000 retry path ───────────────────────────────────────
+# The branch taken when no 4-byte chunk of a digest falls below maxFair. Same status as the
+# rejection ceiling it belongs to: specified, never exercised.
+cursor \+ 1_000_000
+
+# ── DELIBERATELY NOT LISTED, and why ────────────────────────────────────────────────────
+# This check earns its keep by having near-100% precision on the terms it does carry. Three
+# further ASSUMED premises are handled by MANIFEST's Load-Bearing Premises table instead of
+# here, because a bare grep for them returns overwhelmingly more noise than signal and a check
+# nobody can keep green is a check that gets switched off:
+#
+#   maxOdds      — the 10000x ceiling is config-attested, never enforcement-witnessed (no
+#                  captured round approaches it; largest won 24.75x). But the word appears in
+#                  scope tables, the cap-exposure info block and the findings' deviation row,
+#                  where the qualification is carried by the surrounding row, not the sentence.
+#   qa.liqd.com  — the whole verdict is marked *provisional* for this reason, in the MANIFEST
+#                  verdict line and on the first line of every chapter header. Flagging each
+#                  platform mention would report the report's own masthead.
+#   275 cells /  — these phrases ARE the qualification of the 300-cell claim. Listing them
+#   formula-only   would invert the check.
+#
+# If a future round shows a defect slipping through one of those three, list it here and fix
+# the resulting noise in the prose rather than leaving it out.
