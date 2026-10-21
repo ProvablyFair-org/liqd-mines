@@ -1,0 +1,45 @@
+{
+  "auditId": "PF-2026-LQ02",
+  "auditIdStatus": "confirmed by ProvablyFair.org",
+  "game": "mines",
+  "casino": "liqd",
+  "release": "v1.0.0",
+  "framework": "1.1",
+  "datasetSha256": "c7c2e8a930549e11e3e564a962aea0ca2875b6eb94bc1f4347cc703bc410b222",
+  "artifacts": {
+    "data/mines-master-6900bets.json": "c7c2e8a930549e11e3e564a962aea0ca2875b6eb94bc1f4347cc703bc410b222",
+    "outputs/simulation-results.json": "8854fc57e7f22f1960b9c89f6c8e003a5e92e19d899a3ecf20e0c0170e44fc2c",
+    "outputs/simulation-provenance.json": "4eee6b2b2259244fd2402a825c829089e270d36e8700ef0b9e3f1f8b1660eaa6",
+    "outputs/bootstrap-nulls.float64le": "477c58267cf890751abadaf48a723b569207838be7838d7a20da9b2e2d09cf18",
+    "outputs/rtp-convergence.html": "ad969c106e979f3f0eabcea69b5d2d881eb4a44be248e670a215e6a561989d2d",
+    "outputs/deep-replay-report.json": "6de3935092af3db155c9e608f7f5993b68b31ac25364ad24ac0c0ce021c8d6bc",
+    "outputs/bootstrap-replay-report.json": "a0395e57d8ccda10a9950334211380a43a02f4f01ab923b1472347fd43148573",
+    "outputs/audit-figures.json": "942ba10e301d2c99a502cfbec4ad3441055f27df0d1ca907df2b8f95f8dc69ca",
+    "outputs/verification-results.json": "25db7665027a4c0df089d1b711fb15c68449214be153ee0cd468d93eaf1ba745",
+    "outputs/rtp-claim-table.json": "b8293e56cb2f77d5e58e176b1e7cb3b7cbb732bcd5c6a6131ae292fc23839a4a"
+  },
+  "verdict": "PROVABLY FAIR — Full Pass",
+  "scored": {
+    "passed": 22,
+    "flags": 0,
+    "hardFail": 0,
+    "of": 22
+  },
+  "capturedAt": {
+    "from": "2026-07-30T16:23:03.508Z",
+    "to": "2026-10-03T12:42:12.148Z"
+  },
+  "environment": {
+    "host": "qa.liqd.com",
+    "stage": "pre-production",
+    "qualifier": "provisional"
+  },
+  "reproduction": {
+    "workflow": ".github/workflows/reproduce.yml",
+    "runner": "ubuntu-latest",
+    "node": "22",
+    "command": "npm ci && npm test"
+  },
+  "supersedes": null,
+  "signature": "SHA256:gEujiJm2pRyq7lQsfYQfQ1r97H/J7GdaKHbOW8GtikY"
+}

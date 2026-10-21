@@ -1,0 +1,40 @@
+{
+  "name": "mines-audit",
+  "version": "1.0.0",
+  "license": "MIT",
+  "private": true,
+  "description": "Provably fair audit — LIQD.com Mines",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "test": "node scripts/run-stages.mjs test",
+    "verify": "ts-node tests/verify.ts",
+    "figures": "ts-node src/write-figures.ts",
+    "chart": "ts-node src/write-chart.ts",
+    "chart:check": "ts-node src/write-chart.ts --check",
+    "simulate": "ts-node src/simulate.ts",
+    "deep-replay": "ts-node src/deep-replay.ts",
+    "mutations": "ts-node tests/mutations.ts",
+    "mutate": "ts-node tests/mutations.ts",
+    "forgeries": "ts-node tests/forgeries.ts",
+    "report": "PF_EMIT=1 ts-node tests/verify.ts",
+    "test:toolchain": "node scripts/run-stages.mjs toolchain",
+    "verify:standalone": "node verify.js",
+    "test:standalone": "node test.js && node verify.js",
+    "build": "node scripts/build-standalone.mjs",
+    "check:build": "node scripts/build-standalone.mjs --check",
+    "build:check": "node scripts/build-standalone.mjs --check",
+    "check:standalone": "node scripts/check-standalone.mjs",
+    "bootstrap-replay": "python3 scripts/replay-bootstrap.py",
+    "rtp-claim:write": "ts-node src/rtp-settings.ts"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10",
+    "@types/node": "^22",
+    "chart.js": "4.4.7",
+    "mocha": "^11",
+    "ts-node": "^10",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,543 @@
+{
+  "auditId": "PF-2026-LQ02",
+  "totalBets": 6900,
+  "totalSeeds": 138,
+  "datasetSha256": "c7c2e8a930549e11e3e564a962aea0ca2875b6eb94bc1f4347cc703bc410b222",
+  "artifactHashes": {
+    "dataset": {
+      "file": "data/mines-master-6900bets.json",
+      "expected": "c7c2e8a930549e11e3e564a962aea0ca2875b6eb94bc1f4347cc703bc410b222",
+      "actual": "c7c2e8a930549e11e3e564a962aea0ca2875b6eb94bc1f4347cc703bc410b222",
+      "match": true,
+      "sha256": "c7c2e8a930549e11e3e564a962aea0ca2875b6eb94bc1f4347cc703bc410b222"
+    },
+    "simulation": {
+      "file": "outputs/simulation-results.json",
+      "sha256": "8854fc57e7f22f1960b9c89f6c8e003a5e92e19d899a3ecf20e0c0170e44fc2c"
+    }
+  },
+  "steps": [
+    {
+      "step": 1,
+      "name": "Seed Hash Integrity",
+      "status": "PASS",
+      "detail": "138/138 revealed seeds checked against the pinned population of 138 (src/pins.ts EXPECTED_SEEDS, a code constant — not the dataset's own count); SHA-256(utf8(serverSeed)) == hashedServerSeed; 0 mismatches",
+      "profileIds": [
+        "MINES-01"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-01",
+          "coverage": "full",
+          "note": "commitHash(serverSeed) == hashedServerSeed for every revealed seed, PAIRED PER ENTRY (a loop over seed records, not a set-membership test), under the one declared encoding SHA-256(utf8(serverSeed hex STRING)) — src/rng.ts commitHash. The denominator is EXPECTED_SEEDS in src/pins.ts, a code constant, and is ALSO required to equal seeds.length, so a capture shipping fewer seed records FAILs rather than reporting its own count back to itself; `checked === seeds.length` makes 0 reveals a FAIL instead of a vacuous pass on `fails === 0`. The competing encoding is rejected rather than merely unused: tests/mutations.json M10 rewrites commitHash to hash the DECODED 16 bytes and this step is the one that must FAIL"
+        }
+      ]
+    },
+    {
+      "step": 2,
+      "name": "Next-Seed Pre-Commitment Chain",
+      "status": "PASS",
+      "detail": "137/137 transitions: nextHashedServerSeed == next epoch's hashedServerSeed (chain INTACT); pre-capture link: reveal→commitment OK, chains into epoch 0 OK; recorded order (capture clock, the order the capture RECORDED — not an operator-side event order): 138/138 epochs' commitment recorded before their first bet (pre-capture record for epoch 0, the previous seed record's next-hash after that), 138/138 seed records written before their epoch's first bet, 137/137 rotations (the next seed record) written after the retiring epoch's last bet (the closing rotation of the last epoch is not a seed record and is not timed)",
+      "profileIds": [
+        "MINES-02"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-02",
+          "coverage": "full",
+          "note": "all 137 rotations recomputed from the RAW fields — seeds[i].nextHashedServerSeed must equal seeds[i+1].hashedServerSeed after sorting by epoch — and never from the capture's own chainLinkOk / commitVerified booleans, which no predicate here reads. The pre-capture anchor the profile requires is asserted in both halves and its ABSENCE is a FAIL: meta.preCapture.revealedServerSeed must hash to meta.preCapture.hashedServerSeed, and meta.preCapture.nextHashedServerSeed must equal epoch 0's hashedServerSeed, so the chain is anchored before the first captured epoch. Since 2026-10-02 (external QA, A10) the step also asserts the RECORDED ORDER on the capture's own clock: each epoch's commitment (the pre-capture record for epoch 0, the previous seed record's next-hash after that) was recorded before the epoch's first bet (138/138), each seed record before its epoch's first bet (138/138), and each rotation after the retiring epoch's last bet (137/137) — the order the capture recorded, not an operator-side event order; forgery D24 moves one record and FAILs the step. Mutation M56 (the chain walked in reverse epoch order) FAILs it"
+        }
+      ]
+    },
+    {
+      "step": 3,
+      "name": "Hash Consistency Within Epoch",
+      "status": "PASS",
+      "detail": "138/138 epochs (pinned in src/pins.ts, not counted from the dataset): all bets within each epoch share the same hashedServerSeed; 0 violations (that field is written onto each bet row by the capture script from the epoch it opened; LIQD's bet responses carry no hash — none in the auto-bet field list of capture/capture-mines.reference.mjs, none in the 1,000 raw place-bet and settle responses of either multi-reveal supplement capture, 2026-09-26 or 2026-10-03 — so this arm checks the capture's labelling). Operator-served seed reference serverSeedId (on every settle response): 138/138 epochs carry one value across all their bets (0 epochs with more than one, 0 bets without one), 138 distinct across the 138 epochs",
+      "profileIds": [
+        "MINES-03"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-03",
+          "coverage": "full",
+          "note": "the server-seed-hash half: bets are grouped BY EPOCH (betsByEpoch keyed on b.epoch) and each group's hashedServerSeed set must have size 1 — grouping by hash, which would be tautological, is not what this does. The number of epoch groups is bound to EXPECTED_SEEDS in src/pins.ts as well as to seeds.length. That field is written onto each bet row by the capture script — LIQD's bet responses carry no hash — so since 2026-10-02 (external QA, A9) the step also reads the one seed reference LIQD serves on every settle, serverSeedId: one value within each epoch and 138 distinct values across the 138 epochs, otherwise HARD FAIL (forgery D25 swaps one and FAILs the step). The same-client-seed half of the check is Step 4"
+        }
+      ]
+    },
+    {
+      "step": 4,
+      "name": "Nonce Audit",
+      "status": "PASS",
+      "detail": "138/138 epochs: single client seed each, nonces in capture order, unique, and exactly the DECLARED window [0, 49] (NONCE_BASE 0 and EXPECTED_EPOCH_SIZE 50 are code constants in src/pins.ts — not the minimum observed, and not the seed records' own nonceStart/nonceEnd, which are checked AGAINST the declaration: 0 disagreements). Gaps: 0 found, 0 capture-retry gap(s) declared. The window is what the capture requested under each seed, not an operator-side counter: this establishes that the bet rows are complete against it, not that no other nonce was ever served (selective orphaning — see MANIFEST.md#dataset-and-capture). No gaps in any epoch.",
+      "profileIds": [
+        "MINES-03",
+        "MINES-04"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-03",
+          "coverage": "full",
+          "note": "the client-seed half: per epoch exactly one client seed (Set size 1, otherwise HARD FAIL) — tests/steps/commitment.ts. The server-seed-hash half is Step 3"
+        },
+        {
+          "id": "MINES-04",
+          "coverage": "full",
+          "note": "the window is DECLARED: every epoch's nonces must be exactly NONCE_BASE … NONCE_BASE+EXPECTED_EPOCH_SIZE−1 (src/pins.ts, 0 … 49) — a code constant, not the minimum observed and not the seed record's nonceStart, which is now checked AGAINST the declaration (a record/declaration disagreement hard-fails). No repeat (Set(nonces).size === bets), no reorder (the capture sequence must be strictly increasing within an epoch), no nonce outside the window. Gaps are counted against EXPECTED_CAPTURE_RETRY_GAPS (declared 0): an undeclared gap — the operator-side case — hard-fails, and a gap count equal to a non-zero declaration is a capture-origin FLAG (`origin: capture`, verdict-neutral; tests/verify.ts separates capture-origin from operator-origin flags). Measured: 138/138 epochs exactly 0 … 49, 0 gaps. Mutations M34 (NONCE_BASE 0→1) and M35 (declared gaps 0→1) FAIL the step; forgeries D13 and D15 (window and record shifted together) FAIL it; D21 (a declared gap) shows the [FLAG:capture] branch. Limit, printed by the step: the window is what the capture requested, not an operator-side counter (MANIFEST DL-9)"
+        }
+      ]
+    },
+    {
+      "step": 5,
+      "name": "Mine-Layout Recomputation",
+      "status": "PASS",
+      "detail": "6900/6900 bets recomputed against the pinned population (src/pins.ts EXPECTED_BETS, a code constant — not bets.length, which would make this figure true of any capture); revealMines(serverSeed, clientSeed, nonce, mineCount) == mineTiles (draw order); 0 mismatches; 0 skipped (unrevealed seeds). Draw bias bound (declared design: rejection sampling, src/rng.ts maxFairFor): maxFair per range [range:maxFair] 25:4294967275 24:4294967280 23:4294967284 22:4294967292 21:4294967292 20:4294967280 19:4294967290 18:4294967292 17:4294967295 16:4294967296 15:4294967295 14:4294967292 13:4294967287 12:4294967292 11:4294967292 10:4294967290 9:4294967292 8:4294967296 7:4294967292 6:4294967292 5:4294967295 4:4294967296 3:4294967295 2:4294967296 1:4294967296; 25/25 ranges have maxFair a whole multiple of the range, so the per-value bias conditional on acceptance is exactly 0 (worst over all ranges 0; bound 2^-32 = 2.328e-10); per-draw rejection probability (2^32 − maxFair)/2^32 is at most 4.889e-9 (range 25). Rejection census over this population: 0 of 172500 draws (6900 rounds × 25) took the branch, against 2.024e-4 expected — the capture does not exercise it, so the branch is shown on a vector instead: nonce 760455, cursor 12, range 13 rejects its first chunk and draws 6 (expected 6; deleting the branch gives 1) OK. This bounds the AUDITOR'S draw; that the operator's server takes the same branch is ASSUMED (MANIFEST DL-3). Player-verifier parity (MINES-24): the ProvablyFair.org site verifier, vendored in verifier-parity/, games/mines/derive.js sha256 fa4dbd19b80e7ce7… = pin; lib/hmac-sha256.js sha256 2095571fecd77f53… = pin; its deriveMines was run on 6900/6900 captured rounds and matches src/rng.ts revealMines in draw order on 6900 (0 mismatches), and the served mineTiles on 6900; its displayCents equals src/config.ts minesMultiplierDisplayCents at 300/300 legal cells (informational). Not exercised by any captured round, on either side: the all-8-chunks-rejected retry (cursor + 1,000,000), and non-hex server seeds, where the site keys HMAC with UTF-8 bytes and this package with Buffer.from(hex). The live site file is compared with the same pins by scripts/check-site-verifier.mjs.",
+      "profileIds": [
+        "MINES-07",
+        "MINES-08",
+        "MINES-24"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-07",
+          "coverage": "full",
+          "note": "revealMines(serverSeed, clientSeed, nonce, mineCount) is recomputed for EVERY bet in the population — wins and losses alike, no filter — and compared with mineTiles by sameMines, which is ORDER-SENSITIVE (element by element, same length), so the comparison is the DRAW-ORDER list the operator serves rather than a sorted set; there is no tolerance. A skipped round is a failure, not a smaller sample: `skipped === 0` is part of the pass condition, and the denominator is EXPECTED_BETS from src/pins.ts rather than bets.length, so \"6,900/6,900\" cannot be true of whatever the file happens to contain"
+        },
+        {
+          "id": "MINES-08",
+          "coverage": "full",
+          "note": "the draw-bias bound is stated IN THE STEP DETAIL as a computed quantity: maxFair for each of the 25 ranges the shuffle uses (read from src/rng.ts maxFairFor, the one ceiling the draw itself reads), the exact per-value bias conditional on acceptance (integer arithmetic, src/bias.ts drawBias on src/rng.ts maxFairFor), the worst per-draw rejection probability (4.889e-9 at range 25) and the rejection census over the population (0 of 172,500 draws, 2.024e-4 expected). The declared design is rejection sampling, so the gate is EXACT ZERO bias at every range (a fortiori ≤ 2^-32) — deliberately stricter than the bound, because a plain chunk % range with no rejection is biased by less than 2^-32 at every range 1..25 and would pass the bound alone. The branch the capture never takes is exercised on a vector inside the step (nonce 760455 / cursor 12 / range 13 must draw 6; deletion draws 1). Mutation M12 (maxFair = 2^32), a declared survivor until 2026-09-23, now FAILs this step. Scope, printed by the step: this bounds the AUDITOR'S draw; the operator's branch stays ASSUMED (MANIFEST DL-3)"
+        },
+        {
+          "id": "MINES-24",
+          "coverage": "full",
+          "note": "the player-verifier parity arm. The Mines verifier a player uses on the ProvablyFair.org site — VerifyBets games/mines/derive.js and the one library file it imports, lib/hmac-sha256.js — is vendored byte-for-byte in verifier-parity/ and both files' SHA-256 digests are recorded in src/pins.ts SITE_VERIFIER_PINS (derive.js fa4dbd19…, hmac-sha256.js 2095571f…). The step hashes the vendored copies against the pins, loads them with only the ES-module keywords removed (src/site-verifier.ts; any other import or export form is a load FAIL), runs deriveMines on all 6,900 captured rounds and requires the draw-order minePositions to EQUAL src/rng.ts revealMines — the computeLayout every other layout step uses — with the denominator pinned to EXPECTED_BETS. Measured 2026-09-24: 6,900/6,900 equal (and 6,900/6,900 equal to the served mineTiles); displayCents equal at 300/300 legal cells (printed, not scored). Mutation M44 edits one byte of the vendored derive.js logic and this step FAILs on the hash; a re-pinned copy of the same edit FAILs on layout parity (probe 2026-09-24). scripts/check-site-verifier.mjs compares a site checkout with the same pins (exit 1 on mismatch). What this parity is: hash-pinned behavioural equality on every captured round, not a derive.js generated from src/rng.ts. Where the two differ, on inputs no captured round reaches: all eight chunks of a digest rejected (the site redraws at cursor + 1,000,000; src/rng.ts, rebuilt from docs/ALGORITHM.md, which leaves it unspecified (O1), throws), and non-hex server seeds (the site keys the HMAC with their UTF-8 bytes; src/rng.ts throws). The operator's own verify endpoint is a different thing and remains unprobed"
+        }
+      ]
+    },
+    {
+      "step": 6,
+      "name": "Client Seed Influence",
+      "status": "PASS",
+      "detail": "whole-dataset controls over 6900/6900 bets (denominator pinned in src/pins.ts): wrong clientSeed ('wrong-client-seed-test') reproduces 9/6900 layouts in draw order (0.13%) and 47 as a set; empty clientSeed reproduces 7/6900 in draw order (0.10%, 7 at mineCount 1) and 48 as a set; 6891/6900 bets change under a wrong seed. Model-predicted chance collisions over these bets' own mine counts: draw order E = Σ 1/P(25,m) = 9.269 (σ 2.986, gate E+5σ = 24.197); as a set E = Σ 1/C(25,m) = 59.610 (σ 7.570, gate 97.458) — all four survivor counts within the model. A–C generator (capture/capture-mines.reference.mjs, `audit${randomBytes(6).toString('hex')}`, a CSPRNG): 128/128 non-Phase-D epoch client seeds match /^audit[0-9a-f]{12}$/, 128 distinct. The Phase D seeds are predictable by construction and are enumerated by Step 14 (MANIFEST DL-13).",
+      "profileIds": [
+        "MINES-06"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-06",
+          "coverage": "full",
+          "note": "the whole-dataset control half, over every bet (6,900/6,900, denominator pinned): each layout is recomputed under an EMPTY client seed and under a fixed WRONG client seed, and the survivors are gated at the rate the MODEL predicts — E + 5σ of chance collisions with E = Σ 1/P(25,m) for the draw-order comparison (9.269, gate 24.197; measured 9 wrong / 7 empty) and E = Σ 1/C(25,m) for the set comparison (59.610, gate 97.458; measured 47 / 48), over the tested bets' own mine counts — replacing the arbitrary ≥ 95% gate, which passed a first-mine-only comparator at 286 survivors, 6,614/6,900 = 95.86% changed (probe, 2026-09-23). 0% change fails by construction (M17). The A–C generator is disclosed (capture/capture-mines.reference.mjs, `audit${randomBytes(6)…}`, Node's CSPRNG) and BOUND to the data: all 128 non-Phase-D epoch client seeds must match /^audit[0-9a-f]{12}$/ and be distinct, or the step fails. The Phase D half — every player-set seed recomputes and the predictable seeds are enumerated by epoch — is Step 14 (MANIFEST DL-13)"
+        }
+      ]
+    },
+    {
+      "step": 7,
+      "name": "Displayed Multiplier Field (floored, cosmetic)",
+      "status": "PASS",
+      "detail": "SCOPE: the audited dataset (data/mines-master-6900bets.json) only — the v3 multi-reveal supplement's displayed multipliers are Step 22, against the same rule; 6900/6900 bets checked; 3104 wins: displayed multiplier == floor2(exact) at 1e-9 (0 mismatches); 2662 wins where the displayed field is below the exact reference multiplier; reported settlement amounts are checked separately in Step 8; 3796 losses: no payout — multiplier 0/absent and winningAmount == 0 (0 violations); reference-formula integrity: 0 wins where minesMultiplier/minesMultiplierExact returned a non-finite value (a NaN/Infinity in the auditor's own reference makes every comparison here vacuous — hard fail, not a mismatch)",
+      "profileIds": [
+        "MINES-11",
+        "MINES-13"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-11",
+          "coverage": "full",
+          "note": "the loss half of the payout check, at exact zero with no epsilon: every losing round must carry multiplier 0-or-absent AND winningAmount exactly 0 ((b.multiplier ?? 0) !== 0 || Number(b.winningAmount) !== 0 counts a violation), over a coverage total bound to EXPECTED_BETS. The winning-credit half is Step 8"
+        },
+        {
+          "id": "MINES-13",
+          "coverage": "full",
+          "note": "the display-rounding arm the profile allows for (\"or on the declared display rounding with the exact value credited\"): for EVERY winning bet at its opened depth, the operator's served `multiplier` field must equal floor2(minesMultiplierExact(m, openTiles.length)) at 1e-9 (tests/steps/payouts.ts:62-66), the wins where the display sits below the exact reference are counted and emitted, and a non-finite reference hard-fails rather than scoring as agreement. The exact credited value is Step 8; the 300-cell closed form is Step 10; the independent anchor is Step 13; the depth-5 arm is Step 15. No operator-supplied odds field enters the derivation: minesMultiplierExact takes (m, k) only"
+        }
+      ]
+    },
+    {
+      "step": 8,
+      "name": "Payout Math + Win-Condition (wins: betAmount × EXACT multiplier == winningAmount; losses: 0; label ⇔ mine opened)",
+      "status": "PASS",
+      "detail": "SCOPE: the audited dataset (data/mines-master-6900bets.json) only — the v3 multi-reveal supplement's credits are Step 22, against the same rule; 6900/6900 bets at 2e-8 (expected total pinned in src/pins.ts EXPECTED_BETS, a code constant — not seeds×50 read from the dataset) (credit floored at the 8th decimal): 3104 wins matching the exact-multiplier settlement within the stated residual tolerance, 0 wins matching only the displayed-multiplier payout candidate, 0 errors; exact floor8 identity (winningAmount == floor8(stake × multExact) in BigInt rational arithmetic, 0 tolerance — rejects ±1e-8 over/under-credit): 0 violations; on-grid check applied BEFORE any rounding (winningAmount × 1e8 must already be an integer — a ninth decimal cannot be held in a 1e-8 ledger and must not be rounded onto the grid by the identity above): 0 off-grid credits; reference-formula integrity: 0 wins where minesMultiplierExact returned a non-finite value (hard fail — the auditor's reference is corrupt, not the operator's payout); money-field integrity: 0 bets whose betAmount is not a finite number, 0 whose winningAmount is not — hard fail, because a NaN entering the turnover total makes every ratio computed from it vacuous rather than wrong; credit-floor residuals: max 8.571e-9, 1214 wins below the unrounded value, total shortfall $5.868e-6 on $2670.00 staked (2.2e-9 of turnover); win-condition consistency (won ⇔ no mine opened): 0 label violations. SEVERITY OF A SHORT CREDIT: here a win credited one 1e-8 unit below floor8(stake × exact) is a floor8 violation and HARD-FAILS this step (MINES-11 HARD_FAIL as written; forgery D26); this dataset has 0 such wins. The scored 2026-10-03 supplement gives a short credit the same severity: its declared gap is 0, so one FAILs Step 22. OPEN RULING 2 (profile owner: is a win credited 1e-8 short a FAIL or a FLAG?) now bears only on how the dated history is classed — the 2026-09-26 capture's 50 short credits in 404 wins, held at a Step 22 FLAG from 2026-10-01 to 2026-10-03 (Step 22 arm k, MANIFEST DL-14) — not on this step's status or the verdict",
+      "profileIds": [
+        "MINES-11",
+        "MINES-10"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-11",
+          "coverage": "full",
+          "note": "the winning-credit half, on the settlement value domain rather than at a float epsilon: winningAmount in 1e-8 units must EQUAL floor8(stake x multExact) computed as a BigInt rational with ZERO tolerance (floor8CreditUnits, retention factor EDGE_NUM/EDGE_DEN derived from HOUSE_EDGE and not a re-typed 99n/100n), which is what rejects the uniform +/-1e-8 shift a +/-2e-8 residual band cannot see (forgery D02). An ON-GRID test runs BEFORE any rounding, so a credit carrying a ninth decimal is rejected on its own terms. Money is summed only after it is proven finite, and a non-finite stake or credit hard-fails rather than poisoning the turnover the report quotes. Losses-credit-exactly-zero is Step 7 and is re-asserted here. A win credited one 1e-8 unit below floor8(stake x exact) hard-fails THIS step (forgery D26) — 0 such wins on this dataset (3,104/3,104 exact) — and, since 2026-10-03, fails Step 22 on the scored 2026-10-03 supplement too, whose declared gap is 0: one severity for one shortfall in every scored dataset. OPEN RULING 2 (profile owner: FAIL or FLAG?) now bears only on how the dated 2026-09-26 history is classed (50 short credits, held at a Step 22 FLAG from 2026-10-01 to 2026-10-03), not on any status"
+        },
+        {
+          "id": "MINES-10",
+          "coverage": "full",
+          "note": "the win ⇔ no-mine half, as it bears on payment: a \"won\" round that opened any mine tile and a \"lost\" round that opened none are both labelViolations and hard-fail, and the credit is computed from openTiles.length — the tiles ACTUALLY opened — never from `reveals`. The recomputed-layout form of the check, the bust-on-the-last-tile clause and the opened-count-equals-recorded-depth clause are Step 20"
+        }
+      ]
+    },
+    {
+      "step": 9,
+      "name": "Config Completeness (Phase A: 24 mineCounts × 200)",
+      "status": "PASS",
+      "detail": "Phase A: 24/24 mineCounts present, each with 200 bets (4800/4800 total). Live-sample fit (informational; pre-registered deviation level p < 0.001, reported as INFO, never counted): first-drawn mine position over 6900/6900 captured layouts vs the uniform 25-tile lattice, chi² 15.978 on 24 df, p = 0.8889; win counts in 25 (mineCount, planned reveals) groups vs the binomial at winProbability(m,k), Σz² 13.424 on 25 df, p = 0.9709, largest |z| 1.883 at m=16,k=1 (93/221 vs 79.6 expected). A variance illustration of the live sample, not RTP evidence.",
+      "profileIds": [
+        "MINES-15",
+        "MINES-22"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-15",
+          "coverage": "full",
+          "note": "the Phase A half, asserted against the plan in code: all 24 mineCounts at exactly 200 rounds each, against MINE_COUNTS.length x PHASE_A_PER_MC, and the Phase-A total must equal that product, so a phase short of the plan FLAGs rather than passing on \"no missing mineCount\" — 4,800 rounds, above the 50-per-config floor. The multi-reveal half (\"several depths and mine counts\") is Step 22 on the v3 supplement (5 mine counts x 4 depths x 50, asserted against SUPPLEMENT_DEPTHS in src/pins.ts); the first-pick span is Step 21; the all-cells reference artifact is Step 19"
+        },
+        {
+          "id": "MINES-22",
+          "coverage": "full",
+          "note": "both fits, computed in the step from the captured rows against pure combinatorics: (a) the first-drawn mine position (mineTiles[0]) over all 6,900 layouts against the uniform 25-tile lattice — chi² 15.978 on 24 df, p = 0.8889; (b) the win count in each of the 25 (mineCount, planned reveals) groups against the binomial at winProbability(m,k) — Σz² 13.424 on 25 df, p = 0.9709, largest |z| 1.883. Informational (policy INFORMATIONAL, 2026-09-29): a p-value below the pre-registered LIVE_FIT_ALPHA = 1e-3 is reported as INFO — never counted, never a FLAG or a FAIL (mutation M36 raises the level to 0.95: the step reports INFO and the verdict stays Full Pass)"
+        }
+      ]
+    },
+    {
+      "step": 10,
+      "name": "House Edge / RTP Audit (closed-form identity, per-config, anti-circular)",
+      "status": "PASS",
+      "detail": "Closed-form identity theoreticalRTP(m,k) = winProbability(m,k) × minesMultiplierExact(m,k) (winProbability = pure C(25-m,k)/C(25,k) combinatorics), checked for m=1..24 at k=1 and Phase-E depths (m=3, k=1..5) — 28/28 cases: RTP range 99.0000%–99.0000%, mean 99.0000% — a clean 99.0000% for every (m,k) (closed-form edge exactly 1.00%), because the exact multiplier makes the CLOSED FORM identically (1 − edge) — the settlement floor can reduce the return, quantified next. Full-grid reference sweep: all 300/300 legal (m,k) cells (k=1..25−m) evaluate to 99.0000% within 1e-9 (0 off), range 99.0000%–99.0000% — this checks the reference formula at every reachable depth, NOT the operator (25/300 cells are live-witnessed via Step 8; 275 formula-only; additional settlement coverage is planned for production). Settlement floor: the identity above is the THEORETICAL leg; the amount actually credited is floor8(stake × multExact), so settled RTP is at most (1 − edge), with equality when no fractional settlement unit is discarded. Worst case over all 300 cells at the capture's smallest stake ($0.10, DERIVED from the 2 distinct betAmount values in the pinned bets — $0.10, $10.00 — not read from meta.phases; the header's own smallest amount is $0.10 and the two agree): m=2,k=3 loses 6.600e-8 of turnover → settled RTP 98.9999934%, i.e. 99.0000% to four decimals. Edge-rational integrity: EDGE_NUM/EDGE_DEN = 99000000/100000000 exactly represents (1 − HOUSE_EDGE) = 0.99 — the BigInt factor the floor8 credit identity in Step 8 divides by. A factor that only approximates the audited edge makes that identity measure a different edge, silently. Reference-formula integrity: 0 cells returned a non-finite value — a NaN/Infinity here is NOT an \"off 99%\" deviation (which FLAGs); it means the auditor's own reference is corrupt and every comparison built on it is vacuous, so it hard-FAILS. This is the uncapped reference calculation; Step 8 independently checks the recorded winningAmount at captured winning configurations. The displayed multiplier field is still floored — cosmetic (Step 7). Monotonicity (FLAG policy, scored): the exact multiplier is strictly increasing in depth and in mine count over 552/552 adjacent legal cell pairs (exact rational comparison) — 0 violations. Caps (MINES-14 cap half, MANIFEST DL-7) — DISCLOSED, NOT SCORED since 2026-10-15: payout caps are excluded from the audit and multiplier caps stay in scope (profile owner, 2026-10-15); LIQD states that Mines has had no multiplier cap since the end of August 2026 (the 10,000× setting removed from the configuration) and that a per-round payout limit ends the round and pays the full multiplier for the tiles already revealed (operator statement, 2026-10-15, quoted in MANIFEST DL-7). Scored build: the 2026-10-03 supplement's 607 settles carry {\"minOdds\":1.01,\"houseEdge\":1,\"minBet\":0.01,\"maxBet\":10000,\"maxExposure\":50000,\"maxExposureUsdc\":50000,\"maxBetUsdc\":\"10000.00000000\",\"exposureSource\":\"global\",\"maxBetSource\":\"game\"} (src/pins.ts SUPPLEMENT_GAME_SETTINGS, bound to the data by Step 22), no maxOdds key — no multiplier cap, as stated; keys those records carry that the audited build's do not: maxExposure 50000, maxExposureUsdc 50000, maxBetUsdc \"10000.00000000\", exposureSource \"global\", maxBetSource \"game\" — maxExposure is the round payout limit LIQD describes, excluded (payout-limit enforcement is not tested; no captured round reached it). History, printed and not scored: the audited dataset (captured 2026-07-30) — 10000 on 3844 settles (the July build's maxOdds, src/config.ts MAX_ODDS_DECLARED 10000×: agree); every multiplier the operator quoted in it lies within that July setting: 6208/6208 (served field and credited ratio on every win; largest 24.75×; within); the 2026-09-26 capture's 596 settles carried {\"minOdds\":1.01,\"houseEdge\":1,\"minBet\":0.01,\"maxBet\":10000}, no maxOdds key either (bound to its records by Step 22 (k)); the reference formula exceeds the July 10,000× setting at 44 of the 300 legal cells, none reached by a captured bet; the live page read 2026-10-01 advertises a 5,148,297× top payout (evidence/rtp-page-labels-2026-10-01.json), the uncapped exact multiplier at m=12, k=13. Cap figures as computed (not scored): quoted within the July setting yes, audited settings single-valued at it yes, scored build carries it no. RTP claim — OPEN RULING 1 (profile owner: which statement on LIQD's page is LIQD held to?): the held claim is the page's flat 99.00% (\"99% RTP at every setting\"; scored by the RTP-CLAIM gate printed after the steps). The same page states a realised edge \"between 0.64% and 1.44%\" (RTP 98.56%–99.36%); run through the same rule (RTP-CLAIM 1.2.0, band 0.10 pp) as a range claim it would FAIL: published min 98.560000% vs true 99.000000% (-0.440000 pp, FAIL); published max 99.360000% vs true 99.000000% (0.360000 pp, FAIL). Printed for the ruling, not scored. FLAG REASONS: none.",
+      "profileIds": [
+        "MINES-13",
+        "MINES-18",
+        "MINES-19",
+        "MINES-14"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-13",
+          "coverage": "full",
+          "note": "the closed form at EVERY legal cell: the full-grid sweep evaluates all 300 legal (m,k) cells (m=1..24, k=1..25-m; the count is asserted === 300) and requires theoreticalRTP(m,k) = winProbability(m,k) x minesMultiplierExact(m,k) to equal PUBLISHED_RTP within 1e-9, which is algebraically the profile's claim that mult(m,k) = C(25,k)/C(25-m,k) x (1-edge). The two factors are INDEPENDENTLY WRITTEN in src/config.ts — winProbability as the binomial ratio via combination(), minesMultiplierExact as the product (1-edge) x prod (25-i)/(25-m-i) — and Step 13 anchors the probability factor against a product form and an integer subset tally, so this is not the module agreeing with itself. PUBLISHED_RTP = 0.99 is deliberately a LITERAL and not 1 - HOUSE_EDGE, which would make the comparison vacuous. A corrupted cell is caught: M05 sets minesMultiplierExact(4,2) to 1 and this step FLAGs; M04 sets it to NaN and it FAILs"
+        },
+        {
+          "id": "MINES-18",
+          "coverage": "full",
+          "note": "the identity half of anti-circularity — P(survive to k) x multiplier(m,k) == (1-edge) at all 300 legal cells with no operator data anywhere in the computation. Non-finite is separated from off-target as its own fault class, because Math.abs(NaN - 0.99) > 1e-9 is FALSE and an unguarded sweep would print \"300/300 clean\": a cell at 70% FLAGs, a cell that is not a number hard-FAILS. The counting anchor and negative control are Step 13"
+        },
+        {
+          "id": "MINES-19",
+          "coverage": "full",
+          "note": "the effective edge is DERIVED per cell — all 300 legal (m,k) cells evaluated as winProbability x minesMultiplierExact against the published 99.0000% claim, the off-target count asserted at 0 (FLAG otherwise) with the observed min/max range printed as the magnitude — and the settlement-floor arm re-enumerates the same 300 cells in BigInt at the capture's smallest stake, DERIVED from the distinct betAmount values in the pinned bets and cross-checked against meta.phases (a disagreement is a hard fail, mutation M24), naming its worst cell. No operator edge field is read: the edge factor is EDGE_NUM = round((1-HOUSE_EDGE)*1e8) and this step hard-fails on edgeRationalIsExact() (mutation M26) and on a non-finite reference cell (the reference-formula guard, mutation M04); M27 (EDGE_NUM rebuilt at 1e2 scale, the same rational at a 1% edge) is a declared survivor (tests/survivors.json, DL-11). Both arms can fail (M05 reports GRID-OFF, M04/M26 FAIL). Scope, stated in the step itself: this is a property of the auditor's reference formula plus the settlement floor; only 25 of the 300 cells are operator-witnessed (Step 8), the other 275 are formula-only (limitation DL-4). OPEN RULING 1 (profile owner: which statement on LIQD's page LIQD is held to): the enforced RTP-CLAIM gate holds the page's flat 99% and passes 300/300; the same page's edge range 0.64%-1.44% (RTP 98.56%-99.36%), run through the same rule by this step, would FAIL \"no range wider than reality\" (published min -0.44 pp, published max +0.36 pp, band 0.10 pp) — printed, not scored"
+        },
+        {
+          "id": "MINES-14",
+          "coverage": "full",
+          "note": "FLAG POLICY ON THE MONOTONICITY HALF; THE CAP HALF IS DISCLOSED, NOT SCORED, SINCE 2026-10-15. (a) the exact multiplier is STRICTLY increasing in depth k for every m and in mine count m for every k, over all 552 adjacent legal cell pairs, compared as exact rationals (BigInt cross-multiplication) — 0 violations; mutation M37 flattens the ladder at an unreached cell (m=20, k=5) and the step reports NON-MONOTONE. (b) the cap half: the profile owner ruled on 2026-10-15 that payout caps are excluded from the audit and multiplier caps stay in scope, and LIQD stated the same day that Mines has had no multiplier cap since the end of August 2026 (the 10,000x setting removed from the configuration) and that a per-round payout limit ends the round and pays the full multiplier for the tiles already revealed. The scored 2026-10-03 build's 607 settings records carry no maxOdds (src/pins.ts SUPPLEMENT_GAME_SETTINGS, bound by Step 22), which agrees with that statement; maxExposure 50000 (exposureSource \"global\") is the round payout limit, excluded and not tested. Printed as history, not scored: the audited July build's 3,844 records carry maxOdds 10000 (MAX_ODDS_DECLARED, src/config.ts) and all 6,208 quoted multipliers lie within it (largest 24.75x); the reference formula exceeds it at 44 of 300 cells, none reached by a captured bet. From 2026-10-02 to 2026-10-15 the step FLAGged on the scored build's missing maxOdds; mutation M58 re-scores that figure and the step FLAGs again (SUPPLEMENT-SETTINGS-NO-DECLARED-CAP), and M38 lowers the July declaration to 20x and the step stays PASS. Open ruling 3 (reading R2) is closed by the 2026-10-15 ruling"
+        }
+      ]
+    },
+    {
+      "step": 11,
+      "name": "Phase Labels",
+      "status": "PASS",
+      "detail": "Phases present: A, B, C, D, E (A=4800 B=1000 C=200 D=500 E=400); plan A=4800 B=1000 C=200 D=500 E=400 (src/pins.ts EXPECTED_PHASE_BETS, Σ=6900); total 6900/6900 bets and 138/138 seed records, both against CODE constants in src/pins.ts — not against meta.plannedTotal or any other field of the dataset being scored. The published population and phase plan are fixed in source independently of the dataset header.",
+      "profileIds": [
+        "MINES-05"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-05",
+          "coverage": "full",
+          "note": "the population and phase-plan half of G-BIND: bets.length === EXPECTED_BETS and every per-phase count === EXPECTED_PHASE_BETS[p], both from src/pins.ts — code constants, never meta.plannedTotal or the sum of the phase counts in the file being scored — and the pin table's OWN arithmetic is asserted (sum EXPECTED_PHASE_BETS === EXPECTED_BETS). A mismatch is a HARD FAIL. Mutation M22 re-derives EXPECTED_BETS from the dataset and this step is the one that must FAIL. The seed/epoch-size half is Step 12; this package has one dataset file, so there is no secondary file to pin"
+        }
+      ]
+    },
+    {
+      "step": 12,
+      "name": "Epoch Size",
+      "status": "PASS",
+      "detail": "138/138 epochs and 138/138 seed records (src/pins.ts EXPECTED_SEEDS); min=50, max=50 bets per epoch against EXPECTED_EPOCH_SIZE 50; 138 × 50 = 6900 must equal EXPECTED_BETS 6900. The source constants fix the expected seed and bet population.",
+      "profileIds": [
+        "MINES-05"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-05",
+          "coverage": "full",
+          "note": "the seed, epoch and epoch-size half: seeds.length === EXPECTED_SEEDS, the number of distinct epochs in the bets === EXPECTED_SEEDS, min and max bets per epoch both === EXPECTED_EPOCH_SIZE, and the three pins asserted mutually consistent (EXPECTED_SEEDS x EXPECTED_EPOCH_SIZE === EXPECTED_BETS). Mutation M23 moves EXPECTED_EPOCH_SIZE off 50 and this step must FAIL. The dataset SHA-256 pin is enforced before any parse by src/loader.ts and re-asserted as a scored step in Step 19"
+        }
+      ]
+    },
+    {
+      "step": 13,
+      "name": "Anti-Circularity (Combinatorial Win Probability)",
+      "status": "PASS",
+      "detail": "winProbability(m,k) = C(25-m,k)/C(25,k), pure combinatorics — no operator data (24/24 mineCounts, 300 (m,k) pairs). k=1 outcome space Σ (safe+mine) = 1.0 exactly (max dev 0.000e+0, m=1); combinatorial form == product Π(25-m-i)/(25-i) over all reachable m,k (max dev 2.220e-16, m=1,k=4); counting anchor: 110 (m,k) cases enumerated subset-by-subset, integer equality with C(25,k) and C(25-m,k) — 0 mismatches; reference-formula integrity: 0 non-finite results — a NaN deviation satisfies every `>` comparison it appears in, so it is counted, not silently skipped.",
+      "profileIds": [
+        "MINES-18",
+        "MINES-13"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-18",
+          "coverage": "full",
+          "note": "the anti-circular derivation, the COUNTING ANCHOR and the negative control: winProbability is shown to be pure combinatorics with no call into the multiplier module and no operator data — (1) at k=1 the outcome space sums to exactly 1 for every m; (2) the binomial form C(25-m,k)/C(25,k) equals the product form prod (25-m-i)/(25-i), recomputed locally, over every reachable (m,k); (3) every k-subset of the 25 tiles is ENUMERATED by a depth-first walk and the tallies compared with INTEGER equality to C(25,k) and C(25-m,k). Mutation M00 shifts winProbability to C(26-m,k) and this step must FAIL — the corrupted-model control the profile asks for. The enumeration is exhaustive at k <= 5 (the deepest depth the capture reaches); leg (2) covers all 300 cells and the p x mult identity at all 300 cells is Step 10"
+        },
+        {
+          "id": "MINES-13",
+          "coverage": "full",
+          "note": "the independent-oracle half of the formula check: the multiplier equality Step 10 asserts is only as good as the probability factor in it, and this step anchors that factor outside the audited closed form — against a locally recomputed product form at every reachable cell and against an integer subset tally. A compensating pair of corruptions (a wrong winProbability matched by a wrong multiplier) is caught here rather than cancelling inside Step 10's identity"
+        }
+      ]
+    },
+    {
+      "step": 14,
+      "name": "Phase D — Client Seed Variation",
+      "status": "PASS",
+      "detail": "500 bets, 10 distinct client seeds (10 pfaudit-*); mine-layout recomputation: 500/500 match (500/500 recomputed). Predictable-seed disclosure (MANIFEST DL-13): 10 epoch(s) use the timestamp construction pfaudit-<stamp>-<epoch> — epochs 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 500 bets, stamp 1785428583504 (2026-07-30T16:23:03.504Z) — so for those epochs the client seed does not deny foreknowledge; their rounds rest on the recomputation above and on Steps 16–17, not on the client-seed mitigation.",
+      "profileIds": [
+        "MINES-06"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-06",
+          "coverage": "full",
+          "note": "the Phase D half: all 500 Phase-D rounds recompute their mine layout under the client seeds ACTUALLY used (10 distinct pfaudit- seeds), with a coverage guard (tested === phaseD.length) so a run that recomputed nothing cannot pass on 0 === 0, and at least 2 distinct client seeds required (the profile floor). The predictable construction is disclosed WITH THE EXPOSED EPOCHS ENUMERATED by the step from the data: every Phase-D client seed of the form pfaudit-<13-digit stamp>-<its own epoch> is listed — epochs 120–129, 500 bets, one stamp 1785428583504 decoded to 2026-07-30T16:23:03.504Z — and carried as MANIFEST DL-13. Mutation M39 drops the client seed from the HMAC message and this step FLAGs. The whole-dataset controls and the A–C generator binding are Step 6"
+        }
+      ]
+    },
+    {
+      "step": 15,
+      "name": "Phase E — Multi-Reveal Verification",
+      "status": "PASS",
+      "detail": "400 multi-reveal bets: all mineCount 3 / reveals 5; 400/400 mine layouts recomputed; 216/216 winning multipliers == minesMultiplier(3, openTiles.length) at 1e-9 (reveal depths tested: 5; 0 non-finite reference values — a NaN in the auditor's own formula hard-fails rather than scoring as agreement); outcome split: 216 cashed out at depth 5, 38 hit a mine on the 5th reveal (254 opened all five), 146 busted at depths 1–4",
+      "profileIds": [
+        "MINES-17",
+        "MINES-13"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-17",
+          "coverage": "partial",
+          "note": "the multi-reveal layout and cash-out arm: all 400 Phase-E rounds are asserted to be the declared shape (mineCount 3, reveals 5), every layout recomputes with a coverage guard (layoutChecked === phaseE.length), and each WIN's served multiplier is checked at minesMultiplier(3, openTiles.length) — the depth actually opened, not the planned `reveals` — with a non-finite reference hard-failing. The outcome split is produced rather than asserted in prose (216 cashed out at depth 5, those that hit a mine on the fifth reveal, those that busted at depths 1-4). WHAT IS MISSING, package-wide: no per-step multiplier is recorded (gameModel.multiReveal.perStepMultipliersRecorded is false) — and the v3 supplement shows why: LIQD does not serve one on the wire (Step 22: 0 of 3,314 open-tile responses carry a multiplier on the scored 2026-10-03 capture, 0 of 3,418 on the 2026-09-26 one), so no intermediate rung can be checked against the formula at its depth and the rung check is limited to the cash-out, which the profile's declarationTruth says makes the check partial. Reveal ORDER independence at the cash-out rung and the cash-out rung at 20 (mineCount, depth) cells are Step 22; the mine-set invariance and per-reveal status arm is Step 20; the position arm is Step 21"
+        },
+        {
+          "id": "MINES-13",
+          "coverage": "full",
+          "note": "the depth arm: every Phase-E win's served multiplier equals the closed form at the depth actually opened (minesMultiplier(3, openTiles.length), display rounding), with the reveal depths reached emitted; a non-finite reference is a hard fail"
+        }
+      ]
+    },
+    {
+      "step": 16,
+      "name": "Simulation — Pass 1 (First-Draw · Joint · Serial, FWER)",
+      "status": "PASS",
+      "detail": "24 configurations × 1,000,000 rounds = 24,000,000 rounds. Approximate statistical thresholds use Bonferroni α/24=4.167e-4. First-drawn tile uniformity: 0/24 unadjusted rejections, 0/24 adjusted. Pairwise co-occurrence: 0/23 unadjusted rejections, 0/23 adjusted; max|z|=3.72, per-pair critical=4.83 after adjustment across pairs and configurations. First-drawn-tile serial checks: 1/24 unadjusted rejections, 0/24 adjusted; lag-one |z| critical=3.53. Mean simulated RTP 98.9427%; reference 99.0000%. REPLAYED IN VERIFY: 24/24 rows × 1,000,000 rounds = 24,000,000 rounds regenerated from each row's recorded seed pair; census (convergence counts, df, pair count, worst pair) 0 mismatches; derived statistics (first-draw χ² and p, joint max|z| and p, lag-1 r and z, runs z and p, theoretical and simulated RTP) 0 beyond the reproduction tolerance |Δ| ≤ 1e-14 + 1e-12·max, 0 non-zero differences; prefix-shuffle self-check 162,000 rounds against revealMines, 0 disagreements; every count and verdict arm above is computed from the replayed statistics. Artifact checks: key-path inventory: 58/58 leaf paths classified (47 attested, 2 bound, 1 bounded-only, 1 bootstrap-p-value path with validation reported in Step 17, 3 replay-input paths, 4 unattested); 0 statistic/p-value mismatches; 0 RTP/convergence mismatches; 0 first-draw and 0 runs lower-tail rejections; 0 unsupported or contradictory rows; 0 supported exact-mean rows. Convergence: 24/24 initial 1,000-round checkpoints recomputed, 0 faults; RTP deviation up to 2.38 modeled SE at m=23. FALSE-ALARM ACCOUNTING: 8 scored rejection arms have total NOMINAL level 6.9680%; this is NOT an upper bound or a calibrated combined rate. At n=1000, m=24, the 5-SE screen rejects wins ≤ 9 or ≥ 71; its exact binomial rejection probability is 3.702523820906e-6, compared with nominal 5.742100266382e-7. The Bernstein union upper bound 2.4286e-3 covers the convergence-screen family only. See outputs/audit-figures.json → falseAlarmAccounting for the individual arms. Serial statistics concern first-drawn tiles, not every form of layout dependence.",
+      "profileIds": [
+        "MINES-20"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-20",
+          "coverage": "full",
+          "note": "the committed experiment is REPLAYED, not trusted: all 24 x 1,000,000 Pass-1 rounds are regenerated inside every verify run from the seed pair each row records (src/replay.ts, the expressions src/simulate.ts uses; parallel worker processes of the verifier, src/replay-pool.ts — the zero-install bundle re-runs itself as the worker), and every row field is compared: the census (all seven convergence counts, df, pair count, worst pair) exactly, and every derived statistic — first-draw chi2 and p (first-draw uniformity, the profile's \"first-draw + pairwise co-occurrence\" form), joint max|z| and p, lag-1 r and z, runs z and p, theoretical and simulated RTP — within the reproduction tolerance (1e-14 + 1e-12·max, src/diff.ts). Every FWER count and verdict arm is computed from the REPLAYED statistics and the stored scalars must equal them. The replay's prefix shuffle is checked against the adapter's full revealMines on the first 1,000 rounds of every job. Coverage is bound to the plan: 24 rows, one per mineCount 1..24 (MINE_COUNTS), and roundsPerConfig must EQUAL ENFORCED_ROUNDS_PER_CONFIG (1,000,000) or nothing is replayed and the step fails. The artifact is pinned with no run metadata (Step 19, MINES-27). Measured 2026-09-24: 24/24 rows, 0 census mismatches, 0 derived statistics beyond tolerance, 0 non-zero differences (bit-identical), 162,000 prefix self-check rounds, 0 disagreements. FAIL probed: forgery A31 (the former declared survivor S01, a fully self-consistent deep Pass 1, re-pinned), A32 (one n=50,000 convergence count moved by one win, re-pinned) and mutation M47 (replay engine one nonce off)"
+        }
+      ]
+    },
+    {
+      "step": 17,
+      "name": "Simulation — Pass 2 Cherry-Pick Test",
+      "status": "PASS",
+      "detail": "138 revealed dataset seeds × 10,000 nonces; early window 0..49. Recalculated early/late statistics and late p-values: 0 mismatching rows; epoch and mine-count mismatches: 0, 0. Flags derived from earlyBootstrapP < 0.05 and latePValue >= 0.05: 4; nominal expectation 6.555, binomial survival 0.89757317; 0 stored-flag mismatches. Bootstrap replay: 10,000 replicates per mine count rebuilt from the recorded master seed under 'mines-seed-derivation-v1'; 138/138 p-values checked, 0 mismatches. Unsupported, partial or malformed replay metadata fails verification. This first-draw diagnostic does not prove unbiased seed selection. SERVED-CONFIG TEST (the configurations each epoch actually served, mine count and requested tiles by nonce, replayed over its revealed seed): 138/138 epochs × 10,000 nonces; early window = the captured nonces 0–49, its replayed outcomes bound to the 6,900 recorded outcomes (0 mismatches); statistic = window return against the exact per-config mean and variance; bootstrap p against the seed's own 199 later windows: 0/138 epochs flagged at p ≤ 0.01 (family gate ≤ 6 at family α 0.001); pooled early-window return 6974.1278 vs exact expectation 6831.0000, z = 0.723 (gate −3.09); detection power of the pooled test 8.6% at a 5% early-window return shortfall, 64.1% at a 10% early-window return shortfall, 100.0% at a 20% early-window return shortfall. Rule fixed in code (SERVED_* constants) before the statistic was first computed, 2026-09-24. The tiles a losing round did not reach are rebuilt from the capture's consecutive-tile rule, which every recorded opened sequence satisfies. Mitigation against selecting a server seed for a known client input requires a binding server commitment before learning an unpredictable client seed, with both inputs bound to the round. Player control alone does not establish those conditions.",
+      "profileIds": [
+        "MINES-21"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-21",
+          "coverage": "full",
+          "note": "the SERVED-CONFIG statistic is computed in verify: for each of the 138 revealed epochs, the 50 configurations it actually served — mine count and the tiles the capture requested, in nonce order, taken from the pinned dataset (never from the artifact) — are replayed over the epoch's revealed seed for 10,000 nonces (nonce n plays config n mod 50). The early window is the captured nonce range 0–49, and its replayed outcomes must EQUAL the 6,900 recorded outcomes; nonces 50–9,999 give 199 later windows of the same sequence. Statistic: the window RETURN against the exact per-config mean P(survive k)·mult(m,k) and variance P·mult² − μ². Null: a bootstrap over the seed's own 199 later windows, p = (1 + #later ≤ early)/200. Rule (the SERVED_* constants in tests/steps/simulation.ts, written 2026-09-24 before the statistic was first computed): flag at p ≤ 0.01, family gate = binomial upper tail at 0.001 (6 of 138), pooled z < −3.090 fails. It was written after this capture's seeds were revealed. Power printed: 8.6% at a 5% early-window return shortfall, 64.1% at 10%, 100.0% at 20%. Measured: 0/138 flagged, pooled early-window z = 0.723 (the pooled return and its exact expectation are in the step detail). The tiles a losing round did not reach are rebuilt from the capture's consecutive-tile rule (capture/capture-mines.reference.mjs playRound), which all 6,900 recorded opened sequences satisfy; a round that does not satisfy it fails the binding. The first-draw test (bootstrap null replayed from the recorded master seed, 138/138) is kept and re-derived. FAIL probed: forgery A36 (a Phase-E win's opened tiles reversed, re-pinned), mutations M45 (replay plays a tile off the plan) and M46 (the pooled-z gate branch)"
+        }
+      ]
+    },
+    {
+      "step": 18,
+      "name": "Bet-Size Invariance",
+      "status": "PASS",
+      "detail": "200/200 Phase C hands at $10.00 (mineCount 3) recompute their mine layout in draw order — 0 mismatch. the reference engine revealMines(serverSeed, clientSeed, nonce, mineCount) is wager-free by construction, and the served layouts at $10.00 match it exactly as the $0.10 hands do (stakes present: $0.1, $10) — all sampled layouts agree with the same wager-free reference at both recorded stakes. This is sample layout parity; it does not establish universal backend independence from wager amount",
+      "profileIds": [
+        "MINES-12"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-12",
+          "coverage": "full",
+          "note": "all 200 Phase-C hands at $10.00 (100x the Phase-A stake, mineCount 3 — the low mine count the profile asks for, 176 wins exercising the payout path) recompute their layout in draw order against the same wager-free reference the $0.10 hands are scored by, with a coverage guard (chk === phaseC.length and chk > 0) and the distinct stakes present emitted. The HMAC message is `${clientSeed}:${nonce}:${cursor}` and revealMines takes no stake parameter, so no amount term can enter the derivation. The elevated-stake PAYOUT path is settled by the same exact floor8 identity over these same rows in Step 8. The step states its own limit: sample layout parity at two recorded stakes, not paired-stake causality"
+        }
+      ]
+    },
+    {
+      "step": 19,
+      "name": "Artifact Integrity (dataset pin + derived figures)",
+      "status": "PASS",
+      "detail": "SHA-256 of data/mines-master-6900bets.json = c7c2e8a930549e11… matches the pin c7c2e8a930549e11… (loader aborts on mismatch before any step runs); outputs/audit-figures.json re-derived from src/config.ts + the pinned dataset + the simulation artifact and compared field-for-field against the copy on disk: match; pinned artifacts of record (src/pins.ts ARTIFACT_PINS): 8/8 match (outputs/simulation-results.json match, outputs/simulation-provenance.json match, outputs/bootstrap-nulls.float64le match, outputs/rtp-convergence.html match, outputs/deep-replay-report.json match, outputs/bootstrap-replay-report.json match, outputs/audit-figures.json match, outputs/verification-results.json match); un-ignored by name in .gitignore: 8/8; run-metadata keys in pinned JSON artifacts: 0; value domains (src/domains.ts): 6,718 numeric leaves across 6 pinned JSON artifacts, 0 undeclared, 0 outside their domain. Default verification preserves published figures and writes run results under outputs/run. Explicit report generation replaces published figures only if this step passes.",
+      "profileIds": [
+        "MINES-26",
+        "MINES-27",
+        "MINES-15"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-26",
+          "coverage": "full",
+          "note": "the dataset pin has ONE definition — EXPECTED_DATASET_HASH in src/pins.ts — imported by the producer (src/simulate.ts, src/write-figures.ts) and the verifier (tests/verify.ts) alike; src/loader.ts hashes the raw bytes and exits(1) BEFORE JSON.parse, so enforcement precedes any parse and any step; and the pin is re-asserted here as a scored step. This package has exactly one dataset file and no config file (the payout is a formula), so there is no secondary file to pin. The immutable legacy simulation fixture is pinned too (LEGACY_BOOTSTRAP_ARTIFACT_SHA256, tests/mines/qaRegressionTests.ts QA-05b)"
+        },
+        {
+          "id": "MINES-27",
+          "coverage": "full",
+          "note": "every artifact the report quotes from outputs/ is pinned by SHA-256 in src/pins.ts ARTIFACT_PINS and re-hashed here, ABSENT is a FAIL: simulation-results.json, simulation-provenance.json, bootstrap-nulls.float64le, rtp-convergence.html, deep-replay-report.json, bootstrap-replay-report.json, audit-figures.json and verification-results.json (8/8); each must be un-ignored BY NAME in .gitignore (M48); no pinned JSON artifact may carry a run-metadata key (src/domains.ts RUN_METADATA_KEY; forgery A33 puts generatedAt back, re-pinned, and is rejected); every numeric leaf of every pinned JSON artifact must have a DECLARED value domain with bounds from code and lie in it (src/domains.ts; A34, an impossible value re-pinned, is rejected by the domain alone); the pin arm itself is A35 (one byte, not re-pinned). Run metadata was REMOVED, not excluded, on 2026-09-24, each file through its own generator's serialiser with every other leaf proven identical: simulation-results.json lost generatedAt and two executionTimeMs (1,884 → 1,881 leaves, 0 changed) and a SIM_REPLAY=1 regeneration by src/simulate.ts reproduces it (see MANIFEST \"Artifacts of record\"); provenance, deep-replay, bootstrap-replay and figure artifacts likewise. The producers write to outputs/run/ by default (simulate, figures, bootstrap-replay; deep-replay only to --out), verify writes only outputs/run/ plus a field-level diff.json against the committed copies at the reproduction tolerance, and PF_EMIT=1 is the one deliberate in-place path, re-pinned in the same diff. Named exception: tests/fixtures/legacy-simulation-results.json keeps its 2026-08-05 generatedAt — it is the byte-for-byte copy of a superseded artifact kept as a regression fixture, its bytes (timestamp included) are its asserted identity (LEGACY_BOOTSTRAP_ARTIFACT_SHA256, QA-05b), and no reported figure is read from it"
+        },
+        {
+          "id": "MINES-15",
+          "coverage": "full",
+          "note": "the committed-artifact half: outputs/audit-figures.json carries `referenceGrid`, a row per legal (m,k) cell for all 300 cells, and this step BINDS it by field-for-field re-derivation, so the all-cells reference is a produced artifact and not prose. The artifact does not mark which cells live play reached; that is not in the profile's asserts, and the live-witnessed cash-out cells are now emitted by a step — the audited dataset's 25 in Step 10's detail and MANIFEST DL-4, the scored supplement's 20 in Step 22's detail. The Phase A half is Step 9; the multi-reveal half is Step 22; the first-pick span is Step 21"
+        }
+      ]
+    },
+    {
+      "step": 20,
+      "name": "Reveal-Sequence Consistency",
+      "status": "PASS",
+      "detail": "6900/6900 rounds judged against the RECOMPUTED layout (revealMines from the revealed seed — not the served mineTiles, not the result label): 3104 wins — 0 opened a mine, 0 whose opened count differs from the recorded depth (both must be 0); 3796 losses — 0 did not bust on exactly the final opened tile with no earlier mine, 0 opened more tiles than the recorded depth or none (both must be 0); board structure (opened tiles legal 1..25 and unrepeated, served mine list = mineCount distinct legal indices): 0 violations; 0 rounds not recomputable; 0 rounds with a label other than won/lost",
+      "profileIds": [
+        "MINES-10",
+        "MINES-17"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-10",
+          "coverage": "full",
+          "note": "every clause, over the whole population and from the RECOMPUTED layout — the mine set is revealMines(serverSeed, clientSeed, nonce, m), never the served mineTiles and never the result label: a WIN opens no mine AND its opened count equals the recorded depth (`reveals`); a LOSS busts on EXACTLY the last opened tile with no earlier mine and opens between 1 and `reveals` tiles; every opened tile is a legal index 1..25, none repeated, and the served mine list is mineCount distinct legal indices (the profile's rules.boardStructure note). Coverage: wins + losses === EXPECTED_BETS, both present, 0 rounds unrecomputable, 0 labels other than won/lost. Measured 3,104 wins / 3,796 losses, 0 violations of any clause. Forgery D23 truncates a Phase-E win to 4 tiles with its multiplier and credit rewritten for depth 4 — every payout step prices it at the opened depth and passes; this step FAILs it. D22 ([t,t,t,t,t]) and mutation M42 (recomputed set shifted) FAIL it. The label ⇔ mine half as it bears on payment is also carried by Step 8"
+        },
+        {
+          "id": "MINES-17",
+          "coverage": "partial",
+          "note": "the per-reveal status and mine-set invariance arm: every opened tile's mine/safe status is checked against the seed-derived layout for all 6,900 rounds (not only Phase E), which is what binds the reveal sequence to the committed layout. `partial` for the package-wide reason in Step 15: no per-step multiplier is served on the wire (Step 22), so no intermediate rung is checked. Reveal ORDER independence at the cash-out rung is Step 22"
+        }
+      ]
+    },
+    {
+      "step": 21,
+      "name": "Reveal-Position Independence",
+      "status": "PASS",
+      "detail": "400 multi-reveal (Phase E) rounds span 107 distinct opened-tile sets and 25/25 board positions as a first pick (all 25 required); all 400/400 layouts still recompute (0 mismatch) regardless of which positions were opened — a layout-parity check over a swept first-pick window (first = ((nonce+1) mod 25)+1), not a statistical independence test",
+      "profileIds": [
+        "MINES-17",
+        "MINES-15"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-17",
+          "coverage": "partial",
+          "note": "the reveal-POSITION arm: all 400 Phase-E layouts still recompute regardless of which positions were opened (chk === phaseE.length, 0 mismatches) and the rounds span more than one distinct opened-tile set (measured 107) with ALL 25 board positions as a first pick (asserted since 2026-09-23; measured 25/25). The step says out loud that it is a layout-parity check over a swept window, not a statistical independence test. Reveal ORDER independence is Step 22 on the v3 supplement (CSPRNG reveal orders journalled before each bet). WHAT IS MISSING package-wide: no intermediate rungs, because LIQD serves no per-step multiplier (Step 22: 0 of 3,314 reveals on 2026-10-03, 0 of 3,418 on 2026-09-26) — a property of the operator's API, not closable by another capture"
+        },
+        {
+          "id": "MINES-15",
+          "coverage": "full",
+          "note": "the first-pick span half: ALL 25 positions asserted as a first pick (firsts.size === GRID, tests/steps/standardization.ts; raised from >= 20 on 2026-09-23), measured 25/25, and mutation M43 (shuffle swap removed) makes the step FLAG. The Phase A half is Step 9; the several-depths-and-mine-counts half is Step 22"
+        }
+      ]
+    },
+    {
+      "step": 22,
+      "name": "Multi-Reveal Supplement (capture v3, 1,000 rounds)",
+      "status": "PASS",
+      "detail": "SUPPLEMENT data/liqd-mines-capture-v3-2026-10-03T11-58-54-479Z.json (captured 2026-10-03) — scored here; Steps 1–21 score the audited 6,900-round dataset (Step 10 also reads this supplement's settings declaration, bound here in (j)); the 2026-09-26 capture of the same plan is dated history, arm (k), not scored. (a) integrity: dataset and journal SHA-256 match their pins; 1000/1000 journal bet records equal the dataset rows; 1000/1000 reveal orders journalled before their bet. (b) population: 1000/1000 rounds, 20/20 epochs, 20 (mineCount, depth) configurations × 50 (0 off plan, 0 rounds outside it; capture meta plan agrees with src/pins.ts). (c) commitment: 20/20 commitments verify, 19/19 chain links, pre-capture anchor links to epoch 0; nonce violations 0, rows unbound to their epoch 0. (d) layouts: 1000/1000 recompute (draw order). (e) reveals: 3314/3314 served mine/safe statuses equal the recomputed layout; 0 rounds whose reveals differ from the recorded order; 393 wins (0 not opening exactly the planned safe tiles), 607 losses (0 not busting on exactly the last reveal or credited ≠ 0). (f) per-step multiplier: 0 of 3314 reveals carried one (declared 0) — NOT SERVED ON THE WIRE: 2707 safe reveals returned only {mineTile}, 607 mine reveals returned the settled record; the intermediate-rung arm of MINES-17 is not checkable from the operator's responses. (g) cash-out rung, 393 wins, scored against ONE rule — the rule every win in this package is held to (Steps 7–8 on the audited dataset's 3,104 wins): credit = floor8(stake × exact rational multiplier), display = floor2(exact). CREDIT: == the rule 393/393; ABOVE the rule 0; BELOW the rule 0 — declared gap 0 (src/pins.ts SUPPLEMENT_DISCLOSED_CREDIT_UNIT_BELOW); non-finite 0, off-grid 0. The cells that missed the rule on 2026-09-26 (arm k), on this capture: (1, 10) 23 wins, 23 credited at the rule; (1, 15) 16 wins, 16 credited at the rule. DISPLAY: == the rule 393/393; above 0; one cent below 0 — declared gap 0; out of bound 0. VERDICT TREATMENT: a credit or a display below the rule on this capture FAILs this step — the declared gap is 0, so any short win moves it — which is the severity profile MINES-11 (HARD_FAIL, an exact comparison under a declared settlement rule) gives it, and the one Step 8 gives a short credit on the audited dataset; nothing on this capture is held at FLAG. EXPLANATORY ONLY — hypotheses about the operator, gated on nothing, never the audit's rule: the binary64 models that matched every credit of the 2026-09-26 capture match this one as follows — credit == Math.floor(stake×multF×1e8) 354/393, == exact product of the two doubles floored to 8 dp 354/393, == that model with the multiplier formed edge-first 318/393; display == Math.floor(multF×100)/100 370/393; against the exact rule: credit 393/393, display 393/393. (h) order independence at the cash-out rung: 20/20 witnessed cells carry one served multiplier and one credit across every reveal order (20 cells reached by more than one opened-tile order; 20 with ≥ 2 wins); first picks span 25/25 positions. (i) coverage: 20 cash-out rungs witnessed (floor 20): (1,2)×47 (1,5)×36 (1,10)×23 (1,15)×16 (3,2)×34 (3,4)×28 (3,6)×25 (3,8)×21 (5,2)×30 (5,3)×29 (5,5)×18 (5,6)×10 (8,2)×26 (8,3)×15 (8,4)×9 (8,5)×6 (12,2)×10 (12,3)×5 (12,4)×3 (12,5)×2; safe reveals reached 39 (mineCount, depth) rungs. (j) operator settings: 607 settle responses carry currentGameSettings (declared 607), 1 distinct value, equal to the declaration {\"minOdds\":1.01,\"houseEdge\":1,\"minBet\":0.01,\"maxBet\":10000,\"maxExposure\":50000,\"maxExposureUsdc\":50000,\"maxBetUsdc\":\"10000.00000000\",\"exposureSource\":\"global\",\"maxBetSource\":\"game\"} (src/pins.ts SUPPLEMENT_GAME_SETTINGS); 607/607 reveal copies agree. The declared value carries NO maxOdds key; the declared cap is 10000× (src/config.ts MAX_ODDS_DECLARED, from the audited dataset's settings records), so this build's settings do not carry the July build's cap; LIQD states the multiplier cap was removed at the end of August 2026, and Step 10 discloses this without scoring it (MINES-14 cap half, not scored since 2026-10-15; MANIFEST DL-7). (k) DATED HISTORY, NOT SCORED AS TODAY'S BEHAVIOUR — the 2026-09-26 capture of the same plan (data/liqd-mines-capture-v3-2026-09-26T16-46-41-121Z.json and its journal, both SHA-256 pinned in src/pins.ts SUPPLEMENT_HISTORY_*; exhibits E17/E18), the scored supplement until 2026-10-03, re-derived from the pinned bytes with the rule functions of (g): on the 2026-09-26 build 50 of 404 wins were credited below floor8(stake × exact) — (1, 10) ×29, (1, 15) ×21, each 1 × 1e-8 short, total 50 × 1e-8 = $0.00000050, 0 above, 354 at the rule (DL-14, history); 29 displayed one cent below floor2(exact) — (1, 10) ×29, 0 above (DL-15, history); its 596 settings records carry {\"minOdds\":1.01,\"houseEdge\":1,\"minBet\":0.01,\"maxBet\":10000}. LIQD stated a fix on 2026-09-30; the 2026-10-03 capture of the same plan, scored in (g), credits 393 of its 393 wins exactly at the rule. OPEN RULING 2 (profile owner: is a win credited 1e-8 below floor8(stake × exact) a FAIL or a FLAG?) now bears only on how this history is classed: from 2026-10-01 to 2026-10-03 the package held these wins at a Step 22 FLAG pending the ruling (profile MINES-11's policy is HARD_FAIL; the same shortfall on the audited dataset hard-fails Step 8, forgery D26). It does not move today's status, and nothing here decides it. History figures equal their declarations (a figure that moves FAILs this step: the published history would no longer describe the pinned bytes).",
+      "profileIds": [
+        "MINES-15",
+        "MINES-17"
+      ],
+      "profileChecks": [
+        {
+          "id": "MINES-15",
+          "coverage": "full",
+          "note": "the multi-reveal half, on the scored v3 supplement captured 2026-10-03 (data/liqd-mines-capture-v3-2026-10-03T11-58-54-479Z.json, SHA-256 pinned with its journal in src/pins.ts): exactly 50 rounds at each of the 20 planned (mineCount, depth) configurations — mine counts 1, 3, 5, 8, 12 x 4 depths each, asserted against SUPPLEMENT_DEPTHS in code, none off plan — and at least SUPPLEMENT_MIN_CASHOUT_RUNGS (20) cash-out cells witnessed (measured 20; the fewest wins, 2, at (12, 5)); first picks span 25/25. The Phase A half is Step 9. The same step binds the supplement build's operator settings (arm j, since 2026-10-02): all 607 settle-response settings records equal SUPPLEMENT_GAME_SETTINGS in src/pins.ts (mutation M57 edits the declaration and FAILs the step); they carry no maxOdds, which Step 10 discloses (MINES-14 cap half, not scored since 2026-10-15). The 2026-09-26 capture of the same plan (19 cells witnessed; (12, 5) 0 wins in 50) is dated history, arm (k), pinned and not scored"
+        },
+        {
+          "id": "MINES-17",
+          "coverage": "partial",
+          "note": "the cash-out rung, the order arm and the per-reveal arm on the 1,000 interactive rounds captured 2026-10-03: every layout recomputes (1,000/1,000), every served mine/safe status equals the recomputed layout (3,314/3,314 reveals), the reveal order is the CSPRNG order journalled before the bet (1,000/1,000), and at each of the 20 witnessed (mineCount, depth) cells the served multiplier and credit are one value across every reveal order (20/20). Every win is scored against the ONE rule the audited dataset is held to (credit floor8(stake x exact), display floor2(exact)): 393/393 credits and 393/393 displays equal it, 0 above, 0 below — the declared gap is 0, so a short credit FAILs the step, the severity MINES-11 (HARD_FAIL, an exact comparison under a declared settlement rule) gives it and the one Step 8 gives it on the audited dataset (forgery D26). DATED HISTORY, arm (k), pinned and re-derived, not scored: on the 2026-09-26 capture of the same plan 50 of 404 wins were credited one 1e-8 unit below the rule ((1,10) x29, (1,15) x21; $0.0000005 in total; DL-14) and 29 displayed one cent below it, all at (1,10) (DL-15); the step was a FLAG on them from 2026-10-01 to 2026-10-03, pending OPEN RULING 2 (is a win credited 1e-8 below floor8(stake x exact) a FAIL or a FLAG?), which now bears only on how that history is classed; LIQD confirmed a floating-point issue on 2026-09-30 and stated a fix for its next release. No rule fitted to the operator's output is gated. WHAT IS MISSING: the per-step rung — LIQD serves no multiplier on an open-tile response (0 of 3,314 reveals, asserted equal to the declared SUPPLEMENT_DECLARED_PER_STEP_MULTIPLIERS = 0; 0 of 3,418 on 2026-09-26), so no intermediate rung can be checked and the profile's declarationTruth makes the check partial"
+        }
+      ]
+    }
+  ],
+  "profileCoverage": {
+    "game": "mines",
+    "profileVersion": "1.0.2",
+    "notApplicable": [
+      {
+        "id": "MINES-16",
+        "reason": "applies={path: money.balanceField, notNull: true} is false — this capture has no balance field to reconcile against. Measured over data/mines-master-6900bets.json: no key matching /balance|wallet/i exists on any of the 6,900 bet records or any of the 138 seed records, and this operator's settle response carries none, so there is no consecutive-bet wallet delta and no magnitude to state — the quantity was never recorded. This is the package's own declared limitation DL-5 (MANIFEST.md), carried as risk R-CREDIT in MANIFEST.md#operator-trust and E14 in MANIFEST.md#evidence, with remedy A4 (a follow-up capture recording delta-balance == winningAmount - betAmount per round). What IS verified is the settle-response field: on the audited dataset 3,104/3,104 wins credit the exact floor8 amount and 3,796/3,796 losses credit exactly 0 (Step 8) — which the profile explicitly does not count as a balance ledger. Neither v3 supplement capture carries a balance field either (no key matching /balance|wallet/i in data/liqd-mines-capture-v3-2026-10-03T11-58-54-479Z.json or data/liqd-mines-capture-v3-2026-09-26T16-46-41-121Z.json)"
+      }
+    ],
+    "packageChecks": [
+      {
+        "id": "MINES-09",
+        "artifact": "docs/ALGORITHM.md + src/rng.ts (provenance header) + tests/mines/rngSpecTests.ts + tests/mines/rngTests.ts (+ tests/mines/qaRegressionTests.ts QA-12) — 49 bundled unit specs",
+        "coverage": "partial",
+        "note": "REWRITTEN 2026-10-20. src/rng.ts is rebuilt from a written specification, docs/ALGORITHM.md (framework games/liqd-mines/ALGORITHM.md), by an implementer who never opened LIQD's code; LIQD's code is run as a second check, not used as the source. Until then src/rng.ts was the auditor's reconstruction from LIQD's client bundle, checked against the byte-level RNG specification LIQD supplied privately and cited generically; that module and its citation are gone. The profile's \"the adapter cites the operator source line it ports\" is superseded for this package by the 20 Oct 2026 rule that RNG code is rebuilt from a written spec: nothing is ported, so no operator line is cited; docs/ALGORITHM.md §4 names the source of every step (LIQD's public pages, the standard construction, or the 8,900 live rounds). What IS here: tests/mines/rngSpecTests.ts runs the spec's own vectors and properties against src/rng.ts (98/98); the unit specs reproduce CAPTURED bets from their revealed seeds (bet GbqOuPvhQekqcARNtHZ3_ → [6,20,7]; bet j2ICJ7NM_TrD_UMtv6Av0 → the full 24-tile draw order; commitHash(8b2f…) → 5d6c4f10…); and, as the second check, the OPERATOR'S OWN validation vectors from LIQD's private specification (nonce 7 cursor 0 range 25 → 2; nonce 7 cursor 3 range 52 → 49; Mines nonce 7 mineCount 3 → [3,17,16]). Mutation M16 corrupts a fixture nibble and mocha fails. PARTIAL because LIQD's code itself is not in this package (its specification is private and not quoted), so the second check here is its three vectors, not an execution of its code on every round; and the operator's live verify endpoint is still not probed"
+      },
+      {
+        "id": "MINES-23",
+        "artifact": "MANIFEST.md#verification-results",
+        "coverage": "full",
+        "note": "the standardized matrix with framework IDs S5-1 … S5-8, the same eight categories and order the LIQD Dice package uses — seed substitution, client-seed manipulation, stake-conditional outcome, server-seed cherry-picking, seed-rotation race (TOCTOU), multiplier tampering, nonce manipulation, modulo bias — each row carrying one of Pass / Flag / Hard Fail / Not tested — disclosed and a citation to the scored step or capture evidence that decides it. S5-5 is \"Not tested — disclosed\": the capture drove the atomic auto-bet endpoint one round at a time, so no concurrent rotate/round interleaving was exercised (risk R-RACE in MANIFEST.md#operator-trust, recommendation A5)"
+      },
+      {
+        "id": "MINES-25",
+        "artifact": "MANIFEST.md#verify-a-bet (steps, script and worked verification examples)",
+        "coverage": "full",
+        "note": "MANIFEST.md \"Verify a bet\" carries the player path, in the profile's order and in the dataset's field names: (1) where the seed is revealed — the Seeds panel shows the Active Server Seed (Hashed) commitment and the next pair before play (E12, E13), and rotating the pair reveals the retiring serverSeed, shown under My Bets in the round's Provably Fair section (E21); the player is told to copy the Active Server Seed (Hashed) before rotating, because that round view lists only Client Seed, Server Seed, Nonce and Mines (E21); (2) which fields to take — clientSeed, serverSeed, nonce, mineCount from that section, hashedServerSeed from the Seeds panel before rotating, openTiles and mineTiles from the player's own board; (3) the commitment encoding — SHA-256 of the serverSeed hex STRING as UTF-8, not of its decoded bytes; (4) the shuffle — HMAC-SHA256 keyed by the hex-decoded serverSeed over `clientSeed:nonce:cursor`, 4-byte big-endian chunks, rejection at maxFair, sequential Fisher-Yates; (5) the tile numbering — 1-based, 1..25, mines in draw order, numbered across rows from the top-left square (tile t at row ceil(t/5), column ((t-1) mod 5)+1), settled by E22, the finished board of the E21 round, whose revealed seed computes mines [12, 1, 25] and whose board shows them at row 1 column 1, row 3 column 2 and row 5 column 5 (docs/ALGORITHM.md O5, closed 2026-10-21; until then this check was claimed full while the numbering was open, external QA 2026-10-21). A copy-paste Node script (node:crypto only) performs steps 3-5 and was run against bet GbqOuPvhQekqcARNtHZ3_ (commitment ok, mines [6, 20, 7] = the recorded mineTiles). The worked verification examples in the same section carry bets through literally"
+      },
+      {
+        "id": "MINES-28",
+        "artifact": "scripts/check-standalone.mjs + scripts/standalone-runtime.cjs + src/pins.ts (AUDIT_ID, EXPECTED_UNIT_TESTS) + standalone-manifest.json + verify.js / test.js + package.json (engines 22.x) + .nvmrc + src/diff.ts -> outputs/run/diff.json",
+        "coverage": "full",
+        "note": "zero-install verification on a fresh clone: `npm test` is scripts/run-stages.mjs running four dependency-free stages — check-standalone.mjs, node test.js, node verify.js and release-manifest.mjs --check — every one of them whatever the verdict (until 2026-10-02 an && chain stopped at the verifier's exit 2 and never reached the release check); it exits with the verifier's verdict code when the other three pass and 1 when one does not; the runtime is pinned (engines 22.x plus .nvmrc); verify writes only outputs/run/ and a field-level diff.json at the profile's reproduction tolerance, exiting 1 beyond it; the bundle inventory is hash-checked. The PASSING unit-spec count is enforced: the zero-install runner counts every spec that ran to completion and exits 1 unless it equals EXPECTED_UNIT_TESTS (49) in src/pins.ts. The audit ID is a constant (AUDIT_ID = PF-2026-LQ02 in src/pins.ts), emitted into outputs/verification-results.json, and check-standalone.mjs fails unless MANIFEST.md carries the same ID, the unit-spec count quoted in MANIFEST.md/README.md equals EXPECTED_UNIT_TESTS, and the scored-step count quoted there equals the steps in the committed scored record (22); since 2026-10-02 it also scans every shipped chapter for the current-count phrasings of the unit specs, scored steps, declared mutations, forgeries and declared limitations and fails on any that disagrees with the registry it counts"
+      },
+      {
+        "id": "MINES-29",
+        "artifact": "tests/mutations.json (48) + tests/survivors.json (11, each tied to a DL row) + tests/forgeries.ts (63 must-fail, 0 declared survivors), run by tests/mutations.ts and tests/forgeries.ts",
+        "coverage": "full",
+        "note": "the registry is step-named and runs in a disposable copy (node_modules symlinked, the working tree never touched), and every entry NAMES the step that must fire, with the runner asserting both the VERDICT and that step's status (and, where the named step already carries that status on the unmutated tree, a FLAG REASONS code the unmutated run does not print — Step 10 since 2026-10-02). EVERY scored step 1–22 has at least one mutation that kills it: M56 (Step 2, added 2026-10-02 — until then no entry named Step 2), M33 (Step 3), M34/M35 (4), M12 (5), M36 (9), M37/M38 (10, FLAG), M39 (14), M40 (15), M41 (18), M42 (20), M43 (21) were added 2026-09-23, M44 (5, the vendored site verifier) and M45–M48 (17 served-config binding and gate, 16 replay engine, 19 .gitignore) on 2026-09-24, M49–M52 (22: display rule, supplement plan, per-step declaration, DL-14 count) on 2026-09-26, M53–M55 (22: a credit above the rule, the fitted binary64 model re-adopted as the rule, the credit-gap flag switch) on 2026-09-29, M57 (22: the supplement settings declaration) and M58 (10: the supplement settings arm) on 2026-10-02 — beside the existing entries for steps 1, 5, 6, 7, 8, 10, 11, 12, 13, 16, 17, 19. On 2026-10-03, when Step 22 moved to the 2026-10-03 capture, four Step 22/10 entries were re-targeted to it rather than left asserting the 2026-09-26 data: M52 now edits the dated-history count (SUPPLEMENT_HISTORY_CREDIT_UNIT_BELOW), M55 — whose switch was removed with the FLAG it held — now declares a non-zero gap on the zero-gap capture, M57 edits the 2026-10-03 settings value, and M58 now expects Full Pass. On 2026-10-20, when src/rng.ts was replaced by the module rebuilt from docs/ALGORITHM.md, the nine entries that edit it (M09, M10, M11, M12, M17, M39, M41, M42, M43) were re-targeted to the same faults in the rebuilt code (M13's line is unchanged). A run that hits the per-run time limit (PF_MUTATION_TIMEOUT_S, default 1200 s) is reported TIMED OUT, not MISS, and fails the gate as inconclusive. The survivor staleness alarm is REACHABLE: a declared survivor is \"now caught\" when the verdict is no longer the clean one or its named step fires, and that fails the gate (registry out of date). Every survivor carries a `limitation` field naming its MANIFEST row (DL-11, and DL-2 for the bootstrap-arm entries). Forged-evidence batteries are included (dataset, simulation-artifact and figure-artifact forgeries; dataset forgeries re-pin the dataset and, since 2026-09-24, artifact forgeries re-pin every artifact of record so that only the step re-deriving the content can reject them — A35 is the one that does not, to test the pin). The one evidence survivor, S01, became must-fail A31 on 2026-09-24"
+      },
+      {
+        "id": "MINES-30",
+        "artifact": "MANIFEST.md (Declared Limitations DL-1…DL-16, Load-Bearing Premises, Model Anchors) + MANIFEST.md#evidence E01-E20",
+        "coverage": "full",
+        "note": "the register is present and measured: DL-1…DL-16 each carry a MEASURED MAGNITUDE and the registry entry or evidence that closes it (DL-1, the deep Pass-1 statistics, is CLOSED since 2026-09-24 by the in-verify replay of Step 16 and says so); DL-13 is the predictable Phase D seeds with the exposed epochs 120–129 enumerated; the load-bearing-premises table marks the unwitnessed premises ASSUMED; MANIFEST Evidence numbers E01-E20 with an evidential role each. No internal QA material ships, by the profile's own measure (param package.internalFoldersPresent; conformance C-09 scans file paths for review-rounds/, qa|review|notes|scratch|internal/, .env, credential files and .pf-*): the two framework files that shipped at the package root, .pf-assumptions and .pf-declared-constants, were moved on 2026-09-24 out of the package into the ProvablyFair.org audit framework's package notes (the framework's prose checker still looks for them in the package and must be repointed — a framework change). QA-nn / FIX-nn identifiers remain in shipped prose and test names as cross-references to the review items that produced a guard; the profile's rule measures shipped files and folders, not identifiers inside them, so they are not counted here"
+      }
+    ]
+  },
+  "info": [
+    {
+      "label": "Live RTP",
+      "detail": "99.5361% ($2670.00 wagered, $2657.61 returned over 6900 bets, mixed configs — informational, not authoritative)"
+    },
+    {
+      "label": "maxOdds cap exposure (theoretical, from operator settings)",
+      "detail": "3844/6900 settles carry currentGameSettings (single value; maxOdds 10000). 44 reachable (m,k) cells have exact multiplier > 10000 across 18/24 mineCounts; deepest examples: m=21,k=4 → 12523.5×, m=20,k=5 → 52598.7× (capped path RTP 18.8%); hypothetical lowest-RTP capped cell m=12,k=13: exact 5.148e+6× capped to 10000× → path RTP 0.19%. These returns assume payment capped at maxOdds; the enforcement mechanism was not observed. No recorded winning multiplier approaches the cap. This is the audited (July 2026) build's setting only: the scored 2026-10-03 supplement's 607 settings records carry {\"minOdds\":1.01,\"houseEdge\":1,\"minBet\":0.01,\"maxBet\":10000,\"maxExposure\":50000,\"maxExposureUsdc\":50000,\"maxBetUsdc\":\"10000.00000000\",\"exposureSource\":\"global\",\"maxBetSource\":\"game\"} — no maxOdds key (src/pins.ts SUPPLEMENT_GAME_SETTINGS, bound by Step 22), as the 2026-09-26 capture's 596 did not (dated history). LIQD states (2026-10-15) that this multiplier cap was removed at the end of August 2026; Step 10 discloses the cap figures without scoring them (MANIFEST DL-7). See MANIFEST.md#payouts-and-rtp."
+    },
+    {
+      "label": "Lag-1 autocorr (win/loss)",
+      "detail": "r₁=0.3548 — unconditional win/loss correlation in a capture grouped by game configuration. Different configuration win probabilities can contribute to this value. This calculation does not separate configuration effects from within-configuration dependence. Pass 1 evaluates serial statistics of the reference generator; it does not establish the cause of this captured correlation."
+    },
+    {
+      "label": "Live win rate",
+      "detail": "3104/6900 = 44.99% (mixed mineCounts/reveals — informational)"
+    }
+  ],
+  "summary": {
+    "passed": 22,
+    "flags": 0,
+    "operatorFlags": 0,
+    "captureFlags": 0,
+    "hardFail": 0,
+    "verdict": "PROVABLY FAIR — Full Pass"
+  }
+}
