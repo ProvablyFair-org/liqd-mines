@@ -1,6 +1,6 @@
 # LIQD Mines — Consolidated Audit Overview
 
-**Audit ID:** `PF-2026-LQ02` · **Auditor:** ProvablyFair.org · **Release:** `v1.0.0` (the first public release) · **Framework:** 1.1 · **Game:** Mines (`gameId` `fast-games-13`), LIQD.com · **Captured against:** `qa.liqd.com` (authenticated browser session) · **Currency:** USDC · **Report:** `https://audit.provablyfair.org/casino/liqd/games/mines/overview`
+**Audit ID:** `PF-2026-LQ02` · **Auditor:** ProvablyFair.org · **Release:** `v1.0.1` (errata to `v1.0.0`, the first public release) · **Framework:** 1.1 · **Game:** Mines (`gameId` `fast-games-13`), LIQD.com · **Captured against:** `qa.liqd.com` (authenticated browser session) · **Currency:** USDC · **Report:** `https://audit.provablyfair.org/casino/liqd/games/mines/overview`
 
 **Scored steps:** 22 · **Unit tests:** **49 passing** (measured 2026-10-20; the zero-install runner fails unless exactly `EXPECTED_UNIT_TESTS` = 49 pass)
 
@@ -607,6 +607,8 @@ These are the audit framework's own rules, named so a reviewer can tell which ru
 ## Release history
 
 **`v1.0.0`**, released 21 October 2026, is the first public release, published as one commit (release manifest `supersedes: null`, `signature` the fingerprint of the key that signs the release). The entries below record the audit work that led to it.
+
+**`v1.0.1`** (errata): adds `.gitattributes` (`* -text`) so a Windows git clone keeps every file byte-identical; no audit content changed.
 
 The machine-readable release identity (audit ID status, release, artifact hashes, verdict and scored counts) is [RELEASE-MANIFEST.json](RELEASE-MANIFEST.json). The scored record has been re-emitted as follows, newest first (each re-emission by `PF_EMIT=1 npm run verify`, with a second pass reproducing the same bytes where noted):
 

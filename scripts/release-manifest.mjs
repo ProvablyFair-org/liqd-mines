@@ -33,8 +33,8 @@ const CHECK = process.argv.includes('--check');
 /**
  * The facts no file in this package can supply. `signature` stays null until the release is
  * signed. `auditIdStatus` records that ProvablyFair.org has confirmed the audit ID, which the
- * published report (audit.provablyfair.org) carries. `v1.0.0` is the first public release
- * (ProvablyFair-org/liqd-mines, one commit); it supersedes nothing. `signature` is the fingerprint
+ * published report (audit.provablyfair.org) carries. `v1.0.1` is an errata release on `v1.0.0`, the first public release
+ * (ProvablyFair-org/liqd-mines, one commit); `v1.0.1` supersedes `v1.0.0`. `signature` is the fingerprint
  * of the SSH key that signs the release commit and tag.
  */
 const DECLARED = {
@@ -42,11 +42,11 @@ const DECLARED = {
   auditIdStatus: 'confirmed by ProvablyFair.org',
   game: 'mines',
   casino: 'liqd',
-  release: 'v1.0.0',
+  release: 'v1.0.1',
   framework: '1.1',
   environmentStage: 'pre-production',
   environmentQualifier: 'provisional',
-  supersedes: null,
+  supersedes: 'v1.0.0',
   signature: 'SHA256:gEujiJm2pRyq7lQsfYQfQ1r97H/J7GdaKHbOW8GtikY',
 };
 
