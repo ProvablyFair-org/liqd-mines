@@ -29,22 +29,19 @@ import { hmacSha256Hex, hexToBytes } from '../../lib/hmac-sha256';
  *
  * Multiplier formula (no paytable; pure combinatorics):
  *
- *   exact   = C(25, k) / C(25 - m, k) × 0.99     ← what LIQD actually credits
+ *   exact   = C(25, k) / C(25 - m, k) × 0.99     ← the exact multiplier
  *   display = floor(exact × 100) / 100           ← what the on-screen field shows
  *             (computed in exact integer arithmetic — flooring the float product
  *              understates a handful of deep cells by 0.01)
  *
- * Convention note: LIQD credits the EXACT value to the balance at full
- * precision; the `multiplier` field in the bet record / UI is the same value
- * floored to 2 decimals — cosmetic, and it can only understate the credit.
- * (The pre-remediation build credited the floored value — raised as finding
- * F1 during this audit and fixed by LIQD before this dataset was captured;
- * see the Mines report S4.2 and Section 5.)
- * This verifier reports the exact credited figure.
+ * Amounts on a win, as measured on the 6,574 production rounds of the audit:
+ *   - wallet field (USDT) = floor8(wallet stake × floor8(exact)), LIQD's 8-decimal rule;
+ *   - booked amount (display currency) = floor2(stake × exact), cut to the cent;
+ *   - the `multiplier` field is `display` above, floored to 2 decimals.
+ * LIQD's account bet history records the wallet field as the payout on
+ * 2,691 of 2,691 wins. This verifier reports the exact multiplier.
  *
- * Verified against all 6,900 captured mines bets in the audit dataset:
- *   - mine layouts (ordered): 6,900 / 6,900
- *   - credited multipliers (over 3,104 winning bets, 2e-8): 3,104 / 3,104
+ * Mine layouts (ordered) match the audit on 6,574 / 6,574 production rounds.
  */
 
 const GRID_SIZE = 25;
@@ -72,7 +69,7 @@ const HOUSE_EDGE_FACTOR = 0.99;
  *   firstHmac: string,
  *   cashoutCurve: Array<{reveals: number, multiplier: number, display: number}>
  *                                  // For each k = 1..(25 - mineCount): the
- *                                  // EXACT credited multiplier if the user
+ *                                  // EXACT multiplier if the user
  *                                  // revealed k safe tiles and cashed out,
  *                                  // plus the floor2 value the UI displays.
  * }}
@@ -136,10 +133,10 @@ export function deriveMines({ clientSeed, serverSeed, nonce, mineCount }) {
 }
 
 /**
- * Exact credited multiplier for `reveals` safe-tile reveals at a given mine count.
+ * Exact multiplier for `reveals` safe-tile reveals at a given mine count.
  *
  *   raw    = C(25, reveals) / C(25 - mines, reveals)
- *   exact  = raw × 0.99                     ← credited to the balance
+ *   exact  = raw × 0.99                     ← before settlement rounding
  *
  * Returns 0 if `reveals` exceeds the maximum possible safe count.
  */
@@ -152,7 +149,7 @@ export function cashoutMultiplier(mineCount, reveals) {
 
 /**
  * The floored 2-decimal value LIQD's UI shows for a given (mineCount, reveals).
- * Cosmetic only — the balance receives the exact figure.
+ * Cosmetic only — the amounts on a win are computed from the exact multiplier.
  *
  * floor(100 × exact) is taken in exact integer arithmetic (BigInt), mirroring
  * src/config.ts minesMultiplierDisplayCents(): the exact multiplier is the rational

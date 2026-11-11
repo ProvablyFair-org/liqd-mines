@@ -1,17 +1,15 @@
 /**
- * PROVENANCE (header added on integration, 20 Oct 2026; everything below this comment is the
- * clean-room module byte for byte).
+ * PROVENANCE (header written on integration; everything below this comment is the clean-room module
+ * byte for byte).
  *
  * This module was REBUILT FROM A WRITTEN SPECIFICATION, not ported from LIQD's code:
- *   spec      docs/ALGORITHM.md, a copy of games/liqd-mines/ALGORITHM.md in the ProvablyFair.org
- *             audit framework (SHA-256 3576d1ea…baf2231). Written from LIQD's public pages and screens
- *             (evidence E10-E14, E21, rtp-page-labels-2026-10-01.json), the standard provably-fair
- *             construction and the 8,900 live rounds in data/, without opening LIQD's code, its client
- *             bundle or any port of it (its §8 lists every file read).
- *   rebuild   written by an implementer who read ONLY that spec and a module-interface file (export
- *             names and types), and never opened LIQD's code, its client bundle, or this package's
- *             earlier src/rng.ts.
- *   self-test tests/mines/rngSpecTests.ts (the spec's vectors V1-V6 and properties).
+ *   spec      the algorithm of docs/ALGORITHM.md §1–§2, whose evidence for each step is the production
+ *             captures of 8–10 November 2026.
+ *   rebuild   written by an implementer who read ONLY the specification and a module-interface file
+ *             (docs/INTERFACE.md: export names and types), and never opened LIQD's code, its client
+ *             bundle, or any earlier module of this package.
+ *   self-test tests/mines/rngSpecTests.ts (the specification's vectors V1–V5, production rounds,
+ *             and its properties).
  *
  * LIQD's code is NOT the source of this module. It is run as a SECOND CHECK: the validation vectors
  * from the byte-level RNG specification LIQD supplied privately (tests/mines/rngTests.ts; the Mines
@@ -20,19 +18,17 @@
  * is src/bias.ts, built on this module's maxFairFor; the simulation's seed derivation is
  * src/seed-derivation.ts. Neither is part of the RNG.
  *
- * Three-way agreement measured on integration (20 Oct 2026, every round in data/: 8,900 rounds in
- * three captures, seeds paired to rounds by hashing, 178/178 commitments): this module vs the live
- * rounds, mineTiles in recorded order 8,900/8,900 and commitments 178/178 seed records; vs LIQD's
- * code, the validation vectors 3/3, and LIQD's mine-placement code as given in its private
- * specification (run outside this package, not quoted) 8,900/8,900; vs the ProvablyFair.org site
- * verifier (vendored, hash-pinned) 8,900/8,900. Step 5 of `npm run verify` re-measures the first and
- * the third on the 6,900 audited rounds on every run.
+ * Agreement on the production data is measured by every `npm run verify`: this module against the
+ * served rounds, mineTiles in recorded order on all 6,574 rounds and all 36 commitments (Steps 1 and
+ * 5); against the ProvablyFair.org site verifier on all 6,574 rounds (Step 5); and against the reply
+ * of LIQD's own verifier endpoint for each of the 6,574 rounds (Step 22). scripts/spec-check.mjs runs
+ * the specification and its nearest candidates on the same rounds without importing this module.
  *
- * Where this module and LIQD's code differ on inputs no captured round reaches: when all eight
- * chunks of a digest are rejected (spec O1, continuation unspecified; probability below 1e-66 per
- * draw) this module throws, LIQD's code redraws at cursor + 1,000,000; and this module throws on a
- * mine count outside 1..24, a server seed that is not even-length hex, and a nonce or cursor that is
- * not a non-negative safe integer, where LIQD's code returns a value. No captured round is affected.
+ * Where this module and LIQD's specification differ on inputs no captured round reaches: when all
+ * eight chunks of a digest are rejected (spec O1, continuation unspecified; probability below 1e-66
+ * per draw) this module throws, LIQD's specification redraws at cursor + 1,000,000; and this module
+ * throws on a mine count outside 1..24, a server seed that is not even-length hex, and a nonce or
+ * cursor that is not a non-negative safe integer. No captured round is affected.
  */
 // LIQD Mines layout derivation, written from ALGORITHM.md alone (clean room).
 // Section references (§) point into that spec.

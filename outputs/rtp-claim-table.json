@@ -2,14 +2,14 @@
   "package": "liqd/mines",
   "game": "mines",
   "settingSpace": "mines 1–24 × cash-out after k = 1 … 25 − m reveals (300 cells)",
-  "rtpMethod": "exact rational: C(25−m,k)/C(25,k) × the credited multiplier EDGE_NUM/EDGE_DEN·Π(25−i)/(25−m−i)",
+  "rtpMethod": "exact rational: C(25−m,k)/C(25,k) × the exact multiplier EDGE_NUM/EDGE_DEN·Π(25−i)/(25−m−i)",
   "rule": "RTP-CLAIM",
   "ruleVersion": "1.2.0 (Methodology v1.1: places, per-setting, stake tiers, noted, published, RTP Figure Overstated; agreed 2026-10-14; 1.1.0 2026-10-01; 1.0.0 2026-09-29)",
   "bandPp": "0.10",
   "claim": {
     "kind": "flat",
     "rtp": "0.99",
-    "source": "LIQD Mines: the game page liqd.com/originals/mines shows \"Released: June 2026 | Edge: 1.00%\", RTP \"99% (99.03% after rounding)\" and \"99% RTP at every setting\" (read 2026-10-01, evidence/rtp-page-labels-2026-10-01.json). The same page also states \"the realised edge moves a little with the exact mines-and-picks combination, between 0.64% and 1.44%, around the nominal 1%\" (RTP 98.56%-99.36%); which of the two statements LIQD is held to is OPEN, pending the profile owner's ruling (MANIFEST \"Open rulings\", ruling 1). This table holds the flat figure until then; the range, run through the same rule, is printed in Step 10 and not scored. Same figure as HOUSE_EDGE = 0.01, published RTP 99.0000 % (src/config.ts:10, :43; declaration gameModel.edge.claimed 0.01)"
+    "source": "LIQD Mines: the game page liqd.com/originals/mines shows \"Released: June 2026 | Edge: 1.00%\", RTP \"99% (99.03% after rounding)\" and \"99% RTP at every setting\" (read 2026-10-01, evidence/rtp-page-labels-2026-10-01.json). The same page also states \"the realised edge moves a little with the exact mines-and-picks combination, between 0.64% and 1.44%, around the nominal 1%\" (RTP 98.56%-99.36%); ruling 1 (MANIFEST \"Rulings\") holds LIQD to the flat figure, which the wallet field in the reply meets, and records that sentence as a discrepancy, as published on 1 Oct 2026; the range, run through the same rule, is printed in Step 10 and not scored. Same figure as HOUSE_EDGE = 0.01, published RTP 99.0000 % (src/config.ts:10, :43; declaration gameModel.edge.claimed 0.01)"
   },
   "settings": 300,
   "trueMin": {

@@ -1,245 +1,389 @@
 /**
  * Integrity pins — ONE definition, imported by every reader.
  *
- * The captured master dataset is the load-bearing artifact of this audit: every scored
- * step reads it, and the simulation's Pass 2 reads its revealed casino seeds. Its SHA-256
- * is pinned so that ANY edit — a flipped nibble in a serverSeed, a moved decimal in a
- * winningAmount, a deleted bet — aborts the run instead of being audited as if it were
- * the capture.
+ * The scored dataset is the load-bearing artifact of this audit: every scored step reads it, and
+ * the simulation's Pass 2 reads its revealed casino seeds. Its SHA-256 is pinned so that ANY edit —
+ * a flipped nibble in a serverSeed, a moved decimal in a winningAmount, a deleted bet — aborts the
+ * run instead of being audited as if it were the capture.
  *
- * Two copies of this constant — one in `src/simulate.ts`, one in `tests/verify.ts` — would
- * be two things to keep in sync, and a re-pin that updates one and not the other leaves a
- * producer and a verifier disagreeing about which bytes they audited. It is defined here
- * exactly once and imported by both.
+ * ══════════════════════════════════════════════════════════════════════════════════════
+ *  WHAT IS SCORED (v1.1.0): THREE PRODUCTION CAPTURES ON liqd.com, AND ONLY THEM
+ * ══════════════════════════════════════════════════════════════════════════════════════
+ * 6,574 rounds played on liqd.com from one account, in three runs of the capture runner:
+ *
+ *   capture 1   8–9 Nov 2026   phase A    5,000 rounds  0.10 booked in CAD   25 epochs of 200
+ *                              5 mine counts (1, 3, 5, 8, 12) × 4 depths × 250, multi-reveal
+ *   capture 2   10 Nov 2026    phase D      500 rounds  0.10 booked in USD    5 epochs of 100
+ *                              the 20 phase A settings under 5 player-set client seeds
+ *                              phase A+     950 rounds  0.10 booked in USD    5 epochs of 190
+ *                              the 19 mine counts phase A did not play × 50, single reveal
+ *   capture 3   10 Nov 2026    phase C      124 rounds  10.00 booked in USD   1 epoch of 124
+ *                              3 mines, single reveal
+ *
+ * Each capture is its own run: its own pre-capture anchor, its own commitment chain, its own raw
+ * export (PROD_CAPTURES). The dataset numbers the epochs 0…35 across them (EPOCH_PLAN). There is
+ * no separate multi-reveal phase: phase A is multi-reveal on every round, and phase D replays its
+ * 20 settings.
  */
 
 import { createHash } from 'crypto';
 
-/** SHA-256 of data/mines-master-6900bets.json, byte-for-byte as captured. */
+/** SHA-256 of data/mines-prod-full-6574bets.json, byte-for-byte as converted from the raw captures. */
 export const EXPECTED_DATASET_HASH =
-  'c7c2e8a930549e11e3e564a962aea0ca2875b6eb94bc1f4347cc703bc410b222';
+  '4d684d5e035e0be384685a2b44b9f5ab13b3f638e58686310cd778945c31741b';
 
-/** Path fragment of the pinned dataset, relative to the repo root (for reporting). */
-export const DATASET_RELATIVE_PATH = 'data/mines-master-6900bets.json';
+/** Path of the pinned dataset, relative to the repo root. */
+export const DATASET_RELATIVE_PATH = 'data/mines-prod-full-6574bets.json';
 
 /**
  * ══════════════════════════════════════════════════════════════════════════════════════
  *  THE AUDITED POPULATION — G-BIND. A ROW COUNT IS NOT AN IDENTITY.
  * ══════════════════════════════════════════════════════════════════════════════════════
  *
- * The SHA-256 above proves the dataset has not changed since WE pinned it. It does NOT
- * prove the file is the capture: shrink the data, doctor the header to agree, re-pin, and
- * the repo is internally consistent again on a smaller population than the one this report
- * describes. Two independent reviewers did exactly that: dropping a
- * trailing epoch (50 bets + its seed) produced "PROVABLY FAIR — Conditional Pass, exit 0",
- * because the only thing holding the audit at 6,900 bets was a phase table read from the
- * dataset's own `meta`, and every count the suite compared against came from inside the file
- * being scored.
+ * The SHA-256 above proves the dataset has not changed since WE pinned it. It does NOT prove the
+ * file is the capture: shrink the data, doctor the header to agree, re-pin, and the repo is
+ * internally consistent again on a smaller population than the one this report describes.
  *
- * These three constants are the fix, and they are constants for a reason: they live in
- * source, are quoted in the report, and are asserted by Steps 11 and 12. Changing one is a
- * code change with a diff, not a header edit inside an evidence file.
- *
- * If a re-capture changes the plan, change these — and then every figure in the report that
- * quotes them has to change too, which is the intended cost.
+ * These constants are the fix, and they are constants for a reason: they live in source, are
+ * quoted in the report, and are asserted by Steps 1–5, 9, 11, 12 and 22. Changing one is a code
+ * change with a diff, not a header edit inside an evidence file. They were set from the three
+ * raw captures' plans and are checked against the bets; the dataset's own meta is cross-checked
+ * against them, never used in their place.
  */
 
-/** Bets in the delivered capture. Quoted throughout the report as "6,900 bets". */
-export const EXPECTED_BETS = 6900;
+/** One block of consecutive epochs of one capture, played as one phase. */
+export interface PhaseBlock {
+  /** 1-based index into PROD_CAPTURES. */
+  capture: number;
+  /** The phase letter the runner recorded (the top-up rounds are phase A). */
+  phase: string;
+  /** The runner's phase id: A, A+ (the phase A top-up), C or D. */
+  phaseId: string;
+  /** Epochs in the block, and rounds per epoch (nonces 0 … size − 1 under one seed pair). */
+  epochs: number;
+  size: number;
+  /** The stake of every round of the block, in the fiat the rounds were booked in. */
+  stake: number;
+  fiat: string;
+}
 
-/** Seed epochs in the delivered capture. Quoted throughout as "138 epochs / 138 seeds". */
-export const EXPECTED_SEEDS = 138;
+/** The plan, in dataset order. Everything below about epochs and phases is derived from it. */
+export const PHASE_BLOCKS: ReadonlyArray<PhaseBlock> = [
+  { capture: 1, phase: 'A', phaseId: 'A', epochs: 25, size: 200, stake: 0.1, fiat: 'CAD' },
+  { capture: 2, phase: 'D', phaseId: 'D', epochs: 5, size: 100, stake: 0.1, fiat: 'USD' },
+  { capture: 2, phase: 'A', phaseId: 'A+', epochs: 5, size: 190, stake: 0.1, fiat: 'USD' },
+  { capture: 3, phase: 'C', phaseId: 'C', epochs: 1, size: 124, stake: 10, fiat: 'USD' },
+];
 
-/** Bets per epoch — nonces 0..49 under one (serverSeed, clientSeed) pair. */
-export const EXPECTED_EPOCH_SIZE = 50;
+export interface EpochPlan extends Omit<PhaseBlock, 'epochs'> {
+  /** The dataset's epoch number, 0 … EXPECTED_SEEDS − 1. */
+  epoch: number;
+  /** The epoch's number inside its own capture (each capture numbers from 0). */
+  captureEpoch: number;
+}
 
-/** Planned bets per capture phase. `EXPECTED_BETS` must be their sum — asserted in Step 11. */
-export const EXPECTED_PHASE_BETS: Record<'A' | 'B' | 'C' | 'D' | 'E', number> =
-  { A: 4800, B: 1000, C: 200, D: 500, E: 400 };
+/** One entry per epoch, in dataset order. */
+export const EPOCH_PLAN: ReadonlyArray<EpochPlan> = (() => {
+  const out: EpochPlan[] = [];
+  const perCapture = new Map<number, number>();
+  for (const b of PHASE_BLOCKS) {
+    for (let i = 0; i < b.epochs; i++) {
+      const captureEpoch = perCapture.get(b.capture) ?? 0;
+      perCapture.set(b.capture, captureEpoch + 1);
+      out.push({ epoch: out.length, captureEpoch, capture: b.capture, phase: b.phase, phaseId: b.phaseId, size: b.size, stake: b.stake, fiat: b.fiat });
+    }
+  }
+  return out;
+})();
+
+/** Bets in the scored dataset. Quoted throughout the report as "6,574 rounds". */
+export const EXPECTED_BETS = 6574;
+
+/** Seed epochs in the scored dataset. Quoted throughout as "36 epochs / 36 seeds". */
+export const EXPECTED_SEEDS = 36;
+
+/** Rounds per phase letter and per phase id. `EXPECTED_BETS` must be their sum — asserted in Step 11. */
+export const EXPECTED_PHASE_BETS: Readonly<Record<string, number>> = { A: 5950, C: 124, D: 500 };
+export const EXPECTED_PHASE_ID_BETS: Readonly<Record<string, number>> = { A: 5000, 'A+': 950, C: 124, D: 500 };
+
+/** The distinct epoch sizes of the plan, ascending (100, 124, 190, 200). */
+export const EPOCH_SIZES: ReadonlyArray<number> = [...new Set(PHASE_BLOCKS.map(b => b.size))].sort((a, z) => a - z);
+
+/** The plan entry of a dataset epoch, or undefined when the epoch is not in the plan. */
+export const epochPlan = (epoch: number): EpochPlan | undefined => EPOCH_PLAN[epoch];
+
+/** Commitment links between successive epochs of the SAME capture (24 + 9 + 0). */
+export const EXPECTED_CHAIN_LINKS = EPOCH_PLAN.filter((e, i) => i > 0 && EPOCH_PLAN[i - 1].capture === e.capture).length;
+
+/**
+ * THE SETTINGS PLAN, BOUND IN SOURCE (Steps 9, 15, 22).
+ *   PROD_DEPTHS       mineCount → the depths played to before cash-out: 5 mine counts × 4 depths =
+ *                     20 multi-reveal settings. Phase A: PROD_PER_SETTING (250) rounds each, round i of
+ *                     the plan on setting i mod 20. Phase D: PHASE_D_PER_SETTING (25) each.
+ *   TOPUP_MINE_COUNTS the 19 mine counts phase A did not play; phase A+ plays each
+ *                     TOPUP_PER_MINE_COUNT (50) times, one tile opened.
+ *   PHASE_C_SETTING   3 mines, one tile opened, PHASE_C_ROUNDS (124) rounds at the elevated stake.
+ */
+export const PROD_DEPTHS: Readonly<Record<number, readonly number[]>> =
+  { 1: [2, 5, 10, 15], 3: [2, 4, 6, 8], 5: [2, 3, 5, 6], 8: [2, 3, 4, 5], 12: [2, 3, 4, 5] };
+export const PROD_PER_SETTING = 250;
+export const PHASE_D_PER_SETTING = 25;
+export const TOPUP_MINE_COUNTS: ReadonlyArray<number> = [2, 4, 6, 7, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24];
+export const TOPUP_PER_MINE_COUNT = 50;
+export const PHASE_C_SETTING: Readonly<{ mineCount: number; depth: number }> = { mineCount: 3, depth: 1 };
+export const PHASE_C_ROUNDS = 124;
+
+/** The plan as `${phaseId}|${mineCount}:${depth}` → rounds. 20 + 20 + 19 + 1 = 60 entries. */
+export const SETTINGS_PLAN: ReadonlyMap<string, number> = (() => {
+  const m = new Map<string, number>();
+  for (const [mc, ks] of Object.entries(PROD_DEPTHS)) for (const k of ks) {
+    m.set(`A|${mc}:${k}`, PROD_PER_SETTING);
+    m.set(`D|${mc}:${k}`, PHASE_D_PER_SETTING);
+  }
+  for (const mc of TOPUP_MINE_COUNTS) m.set(`A+|${mc}:1`, TOPUP_PER_MINE_COUNT);
+  m.set(`C|${PHASE_C_SETTING.mineCount}:${PHASE_C_SETTING.depth}`, PHASE_C_ROUNDS);
+  return m;
+})();
+/** Distinct (mineCount, depth) cells played in any phase: the 20 multi-reveal cells, 19 top-up cells and (3, 1). */
+export const PLAYED_CELLS: ReadonlyArray<string> = [...new Set([...SETTINGS_PLAN.keys()].map(k => k.split('|')[1]))];
+
+/**
+ * THE STAKES, AS BOOKED. LIQD's fast-games place-bet takes `betAmount` in the account's display
+ * fiat and records `betAmount` / `winningAmount` in it; the reply's wallet fields are in the
+ * bet currency, USDT, as `betAmountWallet` / `winningAmountWallet` (in the raw captures only).
+ * Capture 1 was booked in CAD (the account's display fiat on 8–9 November); the account's fiat
+ * setting was changed to USD on 9 November and captures 2 and 3 were booked in USD. Nothing is
+ * converted or relabelled: every amount is checked in the currency LIQD recorded it in. Step 18
+ * binds every row to its phase's stake and fiat; the stake is not an input to revealMines.
+ */
+export const PROD_BASE_STAKE = 0.1;
+export const PROD_ELEVATED_STAKE = 10;
+export const PROD_WALLET_CURRENCY = 'USDT';
+export const PROD_HOST = 'liqd.com';
+/** Step 18: the least number of elevated-stake wins the stake-invariance arm requires (MINES-12). */
+export const PHASE_C_MIN_WINS = 100;
 
 /**
  * The first nonce of every epoch — a DECLARED constant, not the minimum observed and not the
- * `nonceStart` a seed record carries. LIQD resets the nonce to 0 on every server-seed rotation,
- * and the capture rotates before each epoch, so every epoch's window is
- * NONCE_BASE … NONCE_BASE + EXPECTED_EPOCH_SIZE − 1 = 0 … 49. Step 4 asserts the bets against
- * THIS window and then separately asserts that each seed record's own `nonceStart`/`nonceEnd`
- * agree with it, so a dataset whose records and bets were shifted together (1 … 50) no longer
- * passes by agreeing with itself.
+ * `nonceStart` a seed record carries. LIQD resets the nonce to 0 on every server-seed rotation, and
+ * the capture rotates before each epoch, so every epoch's window is NONCE_BASE … NONCE_BASE + size − 1
+ * with `size` the epoch's entry in EPOCH_PLAN. Step 4 asserts the bets against THIS window and then
+ * separately asserts that each seed record's own `nonceStart`/`nonceEnd` agree with it.
  */
 export const NONCE_BASE = 0;
 
 /**
- * Auditor-side capture-retry nonce gaps this capture is DECLARED to contain. A retry leaves one
- * nonce unrecorded inside an otherwise complete window; it is disclosed as a capture-origin FLAG
- * (verdict-neutral). This capture has none — a prior LIQD capture had one, this one was re-run
- * clean — so any gap at all is a different dataset from the one declared and hard-fails Step 4,
- * rather than being attributed to the capture on the strength of the remaining bets replaying.
+ * Auditor-side capture-retry nonce gaps this dataset is DECLARED to contain. A retry leaves one nonce
+ * unrecorded inside an otherwise complete window; it is disclosed as a capture-origin FLAG
+ * (verdict-neutral). The three captures have none (the runner's record: 0 refusals, 0 lost replies, 0
+ * gaps), so any gap at all is a different dataset from the one declared and hard-fails Step 4.
  */
 export const EXPECTED_CAPTURE_RETRY_GAPS = 0;
 
 /**
+ * The Pass-2 early window (Step 17, src/simulate.ts): nonces 0 … PASS2_EARLY_WINDOW − 1, the first
+ * 100 nonces of every seed — the longest prefix that all 36 epochs played in full (the shortest
+ * epochs, phase D, played exactly 100). It must equal the smallest epoch size of the plan (asserted
+ * in Step 17). The served-configuration test of Step 17 uses each epoch's own full length instead.
+ */
+export const PASS2_EARLY_WINDOW = 100;
+
+/**
  * ══════════════════════════════════════════════════════════════════════════════════════
- *  THE MULTI-REVEAL SUPPLEMENT — capture v3. A SUPPLEMENT, NOT A REPLACEMENT.
- *  SCORED: the 2026-10-03 capture (today's build). DATED HISTORY: the 2026-09-26 capture.
+ *  THE RAW PRODUCTION CAPTURES — vendored byte-identical, pinned, bound row by row (Step 22)
  * ══════════════════════════════════════════════════════════════════════════════════════
+ * The files the runner exported from the logged-in liqd.com tab (src/prod-capture.ts describes their
+ * events). The dataset was converted from them in the private workshop; Step 22 requires every scored
+ * row to equal the settling reply recorded here, and reads from here what the Bet type has no field
+ * for: the USDT wallet amounts, each round's planned tile order, the per-reveal replies and LIQD's
+ * verifier replies. Lines, events by type and requests by name were measured on 10 November 2026.
  *
- * The audited dataset above stays the population every Step 1–21 scores. The supplement is 1,000
- * interactive rounds (place-bet → open-tile × depth → cash-out-bet) captured by
- * capture/capture-mines-v3.mjs to close what the audited dataset cannot: several mine counts ×
- * several depths (MINES-15) and multi-reveal parity with a RECORDED reveal order (MINES-17).
- * It is scored by Step 22 alone, with one exception: its operator-settings declaration
- * (SUPPLEMENT_GAME_SETTINGS below, bound to the data by Step 22) is also read by Step 10's MINES-14
- * cap half, disclosed and not scored since 2026-10-15. Both files are vendored byte-identical from capture/out/ and
- * pinned here; the journal is the capture's append-only record (every round's reveal order was
- * journalled as an `intent` BEFORE its place-bet), and Step 22 requires it to agree with the
- * dataset row for row.
- *
- * WHICH CAPTURE IS SCORED (2026-10-03). The same 20-configuration plan was captured twice on
- * qa.liqd.com: on 2026-09-26 and on 2026-10-03, after LIQD stated (2026-09-30) that a fix for the
- * 1e-8 short credit ships in its next release. The package scores TODAY's build — the 2026-10-03
- * capture, below — and keeps the 2026-09-26 capture pinned as a DATED HISTORY exhibit
- * (SUPPLEMENT_HISTORY_* further down), whose quoted figures Step 22 re-derives from the pinned
- * bytes in arm (k) without scoring them as today's behaviour.
- *
- * The population is bound in source, not read from the file's own `meta` (G-BIND): 20 epochs of
- * 50, the (mineCount → depths) plan below, 50 rounds per configuration.
+ * Capture 2 stopped once, at its round 538 (the first round LIQD settled by itself on its last safe
+ * tile, a reply shape the runner build 4dbf8ae8f846 did not know), and was resumed on build
+ * bfa80f1fc59d, which rebuilt that round's record from its stored place-bet and open-tile replies:
+ * its `stop`, `resume-check` and `recovered` events are that. The file is the complete run.
  */
-export const SUPPLEMENT_DATASET_RELATIVE_PATH = 'data/liqd-mines-capture-v3-2026-10-03T11-58-54-479Z.json';
-export const SUPPLEMENT_DATASET_HASH =
-  'a7737572394215b0262eb467eec4fe5ff083e87c0d132746aa6e66c271277b45';
-export const SUPPLEMENT_JOURNAL_RELATIVE_PATH = 'data/liqd-mines-capture-v3-2026-10-03T11-58-54-479Z.journal.ndjson';
-export const SUPPLEMENT_JOURNAL_HASH =
-  'db16421c70d55331049ce186d03fa1c60367c84b208252f920e8e91f2074e9c9';
-/** The scored supplement's capture date, quoted in the step details. */
-export const SUPPLEMENT_CAPTURE_DATE = '2026-10-03';
-export const SUPPLEMENT_EXPECTED_BETS = 1000;
-export const SUPPLEMENT_EXPECTED_SEEDS = 20;
-export const SUPPLEMENT_PER_CONFIG = 50;
-/** mineCount → the depths played before cash-out (the v3 plan; 5 × 4 = 20 configurations). */
-export const SUPPLEMENT_DEPTHS: Readonly<Record<number, readonly number[]>> =
-  { 1: [2, 5, 10, 15], 3: [2, 4, 6, 8], 5: [2, 3, 5, 6], 8: [2, 3, 4, 5], 12: [2, 3, 4, 5] };
+export interface CapturePin {
+  capture: number;
+  file: string;
+  sha256: string;
+  lines: number;
+  /** Events by type tag. */
+  events: Readonly<Record<string, number>>;
+  /** Requests by name. */
+  requests: Readonly<Record<string, number>>;
+  rounds: number;
+  wins: number;
+  /** The fiat every round of the capture was booked in. */
+  fiat: string;
+  dates: string;
+  /** The runner build that started the run (the capture's meta.script) and the one that exported it (its export note). */
+  runnerBuild: string;
+  exportBuild: string;
+  /** Wallet totals in 1e-8 USDT units: Σ betAmountWallet, Σ winningAmountWallet. */
+  walletStakedUnits: bigint;
+  walletPaidUnits: bigint;
+  /** Booked fiat totals in cents: Σ betAmount, Σ winningAmount. */
+  bookedStakedCents: bigint;
+  bookedPaidCents: bigint;
+}
+export const PROD_CAPTURES: ReadonlyArray<CapturePin> = [
+  {
+    capture: 1, file: 'data/liqd-mines-prod-capture-2026-11-09T04-45-17-843Z.ndjson',
+    sha256: 'f4a35b0635fd8a196d31ebccd64fa3b617ab127716def789a0f1529b9ffe7d60', lines: 38801,
+    events: { meta: 1, pre: 1, rotate: 26, epoch: 25, intent: 5000, step: 23745, bet: 5000, 'bets-done': 1, verify: 5000, done: 1, 'export-note': 1 },
+    requests: { 'place-bet': 5000, 'open-tile': 16766, 'cash-out': 1979 },
+    rounds: 5000, wins: 1979, fiat: 'CAD', dates: '2026-11-08/09', runnerBuild: '218861d920b8', exportBuild: '218861d920b8',
+    walletStakedUnits: 35452607511n, walletPaidUnits: 35395401893n, bookedStakedCents: 50000n, bookedPaidCents: 48762n,
+  },
+  {
+    capture: 2, file: 'data/liqd-mines-prod-capture-2026-11-10T06-06-19-772Z.ndjson',
+    sha256: '3b8f81d5de58ccbf60fc809a53a34174d2c088aa78aba67ab1a0742a6d866141', lines: 9038,
+    events: { meta: 1, option: 1, pre: 1, rotate: 11, epoch: 10, intent: 1450, step: 4658, bet: 1450, stop: 1, 'resume-check': 1, recovered: 1, 'bets-done': 1, verify: 1450, done: 1, 'export-note': 1 },
+    requests: { 'place-bet': 1450, 'open-tile': 2608, 'cash-out': 600 },
+    rounds: 1450, wins: 603, fiat: 'USD', dates: '2026-11-10', runnerBuild: '4dbf8ae8f846', exportBuild: 'bfa80f1fc59d',
+    walletStakedUnits: 14500000000n, walletPaidUnits: 14088221236n, bookedStakedCents: 14500n, bookedPaidCents: 13739n,
+  },
+  {
+    capture: 3, file: 'data/liqd-mines-prod-capture-2026-11-10T10-27-49-259Z.ndjson',
+    sha256: '795825a548d786946d8ab0d9331dcd80d86a59b5b73dcea197707482bf177376', lines: 738,
+    events: { meta: 1, option: 1, pre: 1, rotate: 2, epoch: 1, intent: 124, step: 357, bet: 124, 'bets-done': 1, verify: 124, done: 1, 'export-note': 1 },
+    requests: { 'place-bet': 124, 'open-tile': 124, 'cash-out': 109 },
+    rounds: 124, wins: 109, fiat: 'USD', dates: '2026-11-10', runnerBuild: 'bfa80f1fc59d', exportBuild: 'bfa80f1fc59d',
+    walletStakedUnits: 124000000000n, walletPaidUnits: 122625000000n, bookedStakedCents: 124000n, bookedPaidCents: 122625n,
+  },
+];
+/** Totals over the three captures: 6,574 place-bet, 19,498 open-tile, 2,688 cash-out requests; 2,691 wins. */
+export const PROD_REQUESTS: Readonly<Record<string, number>> = (() => {
+  const t: Record<string, number> = {};
+  for (const c of PROD_CAPTURES) for (const [k, n] of Object.entries(c.requests)) t[k] = (t[k] ?? 0) + n;
+  return t;
+})();
+export const PROD_WINS = PROD_CAPTURES.reduce((a, c) => a + c.wins, 0);
+
+
 /**
- * Cash-out rungs (mineCount, depth) that must be witnessed by at least one win. A FLOOR, declared
- * from the measured capture: on 2026-10-03 all 20 planned configurations cashed out at least once
- * (fewest: (12, 5), 2 wins in 50). The 2026-09-26 capture reached 19; its (12, 5) had 0 wins in 50
- * (P(win) = C(13,5)/C(25,5) = 0.0242, expected 1.2).
+ * ROUNDS LIQD SETTLED BY ITSELF — DECLARED, asserted against the data by Step 22. When a round opens
+ * its last safe tile, the open-tile reply IS the settled round (`autoFinish: true`, result won, the
+ * multiplier and both amounts) and no cash-out request exists. Only a 24-mine board has one safe
+ * tile after one reveal: the 3 wins of the 50 phase A+ rounds at 24 mines. They are also the only
+ * open-tile replies that carry a multiplier (PROD_DECLARED_PER_STEP_MULTIPLIERS): a safe tile is
+ * otherwise answered `{ mineTile: false }` and nothing else, and a mine reveal returns the settled
+ * record, which carries no multiplier.
  */
-export const SUPPLEMENT_MIN_CASHOUT_RUNGS = 20;
+export const PROD_AUTO_FINISH_ROUNDS: ReadonlyArray<string> = ['Z6B5Y_EKOsIi9rFGBZ8XX', '4FlJdIKXL00eGGkh2OQkS', 'I_uwyzpsU5tyFl4_rmzfZ'];
+export const PROD_DECLARED_PER_STEP_MULTIPLIERS = 3;
+
 /**
- * DECLARED, and asserted against the data by Step 22: the number of reveals whose open-tile
- * response carried a multiplier. LIQD's open-tile response on a safe tile is `{ mineTile: false }`
- * and nothing else; a mine reveal returns the settled record, which carries no multiplier field.
- * The per-step rung arm of MINES-17 is therefore NOT SERVED ON THE WIRE: 0 of 3,314 reveals on
- * 2026-10-03 (0 of 3,418 on 2026-09-26).
+ * ══════════════════════════════════════════════════════════════════════════════════════
+ *  THE SETTLEMENT RULES — measured on the three captures, declared here, scored by Steps 8 and 22
+ * ══════════════════════════════════════════════════════════════════════════════════════
+ * Let mult = (1 − edge) · C(25,k)/C(25−m,k), the exact rational multiplier (src/config.ts
+ * minesMultiplierRational).
+ *
+ *   booked (fiat)     winningAmount       = floor2(betAmount × mult)                     Step 8, 0 tolerance
+ *   displayed         multiplier          = floor2(mult)                                 Step 7
+ *   wallet (USDT)     winningAmountWallet = floor8(betAmountWallet × floor8(mult))       Step 22
+ *
+ * Measured: the booked rule holds on 2,691 of 2,691 wins (1,979 CAD, 712 USD) and the wallet rule on
+ * 2,691 of 2,691. TWO DISCLOSURES follow from the rules; both are bound to the data here and a count
+ * that moves FAILs Step 22.
+ *
+ * (1) THE WALLET FLOORS THE MULTIPLIER FIRST. Against the exact product floor8(betAmountWallet × mult)
+ *     the wallet field is one 1e-8 USDT unit lower on PROD_WALLET_BELOW_EXACT wins, all in capture 1, where
+ *     the wallet stake is a non-round USDT amount (0.10 CAD at the served rate); never higher. On the
+ *     USD captures the wallet stake is 0.10000000 or 10.00000000 and the two products are equal on
+ *     every win.
+ *
+ * (2) THE BOOKED WIN IS FLOORED TO THE CENT; THE WALLET IS NOT. The fiat `winningAmount` LIQD books
+ *     drops the fraction of a cent that the wallet field keeps. Per capture (BOOKED_BELOW_UNROUNDED):
+ *     the wins whose booked amount is below floor8(betAmount × mult), and the sum dropped, in 1e-8
+ *     units of the booked fiat.
+ *       capture 1 (CAD, 0.10)   1,979 of 1,979 wins   11.56861635 CAD dropped from the booked figure
+ *       capture 2 (USD, 0.10)     603 of   603 wins    3.49221236 USD
+ *       capture 3 (USD, 10.00)      0 of   109 wins    0 (10.00 × 1.125 is a whole number of cents)
+ *     On the USD captures the served rate is 1.00000000 and the wallet stake equals the fiat stake, so
+ *     the sum dropped IS the amount by which the wallet fields exceed the booked wins: capture 2
+ *     books 137.39 USD of wins against 140.88221236 USDT of wallet fields. On capture 1 the wallet fields are in
+ *     USDT at the served CAD rate and the two totals are in different currencies; they are reported
+ *     side by side and not converted. No balances were captured, so which amount moved the balance is not verified.
  */
-export const SUPPLEMENT_DECLARED_PER_STEP_MULTIPLIERS = 0;
-/**
- * ONE SETTLEMENT RULE FOR EVERY WIN, EVERY DATASET (2026-09-29).
- *
- * Every win this package scores — the audited dataset's 3,104 (Steps 7–8) and the scored
- * supplement's 393 (Step 22) — is held to the SAME declared rule, and so is every figure the dated
- * history quotes (the 2026-09-26 capture's 404 wins, Step 22 arm k):
- *   credit  = floor8(stake × exact rational multiplier)     (Step 8's rule; 0 tolerance)
- *   display = floor2(exact rational multiplier)             (Step 7's rule)
- * No rule fitted to the operator's output is used to score anything. A win that misses the rule
- * is a GAP against it, reported with its count, cells and magnitude — the audit does not move the
- * rule to where the operator landed.
- *
- * THE SCORED SUPPLEMENT'S GAP AGAINST THE ONE RULE IS ZERO (2026-10-03, measured): 393/393 credits
- * equal floor8(stake × exact) and 393/393 displayed multipliers equal floor2(exact), none above,
- * none below — including (1,10) ×23 and (1,15) ×16, the two cells that missed the rule on
- * 2026-09-26. Declared here so the published "0" is bound to the data: Step 22 FAILs if any win is
- * below the rule (the count, the cells and the total all move off 0) or above it.
- * Cell keys are `${mineCount}:${depth}`.
- */
-export const SUPPLEMENT_DISCLOSED_CREDIT_UNIT_BELOW = 0;
-export const SUPPLEMENT_CREDIT_GAP_CELLS: Readonly<Record<string, number>> = {};
-/** Total shortfall against the credit rule, in 1e-8 units. */
-export const SUPPLEMENT_CREDIT_GAP_TOTAL_UNITS = 0;
-export const SUPPLEMENT_DISCLOSED_DISPLAY_CENT_BELOW = 0;
-export const SUPPLEMENT_DISPLAY_GAP_CELLS: Readonly<Record<string, number>> = {};
-/**
- * THE SUPPLEMENT BUILD'S OPERATOR SETTINGS (QA 2026-10-02, A4) — declared from the data, asserted
- * by Step 22, read by Step 10.
- *
- * The audited dataset (30 July 2026) carries `currentGameSettings` on 3,844 settles, one value:
- * {"minOdds":1.01,"maxOdds":10000,"houseEdge":1,"minBet":0.1,"maxBet":5000} — the source of
- * MAX_ODDS_DECLARED (src/config.ts). The scored 2026-10-03 supplement carries it on every one of its
- * 607 mine-reveal settle responses (`settleRaw`, repeated in that round's last reveal `steps[].raw`),
- * one value: minBet 0.01, maxBet 10000, NO maxOdds key, and five keys the audited build's records
- * do not carry — maxExposure 50000, maxExposureUsdc 50000, maxBetUsdc "10000.00000000",
- * exposureSource "global", maxBetSource "game". Recorded as served. Settled 2026-10-15: LIQD states
- * there is no multiplier cap on Mines since the end of August 2026 and that maxExposure is a per-round
- * payout limit; payout caps are excluded from the audit (profile owner, 2026-10-15). The 2026-09-26 capture's 596 records carried {"minOdds":1.01,"houseEdge":1,"minBet":
- * 0.01,"maxBet":10000} (SUPPLEMENT_HISTORY_GAME_SETTINGS below, dated history).
- *
- * Step 22 FAILs unless every supplement settings record equals `value` and there are exactly
- * `records` of them (each also equal in its reveal copy) — a drift moves the declaration, in a diff.
- * Step 10 reads this declaration for its MINES-14 cap half. From 2026-10-02 to 2026-10-15 that half
- * required the declared cap on these records and FLAGged on its absence; since 2026-10-15 it is
- * disclosed and not scored (no multiplier cap on this build, per LIQD; payout limits excluded).
- */
-export const SUPPLEMENT_GAME_SETTINGS: Readonly<{ records: number; value: string }> = {
-  records: 607,
-  value: '{"minOdds":1.01,"houseEdge":1,"minBet":0.01,"maxBet":10000,"maxExposure":50000,"maxExposureUsdc":50000,"maxBetUsdc":"10000.00000000","exposureSource":"global","maxBetSource":"game"}',
+export const PROD_WALLET_BELOW_EXACT = 62;
+export const PROD_WALLET_BELOW_EXACT_TOTAL_UNITS = 62;
+/** The 62, by cell `${mineCount}:${depth}` (all in capture 1). */
+export const PROD_WALLET_BELOW_EXACT_CELLS: Readonly<Record<string, number>> = {
+  '1:2': 3, '3:2': 18, '5:2': 2, '5:3': 1, '5:5': 10, '8:2': 12, '8:4': 5, '8:5': 1, '12:2': 5, '12:3': 4, '12:4': 1,
 };
+/** Disclosure (2), per capture: wins booked below the unrounded amount, and the total dropped in 1e-8 fiat units (floor). */
+export const BOOKED_BELOW_UNROUNDED: ReadonlyArray<{ capture: number; wins: number; droppedUnits: bigint }> = [
+  { capture: 1, wins: 1979, droppedUnits: 1156861635n },
+  { capture: 2, wins: 603, droppedUnits: 349221236n },
+  { capture: 3, wins: 0, droppedUnits: 0n },
+];
+
 /**
- * ══════════════════════════════════════════════════════════════════════════════════════
- *  DATED HISTORY — the 2026-09-26 capture of the same plan. PINNED, RE-DERIVED, NOT SCORED.
- * ══════════════════════════════════════════════════════════════════════════════════════
- *
- * Until 2026-10-03 this capture WAS the scored supplement (Step 22 FLAG, the DL-14 credit gap).
- * It stays in data/ byte-identical and pinned, as exhibits E17/E18. Step 22 arm (k) hashes both
- * files (mismatch or absence FAILs — an exhibit of record was altered) and re-derives from the
- * dataset every figure the dated history quotes, against the same rule functions arm (g) uses;
- * any figure that moves off its declaration below FAILs the step, because a published history line
- * would then no longer describe the pinned bytes. None of these figures enters today's status.
- *
- * Measured 2026-09-26 and re-derived on 2026-10-03: 404 wins; 354 credited exactly at
- * floor8(stake × exact), 50 one 1e-8 unit below it — (1,10) ×29, (1,15) ×21 — $0.0000005 in total,
- * none above (DL-14, history); 375 displayed floor2(exact), 29 one cent below it, all at (1,10)
- * (1.64 where 33/20 = 1.65; DL-15, history); 596 settings records, one value, no maxOdds.
- *
- * OPEN RULING 2 (profile owner) — is a win credited 1e-8 below floor8(stake × exact) a FAIL or a
- * FLAG? — now bears ONLY on how this history is described: from 2026-10-01 to 2026-10-03 the
- * package held these 50 wins at a Step 22 FLAG pending the ruling (profile MINES-11's policy is
- * HARD_FAIL; the same shortfall on the audited dataset hard-fails Step 8, forgery D26). It does not
- * move today's status: the scored supplement's declared gap is 0, so a short credit on it FAILs
- * Step 22 through the binding above, as one on the audited dataset FAILs Step 8. Nothing here
- * decides the ruling.
+ * THE PRODUCTION BUILD'S OPERATOR SETTINGS — declared from the data, asserted by Step 22, read by
+ * Step 10. A settling reply that is an open-tile reply carries `currentGameSettings` (every loss, and
+ * the 3 rounds LIQD settled by itself); a cash-out reply carries none. The limits are stated in the
+ * fiat the round was booked in: 7060 / 70600 and 7050 / 70500 in capture 1 (CAD), 5000 / 50000 in
+ * captures 2 and 3 (USD); maxExposureUsdc 50000 and maxBetUsdc "5000.00000000" in all three. None
+ * carries a maxOdds key. Step 22 FAILs unless the records are exactly these values with these counts.
  */
-export const SUPPLEMENT_HISTORY_CAPTURE_DATE = '2026-09-26';
-export const SUPPLEMENT_HISTORY_DATASET_RELATIVE_PATH = 'data/liqd-mines-capture-v3-2026-09-26T16-46-41-121Z.json';
-export const SUPPLEMENT_HISTORY_DATASET_HASH =
-  '023c17920d103954ec3c27eab4be55bdeef027884c06d33bd5434139bb569309';
-export const SUPPLEMENT_HISTORY_JOURNAL_RELATIVE_PATH = 'data/liqd-mines-capture-v3-2026-09-26T16-46-41-121Z.journal.ndjson';
-export const SUPPLEMENT_HISTORY_JOURNAL_HASH =
-  '4f464fba88a515692e3f8ddaad4f6466345a1cc8180a96910a96f7461ac25fdc';
-/** Rounds and wins in the history capture. */
-export const SUPPLEMENT_HISTORY_BETS = 1000;
-export const SUPPLEMENT_HISTORY_WINS = 404;
-/** DL-14 (history): wins credited below floor8(stake × exact), by cell, per-win size and total (1e-8 units). */
-export const SUPPLEMENT_HISTORY_CREDIT_UNIT_BELOW = 50;
-export const SUPPLEMENT_HISTORY_CREDIT_GAP_CELLS: Readonly<Record<string, number>> = { '1:10': 29, '1:15': 21 };
-export const SUPPLEMENT_HISTORY_CREDIT_GAP_UNITS_PER_WIN = 1;
-export const SUPPLEMENT_HISTORY_CREDIT_GAP_TOTAL_UNITS = 50;
-/** DL-15 (history): wins whose served multiplier is one cent below floor2(exact), by cell. */
-export const SUPPLEMENT_HISTORY_DISPLAY_CENT_BELOW = 29;
-export const SUPPLEMENT_HISTORY_DISPLAY_GAP_CELLS: Readonly<Record<string, number>> = { '1:10': 29 };
-/** The history capture's operator settings: 596 records, one value, no maxOdds key. */
-export const SUPPLEMENT_HISTORY_GAME_SETTINGS: Readonly<{ records: number; value: string }> = {
-  records: 596,
-  value: '{"minOdds":1.01,"houseEdge":1,"minBet":0.01,"maxBet":10000}',
-};
+export const PROD_GAME_SETTINGS: ReadonlyArray<{ capture: number; records: number; value: string }> = [
+  { capture: 1, records: 413, value: '{"minOdds":1.01,"houseEdge":1,"minBet":0.01,"maxBet":7060,"maxExposure":70600,"maxExposureUsdc":50000,"maxBetUsdc":"5000.00000000","exposureSource":"game","maxBetSource":"game"}' },
+  { capture: 1, records: 2608, value: '{"minOdds":1.01,"houseEdge":1,"minBet":0.01,"maxBet":7050,"maxExposure":70500,"maxExposureUsdc":50000,"maxBetUsdc":"5000.00000000","exposureSource":"game","maxBetSource":"game"}' },
+  { capture: 2, records: 850, value: '{"minOdds":1.01,"houseEdge":1,"minBet":0.01,"maxBet":5000,"maxExposure":50000,"maxExposureUsdc":50000,"maxBetUsdc":"5000.00000000","exposureSource":"game","maxBetSource":"game"}' },
+  { capture: 3, records: 15, value: '{"minOdds":1.01,"houseEdge":1,"minBet":0.01,"maxBet":5000,"maxExposure":50000,"maxExposureUsdc":50000,"maxBetUsdc":"5000.00000000","exposureSource":"game","maxBetSource":"game"}' },
+];
+
 /**
- * Step 22's on-grid test: a served value × 1e8 (credit) or × 100 (display multiplier) must sit within
- * this of an integer — far tighter than one grid unit, loose enough for the binary64 representation
- * of the decimal literal. Declared here rather than typed into the step (conformance C-03).
+ * THE LEDGER DEBITS IN LIQD'S REPLIES — declared from the data, asserted by Step 22 (k). The settling
+ * reply that is an open-tile reply (every loss, and the 3 rounds LIQD settled by itself) also carries
+ * `betTransaction`, a ledger record of the stake debit; no place-bet, cash-out or safe open-tile reply
+ * carries one. Measured on 11 November 2026 on the three captures: 3,886 records (capture 1 3,021,
+ * capture 2 850, capture 3 15), each one per round on its settling reply; each `amount` equals the
+ * round's stake in the booking fiat (`betAmount`: 0.1 CAD, 0.1 USD, 10 USD); each `currencyId` is the
+ * round's own currencyId "3", the wallet's (the id the runner placed every bet under, meta.currencyId 3,
+ * meta.stakeCurrency USDT); transactionType "bet", status "success", betId the round's id. On capture 1
+ * the amount (0.1, under the wallet's currency id) is not the round's USDT stake (betAmountWallet about
+ * 0.0709) on 3,021 of 3,021; on captures 2 and 3 the two are equal. The audit does not use these
+ * records to infer a balance (MANIFEST DL-5). A count or a fact that moves FAILs Step 22.
  */
-export const SUPPLEMENT_ON_GRID_TOLERANCE = 1e-6;
+export const PROD_LEDGER_DEBITS: ReadonlyArray<{ capture: number; records: number; amountNotWalletStake: number }> = [
+  { capture: 1, records: 3021, amountNotWalletStake: 3021 },
+  { capture: 2, records: 850, amountNotWalletStake: 0 },
+  { capture: 3, records: 15, amountNotWalletStake: 0 },
+];
+/** The currency id of the wallet the bets were placed under (every place-bet request and every reply: "3"). */
+export const PROD_WALLET_CURRENCY_ID = '3';
+
+/**
+ * The on-grid test of Steps 8, 17 and 22: a served value × 10^digits must sit within this of an
+ * integer — far tighter than one grid unit, loose enough for the binary64 representation of the
+ * decimal literal.
+ */
+export const PROD_ON_GRID_TOLERANCE = 0.000001;
+
+/**
+ * THE CLIENT SEEDS. Phases A, A+ and C: "audit" + 12 hex digits from the browser CSPRNG, a fresh one
+ * per epoch. Phase D: five PLAYER-SET seeds, "pfaudit-prod-mines-d<k>-" + 12 hex digits from the
+ * browser CSPRNG (k = 1…5, one per epoch), written into the capture's meta before its anchor
+ * rotation and submitted at the rotation that opens their epoch (Step 14).
+ */
+export const AUDIT_SEED_FORMAT = /^audit[0-9a-f]{12}$/;
+export const PLAYER_SEED_FORMAT = /^pfaudit-prod-mines-d([1-5])-[0-9a-f]{12}$/;
+export const PHASE_D_DISTINCT_SEEDS = 5;
 
 /** The audit ID assigned to this package. Emitted into verification-results.json; MANIFEST.md must carry the same ID (checked by scripts/check-standalone.mjs). */
 export const AUDIT_ID = 'PF-2026-LQ02';
+
+/**
+ * Scored steps a verify run must EXECUTE. A summary over a partial result set looks exactly like a
+ * summary over a complete one, so tests/verify.ts compares the number of step results (and of distinct
+ * step numbers) with this constant before it prints any verdict, and exits 1 without one when they
+ * differ. Changing the suite's step count means changing this number, in a diff.
+ */
+export const EXPECTED_STEPS = 22;
 
 /**
  * Unit specs `npm test` must report as PASSING. The zero-install runner (scripts/standalone-runtime.cjs)
@@ -247,7 +391,7 @@ export const AUDIT_ID = 'PF-2026-LQ02';
  * silently skipped or cancelled describe block cannot leave `npm test` green. Changing the unit
  * suite means changing this number, in a diff.
  */
-export const EXPECTED_UNIT_TESTS = 49;
+export const EXPECTED_UNIT_TESTS = 43;
 
 /**
  * ARTIFACTS OF RECORD — every artifact the report quotes, SHA-256 pinned (MINES-27).
@@ -264,83 +408,23 @@ export const EXPECTED_UNIT_TESTS = 49;
  * where --out points. The one deliberate in-place path for the scored record is PF_EMIT=1, and every
  * such regeneration is re-pinned here in the same diff.
  *
- * 2026-09-24 — run metadata removed and every file pinned. Removed with each generator's own
- * serialiser, every other leaf proven identical before/after (=== on all leaves):
- *   simulation-results.json   generatedAt, pass1_fresh_seeds.executionTimeMs,
- *                             pass2_casino_seeds.executionTimeMs (1,884 → 1,881 leaves, 0 changed;
- *                             was 0a00e0ca…613642). A SIM_REPLAY=1 regeneration reproduces it.
- *   simulation-provenance.json pass1.analysisRecordedAt, pass2.inputsRecordedAt; simulation.sha256
- *                             updated to the stripped artifact (was b8e13394…0aa4)
- *   deep-replay-report.json   generatedAt, artifactGeneratedAt, elapsedMs, perRow[].elapsedMs
- *                             (was ce0b055b…8d9f)
- *   bootstrap-replay-report.json  re-run by scripts/replay-bootstrap.py on the stripped inputs; it
- *                             no longer emits generatedAt or seconds (was 467ade06…0851)
- *   audit-figures.json        generatedAt (was 244fc8a4…3642)
- *   verification-results.json generatedAt (re-emitted by PF_EMIT=1)
- *
- * 2026-09-26 — verification-results.json re-emitted by PF_EMIT=1 with Step 22 (the v3 multi-reveal
- *   supplement) and Steps 7/8 scoped to the audited dataset (was 981b6d46…e587). audit-figures.json
- *   re-emitted byte-identical (942ba10e…69ca unchanged). Two PF_EMIT passes: Step 19 counts the
- *   numeric leaves of the committed record itself (6,717 → 6,718 with the added step), so the first
- *   emission quoted the old count; the second is the fixed point pinned here.
- * rtp-convergence.html and bootstrap-nulls.float64le carried no run metadata and are unchanged.
- *
- * 2026-09-28 — rtp-convergence.html rebuilt by `OUT_DIR=outputs npm run chart` (src/write-chart.ts)
- *   from the committed simulation-results.json, with Chart.js 4.4.7 inlined in place of the jsDelivr
- *   <script src> (Framework 1.0 review, F16). Every other byte of the page is unchanged; the data
- *   points are the same rendering of the same committed rows (was 6a314581…4f06).
- *
- * 2026-09-29 — verification-results.json re-emitted by PF_EMIT=1: Step 22 (g) now scores every
- *   supplement win against the ONE declared rule (floor8 / floor2 of the exact value) and reports the
- *   DL-14 / DL-15 gap against it; the fitted binary64 model is emitted as an explanatory note only.
- *   Only Step 22's detail changed (was 8a965ba6…f275). A second PF_EMIT pass reproduced the same
- *   bytes. audit-figures.json unchanged (942ba10e…69ca).
- *
- * 2026-09-29 — verification-results.json re-emitted by PF_EMIT=1 after MINES-22 became policy
- *   INFORMATIONAL (2026-09-29): Step 9's live-sample-fit wording and the MINES-22 profile note
- *   changed; no status or count changed (was f6fb3959…8757). audit-figures.json unchanged.
- *
- * 2026-10-01 — verification-results.json re-emitted by PF_EMIT=1 after publication clean-up of the
- *   step notes and the Step 22 detail (names of other packages and of people removed); no status,
- *   count or figure changed (was fc4784bb…45f2). audit-figures.json unchanged (942ba10e…69ca). *
- * 2026-10-02 — verification-results.json re-emitted by PF_EMIT=1 after the external QA fix list of
- *   2026-10-02: Step 2 gained the recorded-order arm (A10), Step 3 the serverSeedId arm (A9), Step 22
- *   the operator-settings arm (j) and Step 10 reads the supplement build's settings (A4) — Step 10
- *   PASS → FLAG, summary 21/22 → 20/22 PASS, flags 1 → 2, verdict still Conditional Pass; Steps 8,
- *   10 and 22 state the three open rulings; the maxOdds info item names the settings change; the
- *   MINES-02/03/11/14/15/17/19/23/28/29/30 notes changed (was 4ca2e62c…2afd). audit-figures.json
- *   re-emitted byte-identical (942ba10e…69ca). rtp-claim-table.json rewritten by
- *   `npm run rtp-claim:write` (claim source text names ruling 1), re-pinned in src/rtp-settings.ts.
- * 2026-10-03 — verification-results.json re-emitted by PF_EMIT=1 after the MINES-19 note was
- *   corrected (QA 2026-10-03, PB-12): Step 10's edge-rational guard is failed by M26 and its
- *   reference-formula guard by M04; M27 is a declared survivor (tests/survivors.json, DL-11), and
- *   M01/M02/M14 are Step 8's. The MINES-19 note only; no status, count or figure changed (was
- *   eb435f40…959c). audit-figures.json re-emitted byte-identical (942ba10e…69ca).
- * 2026-10-03 — verification-results.json re-emitted by PF_EMIT=1 after Step 22 moved to the 2026-10-03
- *   supplement capture (today's build; the 2026-09-26 capture kept as pinned dated history, arm k) and
- *   Step 10 read that capture's settings: Step 22 FLAG → PASS, summary 20/22 → 21/22 PASS, flags 2 → 1,
- *   verdict still Conditional Pass (Step 10); the Step 3, 7, 8, 10 and 22 details, the MINES-11/14/15/
- *   16/17/29/30 notes and the maxOdds info item changed (was 908057ab…94b8). audit-figures.json
- *   re-emitted byte-identical (942ba10e…69ca).
- * 2026-10-15 — verification-results.json re-emitted by PF_EMIT=1 after the cap half of MINES-14 left
- *   scoring (payout caps excluded by the profile owner, 2026-10-15; LIQD states no multiplier cap since
- *   the end of August 2026): Step 10 FLAG → PASS, summary 21/22 → 22/22 PASS, flags 1 → 0, verdict
- *   Conditional Pass → Full Pass; the Step 10 and 22 details, the MINES-14 note and the maxOdds info
- *   item changed (was a467ebf7…f007). A second PF_EMIT pass reproduced the same bytes.
- * 2026-10-21 — verification-results.json re-emitted by PF_EMIT=1 after the external QA of that date
- *   on the player path (MINES-25): only the MINES-25 note changed (tile numbering across rows from
- *   the top-left, settled by evidence E22; copy the Active Server Seed (Hashed) before rotating);
- *   no step, figure, coverage value or verdict changed (was 7b70235e…08a7).
+ * v1.1.0 (10 November 2026), scored on the three production captures: simulation-results.json,
+ *   simulation-provenance.json and bootstrap-nulls.float64le regenerated by
+ *   `SIM_REPLAY=1 OUT_DIR=<scratch> npm run simulate` (Pass 1 replayed from its recorded seed pairs;
+ *   Pass 2 over the 36 production seeds, early window 0..99) and copied in;
+ *   bootstrap-replay-report.json re-run by scripts/replay-bootstrap.py; deep-replay-report.json
+ *   reproduced; audit-figures.json by `OUT_DIR=outputs npm run figures`; verification-results.json
+ *   re-emitted by PF_EMIT=1 to its fixed point.
  */
 export const ARTIFACT_PINS: ReadonlyArray<{ file: string; sha256: string }> = [
-  { file: 'outputs/simulation-results.json', sha256: '8854fc57e7f22f1960b9c89f6c8e003a5e92e19d899a3ecf20e0c0170e44fc2c' },
-  { file: 'outputs/simulation-provenance.json', sha256: '4eee6b2b2259244fd2402a825c829089e270d36e8700ef0b9e3f1f8b1660eaa6' },
-  { file: 'outputs/bootstrap-nulls.float64le', sha256: '477c58267cf890751abadaf48a723b569207838be7838d7a20da9b2e2d09cf18' },
+  { file: 'outputs/simulation-results.json', sha256: '50bef42d729a973376dee69e274900a037d6baa1d4b17a600c144beb46b329e6' },
+  { file: 'outputs/simulation-provenance.json', sha256: '036f4b3c0c4f9d241206bff2317a3d8632c3547844335653cdd89f9ed8532a86' },
+  { file: 'outputs/bootstrap-nulls.float64le', sha256: 'c8a946c806faa4e8896d68a70f66c6f20fa282571cfc4e14ef29fd29dae160a0' },
   { file: 'outputs/rtp-convergence.html', sha256: 'ad969c106e979f3f0eabcea69b5d2d881eb4a44be248e670a215e6a561989d2d' },
   { file: 'outputs/deep-replay-report.json', sha256: '6de3935092af3db155c9e608f7f5993b68b31ac25364ad24ac0c0ce021c8d6bc' },
-  { file: 'outputs/bootstrap-replay-report.json', sha256: 'a0395e57d8ccda10a9950334211380a43a02f4f01ab923b1472347fd43148573' },
-  { file: 'outputs/audit-figures.json', sha256: '942ba10e301d2c99a502cfbec4ad3441055f27df0d1ca907df2b8f95f8dc69ca' },
-  { file: 'outputs/verification-results.json', sha256: '25db7665027a4c0df089d1b711fb15c68449214be153ee0cd468d93eaf1ba745' },
+  { file: 'outputs/bootstrap-replay-report.json', sha256: '2064e369b17b74d7798dfa5440cbc8f4a71427cb49212fbd270e4aedb3c68d4e' },
+  { file: 'outputs/audit-figures.json', sha256: '5319211bcaf7011b2c88f8e264705ba583cfc2a7e8c68a634a436c187d3d6d9e' },
+  { file: 'outputs/verification-results.json', sha256: 'e1142b07f920b2702a46d9b5e240cdcfc829bc77d9946f879632deb240cbfb33' },
 ];
 
 /**
@@ -357,91 +441,11 @@ export const ARTIFACT_PINS: ReadonlyArray<{ file: string; sha256: string }> = [
  */
 export const SITE_VERIFIER_PINS: ReadonlyArray<{ file: string; sitePath: string; sha256: string }> = [
   { file: 'games/mines/derive.js', sitePath: 'src/components/VerifyBets/games/mines/derive.js',
-    sha256: 'fa4dbd19b80e7ce74fc63bd57630fb76e89ce6a5794d81aacf4a1f0ec38ffb82' },
+    sha256: '0ee08caf082e0e1a88b6e1ff0123b6bdae06ff372303fdf4512161d2340d2d11' },
   { file: 'lib/hmac-sha256.js', sitePath: 'src/components/VerifyBets/lib/hmac-sha256.js',
     sha256: '2095571fecd77f536bb3363c801cd70786856e687d108e0ff2102a4e2a18b847' },
 ];
 export const SITE_VERIFIER_DIR = 'verifier-parity';
-
-/**
- * ══════════════════════════════════════════════════════════════════════════════════════
- *  THE LEGACY BOOTSTRAP EXCEPTION — ONE ARTIFACT, NAMED IN SOURCE
- * ══════════════════════════════════════════════════════════════════════════════════════
- *
- * Step 17 replays the Pass-2 bootstrap null from the artifact's recorded `masterSeed`. The
- * 2026-08-05 artifact predates that machinery and records no master seed, so for IT the replay has
- * nothing to rebuild and `earlyBootstrapP` stays bounded-only — limitation DL-2. That artifact is no
- * longer the committed one: it is kept byte-for-byte as tests/fixtures/legacy-simulation-results.json
- * (below). The committed outputs/simulation-results.json records `masterSeed` 7461a9c2… and
- * `seedDerivation` mines-seed-derivation-v1, takes the replay path, and all 138 of its
- * `earlyBootstrapP` values regenerate (Step 17; outputs/bootstrap-replay-report.json, the
- * independent Python replay, records 138/138 p-values and 240,000 null statistics with 0 mismatches
- * against this file's SHA-256). Everything below about the legacy exception is about the fixture.
- *
- * Reaching that fallback by ABSENCE OF DATA — every artifact without usable replay metadata
- * taking the lenient path — is the wrong rule, and a reviewer executed the consequence: set
- * `seedDerivation` to an unknown string, or `masterSeed` to `not-hex`, and a run whose
- * p-values demonstrably did NOT replay went back to 21/21 Full Pass, exit 0. The check was
- * switched off by corrupting the thing it verifies.
- *
- * The fix has two halves. Invalid or partial replay metadata now FAILS Step 17 (see
- * `tests/steps/simulation.ts`). And the legacy path is no longer "no metadata" — it is THIS
- * artifact, identified by a digest over the exact quantity the exception excuses:
- *
- *     sha256( "<epoch>:<earlyBootstrapP>" for all rows, epoch-ascending, "\n"-joined )
- *
- * WHAT THIS PIN IS. A commitment, in source, with a diff, to the 138 numbers that were
- * reviewed. It makes the exception specific to one artifact instead of available to any file
- * that omits three fields, and it turns forgery A27 — one `earlyBootstrapP` nudged to a
- * neighbouring legal lattice point — from a declared survivor into a caught forgery.
- *
- * WHAT THIS PIN IS NOT. It is NOT evidence that these values came from a bootstrap. Nothing
- * in this repository can establish that for this artifact: the replicate inputs were
- * discarded in August 2026 and no master seed is invented for a run that did not record one.
- * **DL-2 stays open on the substance.** The pin closes the EDIT vector, not the origin question.
- *
- * A run produced by the current `src/simulate.ts` records its master seed, takes the replay
- * path, and never consults this pin.
- */
-export const LEGACY_BOOTSTRAP_ARTIFACT_GENERATED_AT = '2026-08-05T16:41:40.964Z';
-
-/** Digest of the legacy artifact's `earlyBootstrapP` vector. See the block above. */
-export const LEGACY_EARLY_BOOTSTRAP_P_DIGEST =
-  '292d8d546f924cf4cc469bb01061e271c1892f4657f2f28754a2793dba08bc6d';
-
-/**
- * ══════════════════════════════════════════════════════════════════════════════════════
- *  THE PIN IS ABOUT A FIXED FILE, NOT ABOUT WHATEVER IS IN outputs/
- * ══════════════════════════════════════════════════════════════════════════════════════
- *
- * Asserting the three properties above — the digest, the absence of replay metadata, the
- * 2026-08-05 timestamp — against the MUTABLE artifact at `outputs/simulation-results.json`
- * would be the wrong place for them. The producer legitimately writes a master seed, a
- * derivation version, a fresh timestamp and newly drawn bootstrap values, so the moment
- * anyone re-ran the documented pipeline the unit suite would reject the package's own output.
- *
- * EXECUTED, at reduced counts (ROUNDS_PER_CONFIG=1000, PASS2_NONCES=1000,
- * BOOTSTRAP_REPS=1000): `npm run simulate` exits 0, and the unit suite then FAILS its
- * historical assertions, because the freshly drawn vector digests to something else.
- *
- * The pin does not get weaker — it gets a subject. The reviewed artifact is COPIED, byte for
- * byte, into `tests/fixtures/legacy-simulation-results.json`, which no pipeline step writes,
- * and the historical assertions are made against THAT. Its SHA-256 is pinned here so the
- * fixture cannot be quietly edited into agreement with the digest either.
- *
- * What remains asserted about the LIVE artifact is the rule Step 17 implements: it must be
- * one of the two supported shapes — schema-2 (all three replay fields present and usable) or
- * schema-1 (none of them, in which case it must BE this pinned legacy artifact). A schema-2
- * rebuild passes; a metadata-stripped forgery does not.
- */
-
-/** SHA-256 of `tests/fixtures/legacy-simulation-results.json`, byte-for-byte as reviewed. */
-export const LEGACY_BOOTSTRAP_ARTIFACT_SHA256 =
-  'bf1838490a7e9c173a04c06c1255a59e2bf17e114cca02e9d9b491c72fea0461';
-
-/** Path of the immutable legacy artifact copy, relative to the repo root. */
-export const LEGACY_BOOTSTRAP_FIXTURE_RELATIVE_PATH =
-  'tests/fixtures/legacy-simulation-results.json';
 
 /**
  * Canonical digest of a Pass-2 row set's `earlyBootstrapP` vector. ONE definition, so the pin

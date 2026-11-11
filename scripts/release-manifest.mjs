@@ -31,31 +31,37 @@ const CHECK = process.argv.includes('--check');
 // ── Package block ─────────────────────────────────────────────────────────────
 
 /**
- * The facts no file in this package can supply. `signature` stays null until the release is
- * signed. `auditIdStatus` records that ProvablyFair.org has confirmed the audit ID, which the
- * published report (audit.provablyfair.org) carries. `v1.0.1` is an errata release on `v1.0.0`, the first public release
- * (ProvablyFair-org/liqd-mines, one commit); `v1.0.1` supersedes `v1.0.0`. `signature` is the fingerprint
- * of the SSH key that signs the release commit and tag.
+ * The facts no file in this package can supply. `auditIdStatus` records that ProvablyFair.org has confirmed the audit
+ * ID. `v1.1.0` scores the audit on the three production captures of 8–10 November 2026 on liqd.com (6,574 rounds) and
+ * supersedes `v1.0.1` (errata to `v1.0.0`), the last tagged release. The environment is production, so it carries no qualifier. `signature` is the fingerprint of
+ * the SSH key that signs the release commit and tag.
  */
 const DECLARED = {
   auditId: 'PF-2026-LQ02',
   auditIdStatus: 'confirmed by ProvablyFair.org',
   game: 'mines',
   casino: 'liqd',
-  release: 'v1.0.1',
+  release: 'v1.1.0',
   framework: '1.1',
-  environmentStage: 'pre-production',
-  environmentQualifier: 'provisional',
-  supersedes: 'v1.0.0',
+  environmentStage: 'production',
+  environmentQualifier: null,
+  supersedes: 'v1.0.1',
   signature: 'SHA256:gEujiJm2pRyq7lQsfYQfQ1r97H/J7GdaKHbOW8GtikY',
 };
 
-/** The dataset the audit scores. */
-const DATASET = 'data/mines-master-6900bets.json';
+/** The dataset the audit scores: the three production captures of 8–10 November 2026 on liqd.com, converted. */
+const DATASET = 'data/mines-prod-full-6574bets.json';
+/** The raw production captures the dataset was converted from (Step 22 binds them row by row). */
+const RAW_CAPTURES = [
+  'data/liqd-mines-prod-capture-2026-11-09T04-45-17-843Z.ndjson',
+  'data/liqd-mines-prod-capture-2026-11-10T06-06-19-772Z.ndjson',
+  'data/liqd-mines-prod-capture-2026-11-10T10-27-49-259Z.ndjson',
+];
 
 /** Every file whose bytes the release is a claim about. Order is the manifest's order. */
 const ARTIFACTS = [
   DATASET,
+  ...RAW_CAPTURES,
   'outputs/simulation-results.json',
   'outputs/simulation-provenance.json',
   'outputs/bootstrap-nulls.float64le',
@@ -71,11 +77,10 @@ const ARTIFACTS = [
 const AUDIT_ID_DOCS = ['MANIFEST.md'];
 
 /**
- * Every other capture whose rounds are scored: the supplement of 2026-10-03 (Step 22; the 2026-09-26 capture is dated
- * history, not scored). The capture window spans all scored captures, not only DATASET (2026-10-15: it read
- * 30 July only, while the 1,000 scored supplement rounds were placed on 3 October).
+ * Every other dataset whose rounds are scored. None: the production dataset is the one scored population. The
+ * capture window and host are read from its header (first capture's start, last capture's end).
  */
-const SCORED_SUPPLEMENTS = ['data/liqd-mines-capture-v3-2026-10-03T11-58-54-479Z.json'];
+const SCORED_SUPPLEMENTS = [];
 /**
  * Capture window and host, read from the headers of every scored capture: `from` the earliest `startedAt`,
  * `to` the latest `finishedAt`. The host must be the same in every header.

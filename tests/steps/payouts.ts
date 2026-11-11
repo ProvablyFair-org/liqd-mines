@@ -14,71 +14,73 @@ import { chiSquaredPValue } from '../../src/stats';
  */
 const LIVE_FIT_ALPHA = 1e-3;
 import {
-  EXPECTED_BETS, EXPECTED_SEEDS, EXPECTED_EPOCH_SIZE, SUPPLEMENT_GAME_SETTINGS, SUPPLEMENT_CAPTURE_DATE,
-  SUPPLEMENT_DISCLOSED_CREDIT_UNIT_BELOW, SUPPLEMENT_HISTORY_GAME_SETTINGS, SUPPLEMENT_HISTORY_CAPTURE_DATE,
-  SUPPLEMENT_HISTORY_CREDIT_UNIT_BELOW, SUPPLEMENT_HISTORY_WINS,
+  EXPECTED_BETS, EXPECTED_SEEDS, EPOCH_PLAN, PROD_DEPTHS, PROD_PER_SETTING, PHASE_D_PER_SETTING, TOPUP_MINE_COUNTS,
+  TOPUP_PER_MINE_COUNT, PHASE_C_SETTING, PHASE_C_ROUNDS, SETTINGS_PLAN, PLAYED_CELLS, PROD_GAME_SETTINGS,
+  PROD_CAPTURES, PROD_WALLET_CURRENCY, PROD_WALLET_BELOW_EXACT, PROD_WALLET_BELOW_EXACT_TOTAL_UNITS,
+  PROD_HOST, PROD_ON_GRID_TOLERANCE, PROD_AUTO_FINISH_ROUNDS, BOOKED_BELOW_UNROUNDED,
 } from '../../src/pins';
+import { decimalUnits } from '../../src/prod-capture';
 import { computeRtpClaim, RTP_CLAIM, RTP_CLAIM_PAGE_RANGE } from '../../src/rtp-settings';
 
 /**
- * Exact floor8 credit in integer 1e-8 units, via BigInt RATIONAL arithmetic (0 tolerance).
- * floor8(stake × multExact) where multExact = (1 − HOUSE_EDGE)·Π_{i=0}^{k-1} (25-i)/(25-m-i).
- * Because it is exact integer division (floor), an equality test against the credited
- * winningAmount catches BOTH under- and over-credit at the 1e-8 resolution — which a ±2e-8
- * residual band does not (a uniform ±1e-8 shift sits inside that band). Returns null for an
- * impossible depth (k>25−m) so the caller flags it instead of dividing by zero.
+ * THE BOOKED-AMOUNT RULE (measured on the three production captures): LIQD books a win's `winningAmount`
+ * in the fiat the round was staked in (CAD in capture 1, USD in captures 2 and 3) as
+ * floor2(betAmount × exact multiplier) — the exact rational
+ * product floored to cents. Computed here in BigInt RATIONAL arithmetic (0 tolerance), in integer
+ * cents: floor(stakeCents × num / den) with mult = num/den = EDGE_NUM/EDGE_DEN · Π (25−i)/(25−m−i).
+ * Because it is exact integer division (floor), an equality test against the recorded amount
+ * catches BOTH under- and over-statement at the cent. Returns null for an impossible depth
+ * (k > 25 − m) or a stake that is not a whole number of cents, so the caller fails it instead of
+ * dividing by zero or rounding a stake onto the grid.
  *
- * The retention factor is EDGE_NUM/EDGE_DEN, derived from HOUSE_EDGE in src/config.ts, and not
- * a local `let num = 99n, den = 100n` — a BigInt literal has no textual relationship to the
- * audited edge, and duplicating it decouples this arm from the constant it is meant to test.
- * Mutating HOUSE_EDGE to 0.02 against such a literal leaves this arm reporting 0 violations
- * while the residual arm beside it counts thousands: the tightest test in the suite would be
- * measuring a number the audit had stopped using.
+ * The retention factor is EDGE_NUM/EDGE_DEN, derived from HOUSE_EDGE in src/config.ts, and not a
+ * local `99n/100n` — a BigInt literal has no textual relationship to the audited edge, and
+ * duplicating it decouples this arm from the constant it is meant to test.
+ *
+ * The USDT wallet field of the reply is a different amount under a different rule
+ * (floor8(betAmountWallet × floor8(mult))), carried only in the raw capture: Step 22.
  */
-function floor8CreditUnits(betAmount: number, mineCount: number, k: number): bigint | null {
+export const FIAT_SCALE = 100n;          // cents
+function floor2BookedCents(betAmount: number, mineCount: number, k: number): bigint | null {
   if (k < 1 || k > GRID - mineCount) return null;
-  const stakeUnits = BigInt(Math.round(betAmount * 1e8));
+  const c = betAmount * 100;
+  if (!Number.isFinite(c) || Math.abs(c - Math.round(c)) > PROD_ON_GRID_TOLERANCE) return null;
+  const stakeCents = BigInt(Math.round(c));
   let num = EDGE_NUM, den = EDGE_DEN;
   for (let i = 0; i < k; i++) { num *= BigInt(GRID - i); den *= BigInt(GRID - mineCount - i); }
-  return (stakeUnits * num) / den;   // integer division = floor8(stake × multExact) in 1e-8 units
+  return (stakeCents * num) / den;   // integer division = floor2(stake × multExact) in cents
 }
 
 export function run(ctx: VerifyContext): StepResult[] {
-  const { bets, seeds, phaseA } = ctx;
+  const { bets } = ctx;
   // G-BIND: the expected total is EXPECTED_BETS from src/pins.ts — a CODE constant — not
-  // `seeds.length × 50`. Both operands of that product come out of the dataset being scored, so
+  // `seeds.length × epoch size`. Both operands of that product come out of the dataset being scored, so
   // a coherent shrink (drop an epoch, drop its seed, fix the header, re-pin) moves the
   // expectation with the evidence and the coverage guard never notices. A row count derived
   // from the rows is not a population guard.
   const expectedBets = EXPECTED_BETS;
-  // Kept as a reported cross-check: the pinned plan must also equal seeds × epoch size, so a
+  // Kept as a reported cross-check: the pinned epoch plan must also sum to the pinned population, so a
   // disagreement between the plan and the shipped seed set is visible rather than silent.
-  const planConsistent = EXPECTED_SEEDS * EXPECTED_EPOCH_SIZE === EXPECTED_BETS;
+  const planConsistent = EPOCH_PLAN.length === EXPECTED_SEEDS && EPOCH_PLAN.reduce((a, e) => a + e.size, 0) === EXPECTED_BETS;
 
   // ── Step 7: Displayed multiplier field ────────────────────────────────────────
-  // SCOPE (2026-09-26): Steps 7 and 8 score the AUDITED dataset only — `bets` is
-  // data/mines-master-6900bets.json, bound to EXPECTED_BETS. The v3 multi-reveal supplement is
-  // scored by Step 22 (tests/steps/supplement.ts) against the same two rules; on its 2026-09-26
-  // capture (dated history since 2026-10-03) the served display and credit sat one cent / one 1e-8
-  // unit below them at two cells (MANIFEST DL-14, DL-15), on the scored 2026-10-03 capture at none.
-  // The `multiplier` field liqd returns for the fairness panel is the DISPLAY value —
-  // still floored to 2 decimals: minesMultiplier(m,k) == floor2(exact). It is no longer
-  // the value used to compute the payout (see Step 8); it now UNDERSTATES the credited
-  // amount (player-favourable, cosmetic). We confirm the field equals the floored value.
-  // For LOST bets there is no payout: `multiplier` is omitted and winningAmount == 0.
-  // NON-FINITE REFERENCE GUARD (applied at every site the reference formula gates a
-  // scored step — Steps 7, 8, 10 here and Step 15 in phase-e.ts). `Math.abs(NaN − x) > eps` is
-  // FALSE, so a NaN coming out of OUR OWN minesMultiplier/minesMultiplierExact/theoreticalRTP
-  // silently scores as agreement. That is not a fairness question about the operator — it means
-  // the auditor's reference is corrupt and every comparison downstream is vacuous, so it is
-  // counted separately and hard-FAILS rather than joining the ordinary mismatch tally.
+  // SCOPE: the scored production dataset (EXPECTED_BETS rounds). The `multiplier` field LIQD returns
+  // on a win is the DISPLAY value, floored to 2 decimals: minesMultiplier(m,k) == floor2(exact), k =
+  // the tiles opened. It is not the wallet field of the reply (Step 22) and it UNDERSTATES the
+  // exact multiplier wherever the exact value is not a whole number of cents. For LOST bets there is
+  // no payout: `multiplier` is omitted and winningAmount == 0.
+  // NON-FINITE REFERENCE GUARD (applied at every site the reference formula gates a scored step —
+  // Steps 7, 8, 10 here and Step 15 in phase-e.ts). `Math.abs(NaN − x) > eps` is FALSE, so a NaN
+  // coming out of OUR OWN minesMultiplier/minesMultiplierExact/theoreticalRTP silently scores as
+  // agreement. That means the auditor's reference is corrupt and every comparison downstream is
+  // vacuous, so it is counted separately and hard-FAILS rather than joining the ordinary mismatch tally.
   let wonChecked = 0, wonErrors = 0, lostChecked = 0, lostErrors = 0, displayBelowPaid = 0;
   let s7NonFiniteRef = 0;
   for (const b of bets) {
     if (b.result === 'won') {
       wonChecked++;
       const display = minesMultiplier(b.mineCount, b.openTiles.length);      // floored
-      const exact = minesMultiplierExact(b.mineCount, b.openTiles.length);   // credited
+      const exact = minesMultiplierExact(b.mineCount, b.openTiles.length);   // exact
       if (!Number.isFinite(display) || !Number.isFinite(exact)) { s7NonFiniteRef++; continue; }
       if (b.multiplier === undefined || !Number.isFinite(b.multiplier) || Math.abs(display - b.multiplier) > 1e-9) wonErrors++;
       if (b.multiplier !== undefined && b.multiplier + 1e-9 < exact) displayBelowPaid++;
@@ -87,49 +89,42 @@ export function run(ctx: VerifyContext): StepResult[] {
       if ((b.multiplier ?? 0) !== 0 || Number(b.winningAmount) !== 0) lostErrors++;
     }
   }
-  // Coverage guard: the checked count must equal the DERIVED expected total (seeds × 50),
-  // not bets.length — s7Covered = wonChecked + lostChecked equals bets.length by construction,
-  // so comparing to bets.length is tautological. A short/altered dataset (fewer bets than
-  // seeds×50) must FAIL, not vacuously pass on `errors === 0`.
+  // Coverage guard: the checked count must equal EXPECTED_BETS (a code constant), not bets.length —
+  // wonChecked + lostChecked equals bets.length by construction, so comparing to it is tautological.
   const s7Covered = wonChecked + lostChecked;
   const s7 = step(7, 'Displayed Multiplier Field (floored, cosmetic)',
     wonErrors === 0 && lostErrors === 0 && s7NonFiniteRef === 0 && s7Covered === expectedBets ? 'PASS' : 'FAIL',
-    `SCOPE: the audited dataset (data/mines-master-6900bets.json) only — the v3 multi-reveal supplement's displayed multipliers are Step 22, against the same rule; `
-      + `${s7Covered}/${expectedBets} bets checked; ${wonChecked} wins: displayed multiplier == floor2(exact) at 1e-9 (${wonErrors} mismatches); `
-      + `${displayBelowPaid} wins where the displayed field is below the exact reference multiplier; reported settlement amounts are checked separately in Step 8; `
+    `SCOPE: the scored production dataset (${PROD_HOST}); `
+      + `${s7Covered}/${expectedBets} bets checked; ${wonChecked} wins: displayed multiplier == floor2(exact) at the opened depth, at 1e-9 (${wonErrors} mismatches); `
+      + `${displayBelowPaid} wins where the displayed field is below the exact reference multiplier (for example 1.12 displayed for the exact 1.125 at 3 mines, one tile; the booked amount there is the exact 11.25 on a 10.00 stake); the booked amounts are checked in Step 8 and the USDT wallet fields in Step 22; `
       + `${lostChecked} losses: no payout — multiplier 0/absent and winningAmount == 0 (${lostErrors} violations); `
       + `reference-formula integrity: ${s7NonFiniteRef} wins where minesMultiplier/minesMultiplierExact returned a non-finite value (a NaN/Infinity in the auditor's own reference makes every comparison here vacuous — hard fail, not a mismatch)`,
   );
 
-  // ── Step 8: Payout math (uses the EXACT multiplier that is CREDITED) + label check ─
-  // Wins: betAmount × minesMultiplierExact(m,k) == winningAmount (2e-8). The credited
-  // amount is the FULL-PRECISION multiplier, NOT the floored display field — a prior
-  // capture (July) paid the floored amount (~98.78% RTP); liqd now pays exact. Losses: 0.
-  // (betAmount is mixed-typed — number on wins, decimal string on losses — coerce with Number().)
-  // Win-condition consistency: a 'won' round must open NO mine tile; a 'lost' round must
-  // open at least one. Without this, a mislabelled result would still pass the payout math
-  // (the layout recomputes and the credit is "consistent with the label"). Folded into
-  // Step 8 rather than a new step (no new scored step).
-  // Tolerance: liqd floors the CREDITED amount at the 8th decimal, so a legitimate win
-  // sits at most 1e-8 below betAmount × exact. The gate is 2e-8 — just above that floor,
-  // and 50× tighter than the old 1e-6 (which was ~116× coarser than the largest residual
-  // it was cited as establishing). The credit-floor residuals themselves are measured and
-  // emitted below, so the report's residual figures have a producing artifact.
-  const S8_TOL = 2e-8;
+  // ── Step 8: Recorded payout (fiat, cents) + label check ──────────────────────────
+  // Wins: winningAmount == floor2(betAmount × exact multiplier), in BigInt cents, 0 tolerance —
+  // LIQD's booked amount in the fiat the round was staked in (the row's fiatCurrency). Losses: exactly 0.
+  // Win-condition consistency: a 'won' round must open NO mine tile; a 'lost' round must open at
+  // least one — otherwise a mislabelled result would still pass the payout math. A band check sits
+  // beside the identity: the recorded amount must lie in [stake × exact − 0.01, stake × exact], the
+  // only interval a cent floor can produce; a win outside it that equals the stake × DISPLAYED
+  // multiplier floored to cents is counted separately.
+  const S8_TOL = 0.01 + 1e-9;
   let payErrors = 0, paidExact = 0, paidFloored = 0, labelViolations = 0, s8Covered = 0;
   let maxResidual = 0, flooredBelowExact = 0, totalShortfall = 0, totalStaked = 0;
-  let floor8Violations = 0, offGridCredits = 0, s8NonFiniteRef = 0;
-  let nonFiniteStakes = 0, nonFiniteCredits = 0, firstNonFiniteMoney = '';
-  let firstOffGrid = '';
+  // Money is totalled PER BOOKED FIAT and never across them: capture 1 is booked in CAD, captures 2 and
+  // 3 in USD, and nothing is converted. Cents, as BigInt.
+  const byFiat = new Map<string, { rounds: number; wins: number; stakedCents: bigint; paidCents: bigint; below: number; droppedUnits: bigint }>();
+  const byCapture = new Map<number, { wins: number; below: number; droppedUnits: bigint; stakedCents: bigint; paidCents: bigint; fiats: Set<string> }>();
+  let fiatOff = 0, firstFiatOff = '';
+  let floorViolations = 0, offGridAmounts = 0, s8NonFiniteRef = 0;
+  let nonFiniteStakes = 0, nonFiniteAmounts = 0, firstNonFiniteMoney = '';
+  let firstOffGrid = '', firstFloorViolation = '';
   for (const b of bets) {
     s8Covered++;
-    // MONEY IS SUMMED ONLY AFTER IT IS PROVEN TO BE A NUMBER.
-    // Written as `totalStaked += Number(b.betAmount)` with no finiteness test, and with the loss
-    // branch below guarding only `winAmt`, one loss row carrying `betAmount: "not-a-number"`
-    // poisons the running total: the suite prints `$NaN wagered` in the Live RTP
-    // line and still exits as a pass (measured: Conditional Pass 20/21, exit 0). Every
-    // comparison a NaN reaches is FALSE, so an unguarded accumulator does not merely print
-    // badly — it removes the arithmetic that was supposed to be the check.
+    // MONEY IS SUMMED ONLY AFTER IT IS PROVEN TO BE A NUMBER. One loss row carrying
+    // `betAmount: "not-a-number"` would otherwise poison the running total while the suite still
+    // exits as a pass.
     const stakeNum = Number(b.betAmount);
     const winAmtNum = Number(b.winningAmount);
     if (!Number.isFinite(stakeNum)) {
@@ -139,49 +134,66 @@ export function run(ctx: VerifyContext): StepResult[] {
       totalStaked += stakeNum;
     }
     if (!Number.isFinite(winAmtNum)) {
-      nonFiniteCredits++;
+      nonFiniteAmounts++;
       if (!firstNonFiniteMoney) firstNonFiniteMoney = `bet ${b.id}: winningAmount ${JSON.stringify(b.winningAmount)}`;
     }
     const winAmt = winAmtNum;
+    // The booked fiat of the row must be the fiat the plan gives its capture.
+    const planFiat = EPOCH_PLAN[b.epoch]?.fiat;
+    if (b.fiatCurrency !== planFiat) { fiatOff++; if (!firstFiatOff) firstFiatOff = `bet ${b.id}: booked in ${JSON.stringify(b.fiatCurrency)}, plan ${planFiat}`; }
+    const ff = byFiat.get(b.fiatCurrency) ?? { rounds: 0, wins: 0, stakedCents: 0n, paidCents: 0n, below: 0, droppedUnits: 0n };
+    const cc = byCapture.get(b.capture) ?? { wins: 0, below: 0, droppedUnits: 0n, stakedCents: 0n, paidCents: 0n, fiats: new Set<string>() };
+    ff.rounds++; cc.fiats.add(b.fiatCurrency);
+    if (Number.isFinite(stakeNum)) { const sc = BigInt(Math.round(stakeNum * 100)); ff.stakedCents += sc; cc.stakedCents += sc; }
+    if (Number.isFinite(winAmtNum)) { const pc = BigInt(Math.round(winAmtNum * 100)); ff.paidCents += pc; cc.paidCents += pc; }
+    if (b.result === 'won' && Number.isFinite(stakeNum) && Number.isFinite(winAmtNum)) {
+      // Disclosure (2) of src/pins.ts: the unrounded amount floor8(stake × exact) against the booked cents.
+      const r = minesMultiplierRational(b.mineCount, b.openTiles.length);
+      ff.wins++; cc.wins++;
+      if (r) {
+        const unrounded = (BigInt(Math.round(stakeNum * 100)) * 1_000_000n * r.num) / r.den;
+        const booked = BigInt(Math.round(winAmtNum * 100)) * 1_000_000n;
+        if (unrounded > booked) { ff.below++; cc.below++; ff.droppedUnits += unrounded - booked; cc.droppedUnits += unrounded - booked; }
+      }
+    }
+    byFiat.set(b.fiatCurrency, ff); byCapture.set(b.capture, cc);
     const mineSet = new Set<number>(b.mineTiles);
     const openedMine = b.openTiles.some((t: number) => mineSet.has(t));
     if (b.result === 'won') {
       if (openedMine) labelViolations++;              // won yet opened a mine
       const exact = minesMultiplierExact(b.mineCount, b.openTiles.length);
       const bet = Number(b.betAmount);
-      // A non-finite reference multiplier makes `Math.abs(residual) > TOL` false, so the
-      // bet would score as an EXACT payout. The auditor's own formula being corrupt hard-fails.
       if (!Number.isFinite(exact)) { s8NonFiniteRef++; continue; }
-      const residual = bet * exact - winAmt;          // > 0 ⇒ credited below the exact value
-      // ON-GRID CHECK, BEFORE any rounding. The floor8 identity below multiplies by 1e8
-      // and ROUNDS, so a credit carrying a NINTH decimal (one part in ten of a ledger unit)
-      // rounds onto the grid and passes. USDC is credited in 1e-8 units; a value with a ninth
-      // decimal is not a quantity the ledger can hold, and it is checked here on its own terms.
-      // Compared as a scaled integer with a tolerance far tighter than one 1e-8 unit but loose
-      // enough for double-precision representation of the decimal literal (a 1e-9 offset shows
-      // up as 0.1 grid units — 100,000× the 1e-6 gate).
+      const residual = bet * exact - winAmt;          // >= 0 ⇒ recorded at or below the exact value
+      // ON-GRID CHECK, BEFORE any rounding: a recorded fiat amount is a whole number of cents. A value
+      // with a third decimal would otherwise be rounded onto the grid by the identity below.
       if (Number.isFinite(winAmt)) {
-        const units = winAmt * 1e8;
-        if (Math.abs(units - Math.round(units)) > 1e-6) {
-          offGridCredits++;
-          if (!firstOffGrid) firstOffGrid = `bet ${b.id}: winningAmount ${b.winningAmount} is ${(units).toFixed(6)} units of 1e-8`;
+        const units = winAmt * 100;
+        if (Math.abs(units - Math.round(units)) > PROD_ON_GRID_TOLERANCE) {
+          offGridAmounts++;
+          if (!firstOffGrid) firstOffGrid = `bet ${b.id}: winningAmount ${b.winningAmount} is ${units.toFixed(6)} cents`;
         }
       }
-      // Exact-floor8 identity (0 tolerance, rational): winningAmount in 1e-8 units must EQUAL
-      // floor8(stake × multExact). Unlike the ±2e-8 band below, this rejects a uniform ±1e-8
-      // under/over-credit. Only meaningful for a finite credit at a legal depth.
+      // Exact floor2 identity (0 tolerance, rational).
       if (Number.isFinite(winAmt) && Number.isFinite(bet)) {
-        const credUnits = floor8CreditUnits(bet, b.mineCount, b.openTiles.length);
-        if (credUnits === null || BigInt(Math.round(winAmt * 1e8)) !== credUnits) floor8Violations++;
+        const credCents = floor2BookedCents(bet, b.mineCount, b.openTiles.length);
+        const recCents = BigInt(Math.round(winAmt * 100));
+        if (credCents === null || recCents !== credCents) {
+          floorViolations++;
+          if (!firstFloorViolation) firstFloorViolation = `bet ${b.id} (m=${b.mineCount}, k=${b.openTiles.length}): recorded ${b.winningAmount}, rule ${credCents === null ? 'n/a' : (Number(credCents) / 100).toFixed(2)}`;
+          // Does it match the stake × DISPLAYED multiplier floored to cents instead? Counted only where that
+          // candidate differs from the rule: at a 0.10 stake the two candidates coincide on most cells, so a
+          // match there would say nothing.
+          const dispCents = BigInt(Math.floor(bet * 100 * minesMultiplier(b.mineCount, b.openTiles.length) + 1e-9));
+          if (recCents === dispCents) paidFloored++;
+        }
       }
+      // The band test is a second, independent arm on the FLOAT reference (minesMultiplierExact): an amount
+      // outside [stake × exact − 0.01, stake × exact] is an error, whatever else it matches.
       if (!Number.isFinite(winAmt) || !Number.isFinite(bet)) {
-        // Non-numeric credit/stake: the `Math.abs(residual) > TOL` test is NaN-blind (NaN > x
-        // is false), so a non-finite value would silently score as an exact payout. Fail it.
         payErrors++;
-      } else if (Math.abs(residual) > S8_TOL) {
-        // fall back: is it the OLD floored-payout behaviour? (should not occur post-fix)
-        if (Math.abs(bet * minesMultiplier(b.mineCount, b.openTiles.length) - winAmt) <= 1e-6) paidFloored++;
-        else payErrors++;
+      } else if (residual < -1e-9 || residual > S8_TOL) {
+        payErrors++;
       } else {
         paidExact++;
         if (Math.abs(residual) > maxResidual) maxResidual = Math.abs(residual);
@@ -189,57 +201,69 @@ export function run(ctx: VerifyContext): StepResult[] {
       }
     } else {
       if (!openedMine) labelViolations++;             // lost yet opened no mine
-      // A loss pays EXACTLY zero. A gate of `Math.abs(winAmt) > 1e-6` is 100 ledger units wide:
-      // a loss credited one single 1e-8 unit — a real credit, on the grid — sits inside it, and
-      // Step 8 scores PASS while the verdict flips through Step 7. That case is
-      // tests/forgeries.ts D06, which asserts WHICH step must fire, not just the verdict.
-      // There is no rounding to accommodate here: zero is representable exactly.
+      // A loss records EXACTLY zero; zero is representable exactly, there is nothing to round.
       if (!Number.isFinite(winAmt) || winAmt !== 0) payErrors++;
     }
   }
-  // Coverage guard: s8Covered (incremented once per bet) must equal the DERIVED expected
-  // total (seeds × 50), not bets.length — comparing to bets.length is tautological. A short
-  // dataset scores fewer than seeds×50 and must FAIL.
   const s8FullCoverage = s8Covered === expectedBets;
-  // A floor8 violation (over- or under-credit at the 1e-8 unit) is a real payout fault, not a
-  // benign rounding artifact — it hard-fails, exactly like a payErrors/label violation.
-  // A floored credit, an off-grid credit and a non-finite reference are all HARD failures; only
-  // `paidFloored` alone (which cannot co-occur with a clean floor8 tally) could ever be a FLAG.
-  // A non-finite stake or credit anywhere in the dataset, and a turnover total that did not
-  // come out finite, are hard failures on their own terms — not a printing problem. The report
-  // quotes `$X staked` and a shortfall ratio computed from it; if that denominator is not a
-  // number, every figure downstream of it is vacuous rather than wrong.
-  const moneyFinite = nonFiniteStakes === 0 && nonFiniteCredits === 0
+  const moneyFinite = nonFiniteStakes === 0 && nonFiniteAmounts === 0
     && Number.isFinite(totalStaked) && totalStaked > 0 && Number.isFinite(totalShortfall);
-  const s8Hard = payErrors > 0 || labelViolations > 0 || floor8Violations > 0
-    || offGridCredits > 0 || s8NonFiniteRef > 0 || !s8FullCoverage
-    || !moneyFinite || !planConsistent;
-  const s8 = step(8, 'Payout Math + Win-Condition (wins: betAmount × EXACT multiplier == winningAmount; losses: 0; label ⇔ mine opened)',
+  // The per-capture booked totals and the booked-below-unrounded disclosure must equal the declaration
+  // (src/pins.ts PROD_CAPTURES, BOOKED_BELOW_UNROUNDED): a moved figure is a different dataset.
+  const cents = (c: bigint) => `${c / 100n}.${String(c % 100n).padStart(2, '0')}`;
+  const units8 = (u: bigint) => `${u / 100_000_000n}.${String(u % 100_000_000n).padStart(8, '0')}`;
+  const bookedDeclOk = PROD_CAPTURES.every(c => {
+    const g = byCapture.get(c.capture), d = BOOKED_BELOW_UNROUNDED.find(x => x.capture === c.capture);
+    return !!g && !!d && g.wins === c.wins && g.stakedCents === c.bookedStakedCents && g.paidCents === c.bookedPaidCents
+      && g.below === d.wins && g.droppedUnits === d.droppedUnits && g.fiats.size === 1 && g.fiats.has(c.fiat);
+  }) && byCapture.size === PROD_CAPTURES.length;
+  const s8Hard = payErrors > 0 || labelViolations > 0 || floorViolations > 0
+    || offGridAmounts > 0 || s8NonFiniteRef > 0 || !s8FullCoverage
+    || !moneyFinite || !planConsistent || fiatOff > 0 || !bookedDeclOk;
+  const fiatLine = [...byFiat].sort(([a], [z]) => a.localeCompare(z)).map(([f, x]) =>
+    `${f}: ${x.rounds} rounds, ${cents(x.stakedCents)} staked, ${cents(x.paidCents)} booked as won over ${x.wins} wins`).join('; ');
+  const captureLine = PROD_CAPTURES.map(c => {
+    const g = byCapture.get(c.capture);
+    return g ? `capture ${c.capture} (${c.fiat}): ${g.below} of ${g.wins} wins booked below the unrounded amount, ${units8(g.droppedUnits)} ${c.fiat} dropped in total (booked ${cents(g.paidCents)} of ${cents(g.stakedCents)} staked)` : `capture ${c.capture}: NO ROWS`;
+  }).join('; ');
+  const s8 = step(8, 'Payout Math + Win-Condition (wins: winningAmount == floor2(betAmount × EXACT multiplier), the booked fiat amount; losses: 0; label ⇔ mine opened)',
     !s8Hard && paidFloored === 0 ? 'PASS' : (s8Hard ? 'FAIL' : 'FLAG'),
-    `SCOPE: the audited dataset (data/mines-master-6900bets.json) only — the v3 multi-reveal supplement's credits are Step 22, against the same rule; `
-      + `${s8Covered}/${expectedBets} bets at 2e-8 (expected total pinned in src/pins.ts EXPECTED_BETS, a code constant — not seeds×50 read from the dataset${planConsistent ? '' : `; PLAN INCONSISTENT: ${EXPECTED_SEEDS}×${EXPECTED_EPOCH_SIZE} != ${EXPECTED_BETS}`}) (credit floored at the 8th decimal): ${paidExact} wins matching the exact-multiplier settlement within the stated residual tolerance, `
-      + `${paidFloored} wins matching only the displayed-multiplier payout candidate, ${payErrors} errors; `
-      + `exact floor8 identity (winningAmount == floor8(stake × multExact) in BigInt rational arithmetic, 0 tolerance — rejects ±1e-8 over/under-credit): ${floor8Violations} violations; `
-      + `on-grid check applied BEFORE any rounding (winningAmount × 1e8 must already be an integer — a ninth decimal cannot be held in a 1e-8 ledger and must not be rounded onto the grid by the identity above): ${offGridCredits} off-grid credits${firstOffGrid ? ` (first: ${firstOffGrid})` : ''}; `
+    `SCOPE: the scored production dataset (${PROD_HOST}), the amounts LIQD BOOKED in the fiat each round was staked in (CAD in capture 1, USD in captures 2 and 3; nothing converted); the ${PROD_WALLET_CURRENCY} wallet field of each reply is Step 22; `
+      + `${s8Covered}/${expectedBets} bets (expected total pinned in src/pins.ts EXPECTED_BETS, a code constant${planConsistent ? '' : '; PLAN INCONSISTENT: EPOCH_PLAN does not sum to EXPECTED_BETS'}): `
+      + `exact floor2 identity (winningAmount == floor2(stake × multExact) in BigInt cents, 0 tolerance — rejects a one-cent over- or under-statement): ${floorViolations} violations${firstFloorViolation ? ` (first: ${firstFloorViolation})` : ''}; `
+      + `${paidExact} wins inside the cent-floor band [stake × exact − 0.01, stake × exact], ${paidFloored} wins matching only the stake × displayed multiplier floored to cents, ${payErrors} errors; `
+      + `on-grid check applied BEFORE any rounding (winningAmount × 100 must already be an integer): ${offGridAmounts} off-grid amounts${firstOffGrid ? ` (first: ${firstOffGrid})` : ''}; `
+      + `booked fiat = the plan's for the row's capture: ${bets.length - fiatOff}/${bets.length}${firstFiatOff ? ` (first: ${firstFiatOff})` : ''}; `
       + `reference-formula integrity: ${s8NonFiniteRef} wins where minesMultiplierExact returned a non-finite value (hard fail — the auditor's reference is corrupt, not the operator's payout); `
-      + `money-field integrity: ${nonFiniteStakes} bets whose betAmount is not a finite number, ${nonFiniteCredits} whose winningAmount is not${firstNonFiniteMoney ? ` (first: ${firstNonFiniteMoney})` : ''} — hard fail, because a NaN entering the turnover total makes every ratio computed from it vacuous rather than wrong; `
-      + `credit-floor residuals: max ${maxResidual.toExponential(3)}, ${flooredBelowExact} wins below the unrounded value, `
-      + `total shortfall $${totalShortfall.toExponential(3)} on $${Number.isFinite(totalStaked) ? totalStaked.toFixed(2) : 'NOT-FINITE'} staked (${moneyFinite ? (totalShortfall / totalStaked).toExponential(1) : 'n/a — turnover not finite'} of turnover); `
+      + `money-field integrity: ${nonFiniteStakes} bets whose betAmount is not a finite number, ${nonFiniteAmounts} whose winningAmount is not${firstNonFiniteMoney ? ` (first: ${firstNonFiniteMoney})` : ''} — hard fail; `
+      + `booked totals per fiat (never summed across currencies): ${fiatLine}; `
+      + `THE BOOKED WIN IS FLOORED TO THE CENT, THE WALLET FIELD IS NOT — ${captureLine} — ${bookedDeclOk ? 'equal to' : 'NOT EQUAL TO'} the declaration (src/pins.ts PROD_CAPTURES, BOOKED_BELOW_UNROUNDED). `
+      + `On the USD captures the served rate is 1.00000000, so the amount dropped is the amount by which the wallet fields exceed the booked wins (Step 22 scores the wallet fields); no balances were captured, so which amount moved the balance is not verified; `
+      + `largest cent-floor residual ${maxResidual.toFixed(8)} of the booked fiat, ${flooredBelowExact} wins below the unrounded value; `
       + `win-condition consistency (won ⇔ no mine opened): ${labelViolations} label violations. `
-      + `SEVERITY OF A SHORT CREDIT: here a win credited one 1e-8 unit below floor8(stake × exact) is a floor8 violation and HARD-FAILS this step (MINES-11 HARD_FAIL as written; forgery D26); this dataset has ${floor8Violations} such wins. `
-      + `The scored ${SUPPLEMENT_CAPTURE_DATE} supplement gives a short credit the same severity: its declared gap is ${SUPPLEMENT_DISCLOSED_CREDIT_UNIT_BELOW}, so one FAILs Step 22. `
-      + `OPEN RULING 2 (profile owner: is a win credited 1e-8 short a FAIL or a FLAG?) now bears only on how the dated history is classed — the ${SUPPLEMENT_HISTORY_CAPTURE_DATE} capture's ${SUPPLEMENT_HISTORY_CREDIT_UNIT_BELOW} short credits in ${SUPPLEMENT_HISTORY_WINS} wins, held at a Step 22 FLAG from 2026-10-01 to 2026-10-03 (Step 22 arm k, MANIFEST DL-14) — not on this step's status or the verdict`,
+      + `SEVERITY OF A SHORT AMOUNT: a win booked one cent below floor2(stake × exact) is a violation of the declared rule and HARD-FAILS this step (MINES-11 HARD_FAIL as written); this dataset has ${floorViolations}. `
+      + `The wallet leg is held to LIQD's measured rule floor8(betAmountWallet × floor8(exact)) in Step 22, where the ${PROD_WALLET_BELOW_EXACT} wins whose wallet field is one 1e-8 ${PROD_WALLET_CURRENCY} unit below floor8(betAmountWallet × exact) (${PROD_WALLET_BELOW_EXACT_TOTAL_UNITS} units in total, all in capture 1) are DISCLOSED, not a deviation (ruling 2, MANIFEST "Rulings"): a floor at 1e-8 produced by LIQD's declared 8-decimal rule moves no status`,
   );
 
-  // ── Step 9: Config completeness (Phase A: 24 mineCounts × 200) ────────────────
-  const PHASE_A_PER_MC = 200;
-  const expectedPhaseA = MINE_COUNTS.length * PHASE_A_PER_MC;
-  const perMineCount = new Map<number, number>();
-  for (const b of phaseA) perMineCount.set(b.mineCount, (perMineCount.get(b.mineCount) ?? 0) + 1);
-  const missing = MINE_COUNTS.filter(m => !perMineCount.has(m));
-  const wrongCount = MINE_COUNTS.filter(m => (perMineCount.get(m) ?? 0) !== PHASE_A_PER_MC);
-  // Coverage guard: the total Phase-A count must equal 24 × 200, not merely "no missing".
-  const s9CoverageOk = phaseA.length === expectedPhaseA;
+  // ── Step 9: Config completeness (the production plan, every phase) ──────────────────
+  // The plan is bound in source (src/pins.ts SETTINGS_PLAN), never read from the dataset: every
+  // (phase id, mineCount, depth) setting it names must carry exactly its planned rounds, and no round
+  // may sit at a setting outside it. Depth is the recorded plan (`reveals`); Step 20 binds it to the
+  // tiles opened. MINES-15's floor — every mine count 1…24 played at least 50 times in phase A — is
+  // asserted from the rows: phase A plays 5 mine counts × 1,000 and the top-up (A+) the other 19 × 50.
+  const planCells = [...SETTINGS_PLAN.keys()];
+  const perCell = new Map<string, number>();
+  for (const b of bets) { const key = `${b.phaseId}|${b.mineCount}:${b.reveals}`; perCell.set(key, (perCell.get(key) ?? 0) + 1); }
+  const missing = planCells.filter(c => !perCell.has(c));
+  const wrongCount = planCells.filter(c => (perCell.get(c) ?? 0) !== SETTINGS_PLAN.get(c));
+  const offPlan = [...perCell.keys()].filter(c => !SETTINGS_PLAN.has(c));
+  const planTotal = [...SETTINGS_PLAN.values()].reduce((a, n) => a + n, 0);
+  const phaseAByMineCount = new Map<number, number>();
+  for (const b of bets) if (b.phase === 'A') phaseAByMineCount.set(b.mineCount, (phaseAByMineCount.get(b.mineCount) ?? 0) + 1);
+  const MINES15_FLOOR = TOPUP_PER_MINE_COUNT;
+  const belowFloor = MINE_COUNTS.filter(m => (phaseAByMineCount.get(m) ?? 0) < MINES15_FLOOR);
+  // Coverage guard: the plan must sum to the pinned population, not merely "no missing".
+  const s9CoverageOk = planTotal === expectedBets && bets.length === expectedBets && belowFloor.length === 0;
 
   // ── Step 9, live-sample fit arm (MINES-22) ─────────────────────────────────────────────
   // Two goodness-of-fit statistics on the CAPTURED rounds, against pure combinatorics:
@@ -282,12 +306,15 @@ export function run(ctx: VerifyContext): StepResult[] {
   const pWin = dfWin > 0 ? chiSquaredPValue(chiWin, dfWin) : NaN;
   const liveFitPopOk = firstN === expectedBets && Number.isFinite(pFirst) && Number.isFinite(pWin);
   const liveFitStatOk = pFirst >= LIVE_FIT_ALPHA && pWin >= LIVE_FIT_ALPHA;
-  const s9 = step(9, 'Config Completeness (Phase A: 24 mineCounts × 200)',
-    !(missing.length === 0 && wrongCount.length === 0 && s9CoverageOk && liveFitPopOk) ? 'FLAG'
+  const s9 = step(9, `Config Completeness (the production plan: ${planCells.length} phase settings, every mine count)`,
+    !(missing.length === 0 && wrongCount.length === 0 && offPlan.length === 0 && s9CoverageOk && liveFitPopOk) ? 'FLAG'
       : liveFitStatOk ? 'PASS' : 'INFO',
-    `Phase A: ${perMineCount.size}/${MINE_COUNTS.length} mineCounts present, each with ${PHASE_A_PER_MC} bets (${phaseA.length}/${expectedPhaseA} total)`
+    `Plan (src/pins.ts SETTINGS_PLAN — code constants): phase A, the 20 multi-reveal settings (mine counts ${Object.keys(PROD_DEPTHS).join(', ')} × 4 depths: ${Object.entries(PROD_DEPTHS).map(([m, ks]) => `${m}: ${ks.join('/')}`).join(' · ')}) × ${PROD_PER_SETTING}; phase D, the same 20 settings × ${PHASE_D_PER_SETTING}; phase A+ (the top-up), the other ${TOPUP_MINE_COUNTS.length} mine counts (${TOPUP_MINE_COUNTS.join(', ')}) at one tile × ${TOPUP_PER_MINE_COUNT}; phase C, ${PHASE_C_SETTING.mineCount} mines at one tile × ${PHASE_C_ROUNDS}; `
+      + `${planCells.length - missing.length}/${planCells.length} settings present, ${planCells.length - wrongCount.length}/${planCells.length} with exactly their planned rounds, ${offPlan.length} settings outside the plan (${bets.length}/${planTotal} rounds)`
       + (missing.length > 0 ? `; missing: ${missing.slice(0, 5).join(', ')}` : '')
-      + (wrongCount.length > 0 ? `; wrong count: ${wrongCount.slice(0, 5).map(m => `${m}=${perMineCount.get(m)}`).join(', ')}` : '')
+      + (wrongCount.length > 0 ? `; wrong count: ${wrongCount.slice(0, 5).map(c => `${c}=${perCell.get(c) ?? 0}`).join(', ')}` : '')
+      + (offPlan.length > 0 ? `; off plan: ${offPlan.slice(0, 5).join(', ')}` : '')
+      + `. Every mine count 1…24 in phase A (A and A+): ${MINE_COUNTS.length - belowFloor.length}/${MINE_COUNTS.length} with at least ${MINES15_FLOOR} rounds (fewest ${Math.min(...MINE_COUNTS.map(m => phaseAByMineCount.get(m) ?? 0))})${belowFloor.length ? ` — BELOW: ${belowFloor.join(', ')}` : ''}. ${PLAYED_CELLS.length} of the 300 legal (mine count, depth) cells were played; the reference formula covers the rest (Step 10)`
       + `. Live-sample fit (informational; pre-registered deviation level p < ${LIVE_FIT_ALPHA}, reported as INFO, never counted): first-drawn mine position over ${firstN}/${expectedBets} captured layouts vs the uniform 25-tile lattice, chi² ${chiFirst.toFixed(3)} on ${GRID - 1} df, p = ${pFirst.toFixed(4)}; `
       + `win counts in ${groups.size} (mineCount, planned reveals) groups vs the binomial at winProbability(m,k), Σz² ${chiWin.toFixed(3)} on ${dfWin} df, p = ${pWin.toFixed(4)}, largest |z| ${maxAbsZ.toFixed(3)} at ${worstGroup || 'n/a'}. A variance illustration of the live sample, not RTP evidence.`,
   );
@@ -297,12 +324,12 @@ export function run(ctx: VerifyContext): StepResult[] {
   // theoreticalRTP(m,k) = winProbability(m,k) × minesMultiplierExact(m,k); the combinatorial
   // winProbability and the exact multiplier's fair factor are reciprocals, so this equals
   // (1 − edge) = 99.00% for every (m,k) BY CONSTRUCTION — it cannot, alone, detect a live
-  // regression. The EMPIRICAL proof that liqd credits the exact multiplier (vs the ~98.78%
-  // floored payout of a prior capture) is Step 8 (winningAmount). We exercise k=1 for all m
-  // AND the Phase-E depths (m=3, k=2..5) so k>1 is checked too.
+  // regression. The EMPIRICAL checks of what LIQD records and pays are Step 8 (the fiat amount)
+  // and Step 22 (the USDT wallet). We exercise k=1 for all m AND the 20 multi-reveal settings, so the
+  // depths played (1 … 15) are checked too.
   const rtpCases: Array<[number, number]> = [];
   for (const m of MINE_COUNTS) rtpCases.push([m, 1]);
-  for (let k = 2; k <= 5; k++) rtpCases.push([3, k]);
+  for (const [m, ks] of Object.entries(PROD_DEPTHS)) for (const k of ks) rtpCases.push([Number(m), k]);
   let minRTP = Infinity, maxRTP = -Infinity, sumRTP = 0;
   let caseNonFinite = 0;
   for (const [m, k] of rtpCases) {
@@ -320,18 +347,17 @@ export function run(ctx: VerifyContext): StepResult[] {
   // both bounds below are vacuously satisfied. Require finiteness and full case coverage first.
   const flat99 = caseNonFinite === 0 && Number.isFinite(minRTP) && Number.isFinite(maxRTP)
     && minRTP >= PUBLISHED_RTP - 1e-9 && maxRTP <= PUBLISHED_RTP + 1e-9;
-  // Coverage guard: N cases is derived (all mineCounts at k=1 + the Phase-E k=2..5 depths),
-  // never a canned constant — a step that scored 0 cases must not pass vacuously.
-  const expectedCases = MINE_COUNTS.length + 4;
+  // Coverage guard: N cases is derived (all mineCounts at k=1 + the production settings), never a
+  // canned constant — a step that scored 0 cases must not pass vacuously.
+  const expectedCases = MINE_COUNTS.length + Object.values(PROD_DEPTHS).reduce((a, ks) => a + ks.length, 0);
   const coverageOk = rtpCases.length === expectedCases;
 
   // FULL-GRID reference sweep: evaluate the closed-form identity at ALL 300 legal (m,k) cells
   // (m=1..24, k=1..25−m), not only the 28 live-witnessed depths above. This asserts the
   // AUDITOR'S REFERENCE FORMULA is a clean (1−edge) at every reachable depth, so a corrupted
   // reference multiplier at a cell no captured bet ever won (e.g. a 70% cell) is caught here.
-  // NOTE: this is a property of the reference formula, NOT evidence about the operator — 275 of
-  // the 300 cells have no live payout (only 25/300 are data-witnessed, via Step 8). Deeper live
-  // coverage is deferred to a future capture (recommendation A1).
+  // NOTE: this is a property of the reference formula, NOT evidence about the operator — 260 of the
+  // 300 cells have no production round (the 40 played cells are data-witnessed, Steps 8 and 22).
   //
   // NON-FINITE IS A DIFFERENT FAULT CLASS FROM "OFF 99%". `Math.abs(NaN − 0.99) > 1e-9`
   // is FALSE, so unguarded, a NaN out of the auditor's own minesMultiplierExact counts as
@@ -360,50 +386,86 @@ export function run(ctx: VerifyContext): StepResult[] {
   const EXPECTED_ALL_CELLS = 300;
   const allCellsOk = allCells === EXPECTED_ALL_CELLS && allCellsOff === 0 && allCellsNonFinite === 0;
 
-  // SETTLEMENT-FLOOR RTP DEFICIT (emitted so the report's "99.0000% to four decimals" sentence
-  // has a producing artifact — G-PRODUCING). The theoretical identity above is exact; the
-  // CREDITED amount is floor8(stake × multExact), so the settled RTP is strictly below
-  // (1 − edge) by the expected discarded fraction of a 1e-8 unit:
-  //     deficit(m,k,stake) = P(win) × frac(stakeUnits × num / den) / (stake × 1e8)
-  // computed in BigInt so the fraction is exact. Worst case over all 300 cells at the smallest
-  // stake the capture actually used.
-  //
-  // THE STAKE COMES FROM THE BETS, NOT FROM THE HEADER.
-  // Reading `ctx.meta.phases[*].amount` takes an unvalidated field out of the evidence file.
-  // Setting those five amounts to 1000 and re-pinning produces a PASSING Step 10 printing "at the
-  // capture's smallest stake ($1000.00, read from meta.phases)" — a sentence quoted verbatim in
-  // the former report chapters (now MANIFEST.md). The settled-RTP deficit
-  // scales with 1/stake, so a doctored header does not merely mislabel the figure, it shrinks it.
-  // src/figures.ts was already computing the same quantity from `bets[].betAmount`; the two paths
-  // disagreeing is itself a finding, so they are compared rather than one being deleted.
+  // SETTLEMENT-FLOOR RTP DEFICIT (G-PRODUCING). The identity above is exact; the amounts LIQD writes
+  // are floored, so the return they carry is at most (1 − edge), strictly below wherever a positive
+  // fraction is discarded. Two amounts, two rules, both computed in BigInt over all 300 cells:
+  //   (a) the RECORDED fiat amount, floor2(stake × mult), at the capture's stake — DERIVED from the
+  //       bets, cross-checked against the header (G-BIND: a doctored header must not move the figure);
+  //   (b) the wallet field in the reply, floor8(walletStake × floor8(mult)) — LIQD's measured rule
+  //       (Step 22) — at the smallest betAmountWallet the raw capture recorded.
+  //   deficit(m,k) = P(win) × (discarded fraction of one grid unit) / (stake in grid units)
   const betStakes = [...new Set(bets.map(b => Number(b.betAmount)))]
     .filter(a => Number.isFinite(a) && a > 0).sort((a, z) => a - z);
   const headerStakes = Object.values((ctx.meta?.phases ?? {}) as Record<string, { amount?: number }>)
-    .map(p => Number(p?.amount)).filter(a => Number.isFinite(a) && a > 0);
+    .flatMap(p => [Number(p?.amount), ...(Array.isArray((p as { amounts?: number[] })?.amounts) ? (p as { amounts: number[] }).amounts.map(Number) : [])]).filter(a => Number.isFinite(a) && a > 0);
   const headerMinStake = headerStakes.length > 0 ? Math.min(...headerStakes) : 0;
   const minStake = betStakes.length > 0 ? betStakes[0] : 0;
-  // The header is a CLAIM about the capture; the bets are the capture. They must agree, and a
-  // disagreement hard-fails: a meta block describing stakes the bets do not contain means the
-  // file's header and its records are describing two different captures (G-BIND).
+  // The header is a CLAIM about the capture; the bets are the capture. They must agree.
   const stakeSourcesAgree = minStake > 0 && Math.abs(headerMinStake - minStake) < 1e-12;
-  let floorDeficit = 0, floorWorst = '';
-  if (minStake > 0) {
-    const stakeUnits = BigInt(Math.round(minStake * 1e8));
+  const worstDeficit = (stakeUnits: bigint, scale: bigint, floorMultFirst: boolean) => {
+    let worst = 0, at = '';
+    if (stakeUnits <= 0n) return { worst, at };
     for (const m of MINE_COUNTS) {
       for (let k = 1; k <= GRID - m; k++) {
         let num = EDGE_NUM, den = EDGE_DEN;
         for (let i = 0; i < k; i++) { num *= BigInt(GRID - i); den *= BigInt(GRID - m - i); }
+        if (floorMultFirst) { num = (100_000_000n * num) / den; den = 100_000_000n; }
         const exactUnits = stakeUnits * num;
-        const creditedUnits = exactUnits / den;                       // floor8, exact
-        const fracUnits = Number(exactUnits - creditedUnits * den) / Number(den);
-        const deficit = winProbability(m, k) * (fracUnits / 1e8) / minStake;
-        if (Number.isFinite(deficit) && deficit > floorDeficit) {
-          floorDeficit = deficit;
-          floorWorst = `m=${m},k=${k}`;
-        }
+        const flooredUnits = exactUnits / den;
+        // Deficit measured against the EXACT multiplier, whatever the rule floors first.
+        let xn = EDGE_NUM, xd = EDGE_DEN;
+        for (let i = 0; i < k; i++) { xn *= BigInt(GRID - i); xd *= BigInt(GRID - m - i); }
+        const lostUnits = Number(stakeUnits * xn - flooredUnits * xd) / Number(xd);
+        const d = winProbability(m, k) * lostUnits / Number(stakeUnits);
+        if (Number.isFinite(d) && d > worst) { worst = d; at = `m=${m},k=${k}`; }
       }
     }
+    void scale;
+    return { worst, at };
+  };
+  const fiat = worstDeficit(BigInt(Math.round(minStake * 100)), FIAT_SCALE, false);
+  const floorDeficit = fiat.worst, floorWorst = fiat.at;
+  let walletMinUnits: bigint | null = null;
+  for (const { rec } of ctx.prodCapture.bets) {
+    const u = decimalUnits(rec?.placeRaw?.betAmountWallet, 8);
+    if (u !== null && u > 0n && (walletMinUnits === null || u < walletMinUnits)) walletMinUnits = u;
   }
+  const wallet = walletMinUnits !== null ? worstDeficit(walletMinUnits, 100_000_000n, true) : { worst: NaN, at: '' };
+  // (c) the booked cent floor at the smallest stake LIQD SERVES (minBet in every settings record,
+  // src/pins.ts PROD_GAME_SETTINGS, bound to the raw captures by Step 22) — arithmetic, not played.
+  // And the full-clear arithmetic for DL-7: 5,148,297× (12 mines, 13 tiles) at that stake against
+  // each served round payout limit (maxExposure, in the booking fiat of the capture that served it).
+  const fiatOfCapture = new Map(PROD_CAPTURES.map(c => [c.capture, c.fiat]));
+  const servedMinBets = new Set<number>();
+  const servedLimits = new Map<string, { fiat: string; maxExposure: number }>();
+  for (const g of PROD_GAME_SETTINGS) {
+    try {
+      const o = JSON.parse(g.value) as { minBet?: unknown; maxExposure?: unknown };
+      servedMinBets.add(Number(o.minBet));
+      const f = fiatOfCapture.get(g.capture) ?? '?';
+      servedLimits.set(`${f} ${Number(o.maxExposure)}`, { fiat: f, maxExposure: Number(o.maxExposure) });
+    } catch { servedMinBets.add(NaN); }
+  }
+  const minBetServed = servedMinBets.size === 1 && Number.isFinite([...servedMinBets][0]) && [...servedMinBets][0] > 0 ? [...servedMinBets][0] : null;
+  const minBetFloor = minBetServed !== null ? worstDeficit(BigInt(Math.round(minBetServed * 100)), FIAT_SCALE, false) : { worst: NaN, at: '' };
+  const c2 = (c: bigint) => `${(c / 100n).toLocaleString('en-US')}.${String(c % 100n).padStart(2, '0')}`;
+  const FULL_M = 12, FULL_K = GRID - FULL_M;
+  const fullClearLine = minBetServed === null ? 'the served minBet could not be read' : [...servedLimits.values()]
+    .sort((a, z) => a.fiat.localeCompare(z.fiat) || a.maxExposure - z.maxExposure).map(r => {
+      const stakeC = BigInt(Math.round(minBetServed * 100)), capC = BigInt(Math.round(r.maxExposure * 100));
+      const at = (k: number) => minesMultiplierRational(FULL_M, k);
+      const full = at(FULL_K);
+      if (!full || !Number.isFinite(r.maxExposure)) return `${r.fiat}: not computable`;
+      const fullCents = (stakeC * full.num) / full.den;
+      const minStakeAbove = (capC * full.den) / full.num + 1n;   // smallest stake in cents whose full clear exceeds the limit
+      if (stakeC * full.num <= capC * full.den) {
+        return `${r.fiat} limit ${r.maxExposure.toLocaleString('en-US')}: a full clear at the ${minBetServed.toFixed(2)} minimum books ${c2(fullCents)} ${r.fiat}, within it; from a stake of ${c2(minStakeAbove)} ${r.fiat} a full clear exceeds it`;
+      }
+      let k = FULL_K;
+      while (k > 1) { const mk = at(k); if (mk && stakeC * mk.num <= capC * mk.den) break; k--; }
+      const mk = at(k)!;
+      return `${r.fiat} limit ${r.maxExposure.toLocaleString('en-US')}: a full clear at the ${minBetServed.toFixed(2)} minimum would book ${c2(fullCents)} ${r.fiat}, above it; by LIQD's statement of 15 October 2026 a ${FULL_M}-mine round at that stake ends at ${k} tiles, ${(Number(mk.num) / Number(mk.den)).toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}× (booked ${c2((stakeC * mk.num) / mk.den)} ${r.fiat})`;
+    }).join('; ') + ' (arithmetic on the served settings; payout-limit enforcement was not observed)';
   // Any non-finite value anywhere in the reference sweep, the case list, or the per-bet
   // comparisons above is a corrupt-reference hard fail.
   // The BigInt retention factor must exactly represent HOUSE_EDGE. If it does not, the
@@ -416,7 +478,7 @@ export function run(ctx: VerifyContext): StepResult[] {
   // A header/bets stake disagreement is a dataset-integrity fault, in the same class as a
   // corrupt reference — the step's settlement-floor figure would be computed for a capture that
   // did not happen. It hard-fails rather than flagging.
-  const stakeSourceFault = !stakeSourcesAgree;
+  const stakeSourceFault = !stakeSourcesAgree || walletMinUnits === null || !Number.isFinite(wallet.worst);
   // The summary clause is INTERPOLATED from meanRTP and GATED on flat99, so it can
   // never contradict the numbers it sits next to. Under a mutated house edge the clause
   // reports the actual (deviating) RTP instead of a hardcoded "clean 99.0000%".
@@ -434,16 +496,14 @@ export function run(ctx: VerifyContext): StepResult[] {
   //     The 300-cell RTP sweep above would pass a non-monotone ladder whose cells all sat at 99%.
   // (b) NOT SCORED SINCE 2026-10-15 — the cap half of MINES-14 (MANIFEST DL-7). Two decisions of
   //     that date settle it. The profile owner ruled that payout caps are excluded from the audit
-  //     (as on Duel: "Max win cap enforcement — not embedded in game logic") and multiplier caps
-  //     stay in scope. LIQD stated, relayed the same morning, that Mines has had no multiplier cap
+  //     and multiplier caps stay in scope. LIQD stated, the same day, that Mines has had no multiplier cap
   //     since the end of August 2026 (the 10,000× setting removed from the configuration), and that
   //     what remains is a per-round payout limit: the round ends and pays the full multiplier for
-  //     the tiles already revealed. So there is no multiplier cap to score on the scored build (its
-  //     2026-10-03 settings records carry no maxOdds — src/pins.ts SUPPLEMENT_GAME_SETTINGS, bound
-  //     to the data by Step 22), and the round payout limit (maxExposure 50000, exposureSource
-  //     "global") is a payout cap, excluded. The figures below are still COMPUTED and printed as
-  //     disclosure — the July build's maxOdds 10000 on the audited dataset's records, the quoted
-  //     multipliers against it, the later builds' settings — and none of them moves the status.
+  //     the tiles already revealed. So there is no multiplier cap to score on the production build
+  //     (its 3,886 settings records carry no maxOdds — src/pins.ts PROD_GAME_SETTINGS, bound to the
+  //     raw captures by Step 22), and the round payout limit (maxExposure, exposureSource "game") is a
+  //     payout cap, excluded. The figures below are still COMPUTED and printed as disclosure — the
+  //     production settings and the largest displayed multiplier — and none of them moves the status.
   //
   // FLAG REASONS are printed as fixed codes at the end of the detail, so a mutation that targets one
   // arm can assert THAT arm fired (tests/mutations.ts expectDetail).
@@ -467,62 +527,68 @@ export function run(ctx: VerifyContext): StepResult[] {
   const EXPECTED_MONO_PAIRS = 276 + 276;   // 300 − 24 depth steps, and the same count in m
   const monotoneOk = monoViolations === 0 && monoPairs === EXPECTED_MONO_PAIRS;
   let quotedChecked = 0, quotedAboveCap = 0, maxQuoted = 0;
-  const settingsCaps = new Set<number>();
-  const auditedSettingsKeys = new Set<string>();
-  let settingsRecords = 0;
+  const settingsValues = new Map<string, number>();
+  let settingsRecords = 0, settingsWithMaxOdds = 0;
   for (const b of bets) {
     const raw = (b as unknown as { currentGameSettings?: unknown }).currentGameSettings;
     if (raw != null) {
       settingsRecords++;
-      try {
-        const gs = typeof raw === 'string' ? JSON.parse(raw) : raw;
-        settingsCaps.add(Number((gs as { maxOdds?: unknown }).maxOdds));
-        for (const k of Object.keys(gs as object)) auditedSettingsKeys.add(k);
-      } catch { settingsCaps.add(NaN); }
+      const text = typeof raw === 'string' ? raw : JSON.stringify(raw);
+      settingsValues.set(text, (settingsValues.get(text) ?? 0) + 1);
+      try { if ((JSON.parse(text) as { maxOdds?: unknown }).maxOdds !== undefined) settingsWithMaxOdds++; } catch { settingsWithMaxOdds++; }
     }
     if (b.result !== 'won') continue;
     const served = Number(b.multiplier);
-    const credited = Number(b.winningAmount) / Number(b.betAmount);
-    for (const q of [served, credited]) {
+    for (const q of [served]) {
       quotedChecked++;
       if (!Number.isFinite(q) || q > MAX_ODDS_DECLARED) quotedAboveCap++;
       else if (q > maxQuoted) maxQuoted = q;
     }
   }
-  const capsAgree = settingsRecords > 0 && settingsCaps.size === 1 && settingsCaps.has(MAX_ODDS_DECLARED);
-  // The supplement build's settings (declared in src/pins.ts, bound to the data by Step 22).
-  let suppMaxOdds: unknown;
-  try { suppMaxOdds = (JSON.parse(SUPPLEMENT_GAME_SETTINGS.value) as { maxOdds?: unknown }).maxOdds; } catch { suppMaxOdds = NaN; }
-  const suppCapAgree = SUPPLEMENT_GAME_SETTINGS.records > 0 && Number(suppMaxOdds) === MAX_ODDS_DECLARED;
-  // Keys today's supplement build serves that the audited build's records do not — printed, not scored.
-  let suppExtra: Array<[string, unknown]> = [];
-  try { suppExtra = Object.entries(JSON.parse(SUPPLEMENT_GAME_SETTINGS.value) as Record<string, unknown>).filter(([k]) => !auditedSettingsKeys.has(k)); } catch { suppExtra = []; }
-  // The dated history's settings (2026-09-26, bound by Step 22 arm k) — printed, not scored.
-  let histMaxOdds: unknown;
-  try { histMaxOdds = (JSON.parse(SUPPLEMENT_HISTORY_GAME_SETTINGS.value) as { maxOdds?: unknown }).maxOdds; } catch { histMaxOdds = NaN; }
+  // The production settings declaration (src/pins.ts PROD_GAME_SETTINGS, bound to the raw capture by
+  // Step 22) and the dataset's own copies of those records must agree — printed, not scored here.
+  const declaredRecords = PROD_GAME_SETTINGS.reduce((a, g) => a + g.records, 0);
+  const declaredByValue = new Map<string, number>();
+  for (const g of PROD_GAME_SETTINGS) declaredByValue.set(g.value, (declaredByValue.get(g.value) ?? 0) + g.records);
+  const declAgree = settingsRecords === declaredRecords && settingsValues.size === declaredByValue.size
+    && [...declaredByValue].every(([v, n]) => settingsValues.get(v) === n);
+  const limitsOf = (v: string) => { try { const o = JSON.parse(v) as { maxBet?: unknown; maxExposure?: unknown }; return `maxBet ${o.maxBet} / maxExposure ${o.maxExposure}`; } catch { return 'unparseable'; } };
   let refAboveCap = 0;
   for (const m of MINE_COUNTS) for (let k = 1; k <= GRID - m; k++) if (minesMultiplierExact(m, k) > MAX_ODDS_DECLARED) refAboveCap++;
   const quotedOk = quotedAboveCap === 0 && quotedChecked > 0;
   const monoDetail = ` Monotonicity (FLAG policy, scored): the exact multiplier is strictly increasing in depth and in mine count over ${monoPairs}/${EXPECTED_MONO_PAIRS} adjacent legal cell pairs (exact rational comparison) — ${monoViolations} violations${firstMonoViolation ? ` (first: ${firstMonoViolation})` : ''}. `
     + `Caps (MINES-14 cap half, MANIFEST DL-7) — DISCLOSED, NOT SCORED since 2026-10-15: payout caps are excluded from the audit and multiplier caps stay in scope (profile owner, 2026-10-15); LIQD states that Mines has had no multiplier cap since the end of August 2026 (the 10,000× setting removed from the configuration) and that a per-round payout limit ends the round and pays the full multiplier for the tiles already revealed (operator statement, 2026-10-15, quoted in MANIFEST DL-7). `
-    + `Scored build: the ${SUPPLEMENT_CAPTURE_DATE} supplement's ${SUPPLEMENT_GAME_SETTINGS.records} settles carry ${SUPPLEMENT_GAME_SETTINGS.value} (src/pins.ts SUPPLEMENT_GAME_SETTINGS, bound to the data by Step 22), ${suppMaxOdds === undefined ? 'no maxOdds key — no multiplier cap, as stated' : `maxOdds ${JSON.stringify(suppMaxOdds)}`}; `
-    + `keys those records carry that the audited build's do not: ${suppExtra.map(([k, v]) => `${k} ${JSON.stringify(v)}`).join(', ') || 'none'} — maxExposure is the round payout limit LIQD describes, excluded (payout-limit enforcement is not tested; no captured round reached it). `
-    + `History, printed and not scored: the audited dataset (captured 2026-07-30) — ${[...settingsCaps].join(', ') || 'none'} on ${settingsRecords} settles (the July build's maxOdds, src/config.ts MAX_ODDS_DECLARED ${MAX_ODDS_DECLARED}×: ${capsAgree ? 'agree' : 'DISAGREE'}); every multiplier the operator quoted in it lies within that July setting: ${quotedChecked - quotedAboveCap}/${quotedChecked} (served field and credited ratio on every win; largest ${maxQuoted}×; ${quotedOk ? 'within' : 'NOT within'}); `
-    + `the ${SUPPLEMENT_HISTORY_CAPTURE_DATE} capture's ${SUPPLEMENT_HISTORY_GAME_SETTINGS.records} settles carried ${SUPPLEMENT_HISTORY_GAME_SETTINGS.value}, ${histMaxOdds === undefined ? 'no maxOdds key either' : `maxOdds ${JSON.stringify(histMaxOdds)}`} (bound to its records by Step 22 (k)); `
-    + `the reference formula exceeds the July 10,000× setting at ${refAboveCap} of the 300 legal cells, none reached by a captured bet; the live page read 2026-10-01 advertises a 5,148,297× top payout (evidence/rtp-page-labels-2026-10-01.json), the uncapped exact multiplier at m=12, k=13. `
-    + `Cap figures as computed (not scored): quoted within the July setting ${quotedOk ? 'yes' : 'no'}, audited settings single-valued at it ${capsAgree ? 'yes' : 'no'}, scored build carries it ${suppCapAgree ? 'yes' : 'no'}.`;
+    + `Production build: ${settingsRecords} of the ${bets.length} settling replies carry currentGameSettings (every loss and the ${PROD_AUTO_FINISH_ROUNDS.length} wins LIQD settled by itself; a cash-out reply carries none), ${settingsValues.size} distinct value(s), ${settingsWithMaxOdds} with a maxOdds key — no multiplier cap, as stated; `
+    + `the values ${declAgree ? 'equal' : 'DO NOT equal'} the declaration src/pins.ts PROD_GAME_SETTINGS (${PROD_GAME_SETTINGS.map(g => `capture ${g.capture}: ${g.records} × ${limitsOf(g.value)}`).join('; ')}; the limits are stated in the fiat the round was booked in, CAD in capture 1 and USD in captures 2 and 3, with maxExposureUsdc 50000 in all), which Step 22 binds to the raw captures; `
+    + `maxExposure is the round payout limit LIQD describes, excluded (payout-limit enforcement is not tested; no captured round reached it). `
+    + `Largest multiplier displayed on a production win: ${maxQuoted}× (${quotedChecked - quotedAboveCap}/${quotedChecked} wins carry a finite displayed multiplier${quotedOk ? '' : ' — NOT all'}); `
+    + `the reference formula exceeds 10,000× at ${refAboveCap} of the 300 legal cells, none played; the live page read 2026-10-01 quotes 5,148,297× (evidence/rtp-page-labels-2026-10-01.json): the top multiplier on the formula (m=12, k=13), payable only within the round payout limit — ${fullClearLine}.`;
 
-  // ── Step 10, RTP claim — OPEN RULING 1 (computed and printed, never scored here) ──────────
-  // The held claim is RTP_CLAIM (flat 99%), scored by the RTP-CLAIM gate in tests/verify.ts. The
-  // page's other statement is run through the same rule so its outcome is a measurement, not prose.
+  // ── Step 10, RTP claim — RULING 1 (decided 11 November 2026; MANIFEST "Rulings") ─────────
+  // The held claim is RTP_CLAIM (flat 99%), scored by the RTP-CLAIM gate in tests/verify.ts; the wallet
+  // field meets it. The page's rounding sentence is a DISCREPANCY recorded as published on 1 Oct 2026:
+  // run through the same rule as a range claim, and set against the edge the 2-decimal multiplier would
+  // give if it were paid, cut (what production displays) or rounded (what the sentence says). Printed,
+  // not scored.
   let rulingOne = '';
   try {
     const alt = computeRtpClaim(RTP_CLAIM_PAGE_RANGE);
     const rc = alt.rangeChecks.map(c => `${c.id === 'published-min-vs-true-min' ? 'published min' : 'published max'} ${c.publishedPct}% vs true ${c.truePct}% (${c.gapPp} pp, ${c.outcome})`).join('; ');
-    rulingOne = ` RTP claim — OPEN RULING 1 (profile owner: which statement on LIQD's page is LIQD held to?): the held claim is the page's flat ${RTP_CLAIM.kind === 'flat' ? `${(Number(RTP_CLAIM.rtp) * 100).toFixed(2)}%` : RTP_CLAIM.kind} ("99% RTP at every setting"; scored by the RTP-CLAIM gate printed after the steps). `
-      + `The same page states a realised edge "between 0.64% and 1.44%" (RTP ${(Number((RTP_CLAIM_PAGE_RANGE as { min: string }).min) * 100).toFixed(2)}%–${(Number((RTP_CLAIM_PAGE_RANGE as { max: string }).max) * 100).toFixed(2)}%); run through the same rule (${alt.rule} ${alt.ruleVersion.split(' ')[0]}, band ${alt.bandPp} pp) as a range claim it would ${alt.outcome}: ${rc}. Printed for the ruling, not scored.`;
+    let cutMin = Infinity, cutMax = -Infinity, rndMin = Infinity, rndMax = -Infinity;
+    for (const m of MINE_COUNTS) for (let k = 1; k <= GRID - m; k++) {
+      const r = minesMultiplierRational(m, k);
+      if (!r) continue;
+      const p = winProbability(m, k);
+      const eCut = 1 - p * Number((100n * r.num) / r.den) / 100;
+      const eRnd = 1 - p * Number((200n * r.num + r.den) / (2n * r.den)) / 100;
+      cutMin = Math.min(cutMin, eCut); cutMax = Math.max(cutMax, eCut); rndMin = Math.min(rndMin, eRnd); rndMax = Math.max(rndMax, eRnd);
+    }
+    const pc = (v: number) => `${(v * 100).toFixed(2)}%`;
+    rulingOne = ` RTP claim — RULING 1 (decided): LIQD is held to the page's flat ${RTP_CLAIM.kind === 'flat' ? `${(Number(RTP_CLAIM.rtp) * 100).toFixed(2)}%` : RTP_CLAIM.kind} ("99% RTP at every setting"; scored by the RTP-CLAIM gate printed after the steps), which the wallet field meets (99.0000% to four decimals, (b) above). `
+      + `DISCREPANCY, as published on 1 Oct 2026: the same page states "Multipliers are rounded to two decimals rather than cut, so the realised edge moves a little with the exact mines-and-picks combination, between 0.64% and 1.44%, around the nominal 1%." (RTP ${(Number((RTP_CLAIM_PAGE_RANGE as { min: string }).min) * 100).toFixed(2)}%–${(Number((RTP_CLAIM_PAGE_RANGE as { max: string }).max) * 100).toFixed(2)}%). On production the displayed multiplier is cut, not rounded (Step 7), and the range matches neither rule: over the 300 cells, paying the 2-decimal multiplier cut would give an edge of ${pc(cutMin)}–${pc(cutMax)}, rounded ${pc(rndMin)}–${pc(rndMax)}. `
+      + `Run through the same rule (${alt.rule} ${alt.ruleVersion.split(' ')[0]}, band ${alt.bandPp} pp) as a range claim the sentence would ${alt.outcome}: ${rc}. Printed as the discrepancy, not scored.`;
   } catch (e: any) {
-    rulingOne = ` RTP claim — OPEN RULING 1: the page's range statement could not be evaluated (${e?.message ?? e}).`;
+    rulingOne = ` RTP claim — RULING 1: the page's range statement could not be evaluated (${e?.message ?? e}).`;
   }
 
   const flagReasons: string[] = [];
@@ -535,13 +601,17 @@ export function run(ctx: VerifyContext): StepResult[] {
 
   const s10 = step(10, 'House Edge / RTP Audit (closed-form identity, per-config, anti-circular)',
     s10Fail ? 'FAIL' : (flagReasons.length === 0 ? 'PASS' : 'FLAG'),
-    `Closed-form identity theoreticalRTP(m,k) = winProbability(m,k) × minesMultiplierExact(m,k) (winProbability = pure C(25-m,k)/C(25,k) combinatorics), checked for m=1..24 at k=1 and Phase-E depths (m=3, k=1..5) — ${rtpCases.length}/${expectedCases} cases: `
+    `Closed-form identity theoreticalRTP(m,k) = winProbability(m,k) × minesMultiplierExact(m,k) (winProbability = pure C(25-m,k)/C(25,k) combinatorics), checked for m=1..24 at k=1 and the 20 multi-reveal settings (src/pins.ts PROD_DEPTHS) — ${rtpCases.length}/${expectedCases} cases: `
       + `RTP range ${(minRTP * 100).toFixed(4)}%–${(maxRTP * 100).toFixed(4)}%, mean ${(meanRTP * 100).toFixed(4)}% — ${rtpClause}`
-      + `Full-grid reference sweep: all ${allCells}/${EXPECTED_ALL_CELLS} legal (m,k) cells (k=1..25−m) evaluate to 99.0000% within 1e-9 (${allCellsOff} off), range ${(allMin * 100).toFixed(4)}%–${(allMax * 100).toFixed(4)}% — this checks the reference formula at every reachable depth, NOT the operator (25/300 cells are live-witnessed via Step 8; 275 formula-only; additional settlement coverage is planned for production). `
-      + `Settlement floor: the identity above is the THEORETICAL leg; the amount actually credited is floor8(stake × multExact), so settled RTP is at most (1 − edge), with equality when no fractional settlement unit is discarded. Worst case over all ${EXPECTED_ALL_CELLS} cells at the capture's smallest stake ($${minStake.toFixed(2)}, DERIVED from the ${betStakes.length} distinct betAmount values in the pinned bets — ${betStakes.map(s => `$${s.toFixed(2)}`).join(', ')} — not read from meta.phases; the header's own smallest amount is $${headerMinStake.toFixed(2)} and the two ${stakeSourcesAgree ? 'agree' : 'DISAGREE — hard fail: the dataset header describes stakes its bets do not contain'}): ${floorWorst || 'n/a'} loses ${floorDeficit.toExponential(3)} of turnover → settled RTP ${((1 - HOUSE_EDGE - floorDeficit) * 100).toFixed(7)}%, i.e. ${((1 - HOUSE_EDGE) * 100).toFixed(4)}% to four decimals. `
-      + `Edge-rational integrity: EDGE_NUM/EDGE_DEN = ${Number(EDGE_NUM)}/${Number(EDGE_DEN)} ${edgeRationalOk ? 'exactly represents' : 'DOES NOT represent'} (1 − HOUSE_EDGE) = ${1 - HOUSE_EDGE} — the BigInt factor the floor8 credit identity in Step 8 divides by. A factor that only approximates the audited edge makes that identity measure a different edge, silently. `
+      + `Full-grid reference sweep: all ${allCells}/${EXPECTED_ALL_CELLS} legal (m,k) cells (k=1..25−m) evaluate to 99.0000% within 1e-9 (${allCellsOff} off), range ${(allMin * 100).toFixed(4)}%–${(allMax * 100).toFixed(4)}% — this checks the reference formula at every reachable depth, NOT the operator (${PLAYED_CELLS.length}/300 cells were played on production, Steps 8 and 22; ${300 - PLAYED_CELLS.length} formula-only). `
+      + `Settlement floor — the identity above is the THEORETICAL leg; the amounts LIQD writes are floored, so the return they carry is at most (1 − edge). `
+      + `(a) the BOOKED fiat amount, floor2(stake × exact), at the smallest stake played (${minStake.toFixed(2)}, DERIVED from the ${betStakes.length} distinct betAmount value(s) in the pinned bets — ${betStakes.map(v => v.toFixed(2)).join(', ')} — not read from meta.phases; the header's own smallest amount is ${headerMinStake.toFixed(2)} and the two ${stakeSourcesAgree ? 'agree' : 'DISAGREE — hard fail: the dataset header describes stakes its bets do not contain'}): worst cell over all ${EXPECTED_ALL_CELLS} ${floorWorst || 'n/a'}, ${(floorDeficit * 100).toFixed(4)} pp of turnover → a booked return of ${((1 - HOUSE_EDGE - floorDeficit) * 100).toFixed(4)}% there — a property of a cent-floored figure at a 0.10 stake, not of the wallet field (Step 8 states the amounts dropped per capture); `
+      + `(b) the ${PROD_WALLET_CURRENCY} wallet field in the reply, LIQD's measured rule floor8(walletStake × floor8(exact)) (Step 22), at the smallest betAmountWallet in the raw captures (${walletMinUnits === null ? 'NOT READ' : (Number(walletMinUnits) / 1e8).toFixed(8)} ${PROD_WALLET_CURRENCY}, a 0.10 CAD stake of capture 1): worst cell ${wallet.at || 'n/a'}, ${Number.isFinite(wallet.worst) ? wallet.worst.toExponential(3) : 'n/a'} of turnover → RTP on the wallet field ${Number.isFinite(wallet.worst) ? ((1 - HOUSE_EDGE - wallet.worst) * 100).toFixed(6) : 'n/a'}%, i.e. ${((1 - HOUSE_EDGE) * 100).toFixed(4)}% to four decimals; `
+      + `(c) the BOOKED amount at the smallest stake LIQD serves (minBet ${minBetServed === null ? 'NOT READ' : minBetServed.toFixed(2)} in every settings record, src/pins.ts PROD_GAME_SETTINGS; not played): worst cell ${minBetFloor.at || 'n/a'}, ${(minBetFloor.worst * 100).toFixed(4)} pp of turnover → a booked return of ${((1 - HOUSE_EDGE - minBetFloor.worst) * 100).toFixed(4)}% there. `
+      + `Which of the booked amount and the wallet field reaches the balance is not verified (no balance was read, MANIFEST DL-5). `
+      + `Edge-rational integrity: EDGE_NUM/EDGE_DEN = ${Number(EDGE_NUM)}/${Number(EDGE_DEN)} ${edgeRationalOk ? 'exactly represents' : 'DOES NOT represent'} (1 − HOUSE_EDGE) = ${1 - HOUSE_EDGE} — the BigInt factor the floor8 wallet field identity in Step 8 divides by. A factor that only approximates the audited edge makes that identity measure a different edge, silently. `
       + `Reference-formula integrity: ${allCellsNonFinite + caseNonFinite} cells returned a non-finite value${firstNonFinite ? ` (first: ${firstNonFinite})` : ''} — a NaN/Infinity here is NOT an "off 99%" deviation (which FLAGs); it means the auditor's own reference is corrupt and every comparison built on it is vacuous, so it hard-FAILS. `
-      + `This is the uncapped reference calculation; Step 8 independently checks the recorded winningAmount at captured winning configurations. The displayed multiplier field is still floored — cosmetic (Step 7).`
+      + `This is the uncapped reference calculation; Step 8 checks the booked winningAmount and Step 22 the wallet field in the reply at the ${PLAYED_CELLS.length} played cells. The displayed multiplier field is floored — cosmetic (Step 7).`
       + monoDetail
       + rulingOne
       + ` FLAG REASONS: ${s10Fail ? 'n/a (hard fail)' : (flagReasons.join(', ') || 'none')}.`,

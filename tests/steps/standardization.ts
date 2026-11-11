@@ -6,14 +6,14 @@
  * operator summary field. Each asserts a distinct property with a coverage
  * assertion so a pass over an empty set cannot occur.
  *
- *   18  Bet-Size Invariance            — layout independent of wager (Phase C, $10)
+ *   18  Bet-Size Invariance            — phase C at 10.00 beside the 0.10 phases; every round bound to its stake
  *   19  Artifact Integrity             — the pinned dataset SHA-256, promoted to a
  *                                                   scored step, PLUS the derived-figure artifact
  *                                                   re-derived and compared to the copy on disk
  *   20  Reveal-Sequence Consistency    — wins never open a mine; losses bust on the
  *                                                   final opened tile and no earlier one
- *   21  Reveal-Position Independence   — opened positions vary freely and are
- *                                                   independent of the recomputed mine layout
+ *   21  Reveal-Position Independence   — pre-registered random opened positions; layout
+ *                                                   recomputes whatever was opened
  */
 
 import { step } from './context';
@@ -23,7 +23,12 @@ import * as path from 'path';
 import { revealMines, sameMines } from '../../src/rng';
 import { computeAuditFigures, AUDIT_FIGURES_FILE } from '../../src/figures';
 import { GRID } from '../../src/config';
-import { EXPECTED_BETS, ARTIFACT_PINS } from '../../src/pins';
+import {
+  EXPECTED_BETS, ARTIFACT_PINS, DATASET_RELATIVE_PATH, EPOCH_PLAN, EXPECTED_PHASE_ID_BETS, PROD_BASE_STAKE, PROD_ELEVATED_STAKE,
+  PHASE_C_SETTING, PHASE_C_MIN_WINS, PROD_WALLET_CURRENCY,
+} from '../../src/pins';
+import { minesMultiplierRational } from '../../src/config';
+import { decimalUnits } from '../../src/prod-capture';
 import { checkArtifactDomains, runMetadataPaths, DOMAIN_TABLES } from '../../src/domains';
 import { createHash } from 'crypto';
 import { fieldDiff, beyondTolerance } from '../../src/diff';
@@ -32,26 +37,66 @@ export function run(ctx: VerifyContext): StepResult[] {
   const { bets, seedMap } = ctx;
   const out: StepResult[] = [];
 
-  // ── Step 18: Bet-Size Invariance ────────────────────────────────────────────
-  // The reference engine revealMines(serverSeed, clientSeed, nonce, mineCount) is wager-free
-  // by construction. Phase C's 200 hands at $10 (mineCount 3) recompute here in draw
-  // order alongside the $0.10 hands scored in Step 5 — the served layout matches the wager-free
-  // reference at both captured stakes. Deterministic; no distributional test at n=200.
+  // ── Step 18: Bet-Size Invariance (phase C, elevated stake) ───────────────────────
+  // The reference engine revealMines(serverSeed, clientSeed, nonce, mineCount) is wager-free by
+  // construction. Phase C (capture 3) played PHASE_C_ROUNDS rounds at 10.00 — 100 times the 0.10 of
+  // every other phase — at 3 mines, one tile. Asserted:
+  //   - every phase C round recomputes its layout from the wager-free engine, exactly as the 0.10
+  //     rounds do (all of them recomputed here too);
+  //   - every phase C win is booked and carried in the wallet field by the SAME rules as a 0.10 win: winningAmount ==
+  //     floor2(stake × exact) and winningAmountWallet == floor8(betAmountWallet × floor8(exact));
+  //   - phase C has at least PHASE_C_MIN_WINS elevated-stake wins, so the payout path is exercised;
+  //   - STAKE BINDING over the whole dataset: each row's betAmount and booked fiat are its phase's in
+  //     the plan (EPOCH_PLAN), each place-bet REQUEST in the raw captures sent that amount, and each
+  //     place and settle reply recorded that fiat.
+  // SCOPE: the 3-mine, one-tile cell was played only at 10.00; 3 mines at 0.10 were played at depths
+  // 2, 4, 6 and 8 (phases A and D). The formula is the same closed form at every cell, so "the same
+  // formula as the base stake" is the rule holding on both stakes, not a same-cell comparison.
   {
-    const c = ctx.phaseC;
-    let chk = 0, bad = 0;
-    for (const b of c) {
+    let chk = 0, bad = 0, stakeOff = 0, requestOff = 0, currencyOff = 0, requests = 0;
+    let cRounds = 0, cRecomputed = 0, cBad = 0, cWins = 0, cBookedOk = 0, cWalletOk = 0, cCellOff = 0, baseWins = 0;
+    const n = Math.min(bets.length, ctx.prodCapture.bets.length);
+    bets.forEach((b, i) => {
+      const pl = EPOCH_PLAN[b.epoch];
+      if (!pl || Number(b.betAmount) !== pl.stake || b.fiatCurrency !== pl.fiat) stakeOff++;
       const ss = seedMap.get(b.hashedServerSeed);
-      if (!ss) continue;
-      chk++;
-      if (!sameMines(revealMines(ss, b.clientSeed, b.nonce, b.mineCount), b.mineTiles)) bad++;
-    }
-    const stakes = [...new Set(bets.map((b) => Number(b.betAmount)))].sort((a, z) => a - z);
-    const ok = chk === c.length && chk > 0 && bad === 0;
-    out.push(step(18, 'Bet-Size Invariance', ok ? 'PASS' : 'FAIL',
-      `${chk}/${c.length} Phase C hands at $10.00 (mineCount 3) recompute their mine layout in draw order — ${bad} mismatch. ` +
-      `the reference engine revealMines(serverSeed, clientSeed, nonce, mineCount) is wager-free by construction, and the served layouts at $10.00 match it exactly as the $0.10 hands do (stakes present: ${stakes.map((s) => `$${s}`).join(', ')}) — all sampled layouts agree with the same wager-free reference at both recorded stakes. This is sample layout parity; it does not establish universal backend independence from wager amount` +
-      (chk === 0 ? '; COVERAGE FAIL: 0 Phase C hands recomputed' : '')));
+      const layoutOk = !!ss && sameMines(revealMines(ss, b.clientSeed, b.nonce, b.mineCount), b.mineTiles);
+      if (ss) { chk++; if (!layoutOk) bad++; }
+      const rec = i < n ? ctx.prodCapture.bets[i].rec : null;
+      if (rec) {
+        requests++;
+        if (!pl || Number(rec.requestBody?.betAmount) !== pl.stake) requestOff++;
+        if (!pl || rec.placeRaw?.fiatCurrency !== pl.fiat || rec.settleRaw?.fiatCurrency !== pl.fiat) currencyOff++;
+      }
+      if (b.result === 'won' && pl && pl.stake === PROD_BASE_STAKE) baseWins++;
+      if (b.phaseId !== 'C') return;
+      cRounds++;
+      if (ss) { cRecomputed++; if (!layoutOk) cBad++; }
+      if (b.mineCount !== PHASE_C_SETTING.mineCount || b.reveals !== PHASE_C_SETTING.depth || Number(b.betAmount) !== PROD_ELEVATED_STAKE) cCellOff++;
+      if (b.result !== 'won') return;
+      cWins++;
+      const r = minesMultiplierRational(b.mineCount, b.openTiles.length);
+      if (!r) return;
+      const stakeCents = BigInt(Math.round(Number(b.betAmount) * 100));
+      if (BigInt(Math.round(Number(b.winningAmount) * 100)) === (stakeCents * r.num) / r.den) cBookedOk++;
+      const ws = decimalUnits(rec?.placeRaw?.betAmountWallet, 8), wc = decimalUnits(rec?.settleRaw?.winningAmountWallet, 8);
+      const mult8 = (100_000_000n * r.num) / r.den;
+      if (ws !== null && wc !== null && wc === (ws * mult8) / 100_000_000n) cWalletOk++;
+    });
+    const stakes = [...new Set(bets.map((b) => `${Number(b.betAmount).toFixed(2)} ${b.fiatCurrency}`))].sort();
+    const ok = chk === bets.length && chk === EXPECTED_BETS && bad === 0 && stakeOff === 0
+      && requests === EXPECTED_BETS && requestOff === 0 && currencyOff === 0 && ctx.prodCapture.problem === null
+      && cRounds === EXPECTED_PHASE_ID_BETS.C && cRecomputed === cRounds && cBad === 0 && cCellOff === 0
+      && cWins >= PHASE_C_MIN_WINS && cBookedOk === cWins && cWalletOk === cWins;
+    out.push(step(18, 'Bet-Size Invariance (phase C at the elevated stake)', ok ? 'PASS' : 'FAIL',
+      `PHASE C: ${cRounds}/${EXPECTED_PHASE_ID_BETS.C} rounds at ${PROD_ELEVATED_STAKE.toFixed(2)} (${PROD_ELEVATED_STAKE / PROD_BASE_STAKE} times the ${PROD_BASE_STAKE.toFixed(2)} of every other phase), ${PHASE_C_SETTING.mineCount} mines, one tile (${cCellOff} off that setting); `
+      + `${cRecomputed}/${cRounds} recompute their mine layout in draw order from the wager-free engine revealMines(serverSeed, clientSeed, nonce, mineCount) — ${cBad} mismatch; `
+      + `${cWins} elevated-stake wins (floor ${PHASE_C_MIN_WINS}): ${cBookedOk}/${cWins} booked at floor2(stake × exact) and ${cWalletOk}/${cWins} carry the wallet field floor8(betAmountWallet × floor8(exact)) in ${PROD_WALLET_CURRENCY} — the rules the ${baseWins} wins at ${PROD_BASE_STAKE.toFixed(2)} are held to in Steps 8 and 22. `
+      + `WHOLE DATASET: ${chk}/${EXPECTED_BETS} rounds recompute from the same wager-free engine (${bad} mismatch); `
+      + `stake binding: ${bets.length - stakeOff}/${bets.length} rows at their phase's stake and booked fiat (src/pins.ts EPOCH_PLAN; present: ${stakes.join(', ')}); `
+      + `raw captures: ${requests - requestOff}/${requests} place-bet requests sent the phase's betAmount, ${requests - currencyOff}/${requests} place and settle replies recorded the phase's fiat`
+      + (ctx.prodCapture.problem ? ` (RAW CAPTURE NOT LOADED: ${ctx.prodCapture.problem})` : '')
+      + `. Scope: the ${PHASE_C_SETTING.mineCount}-mine, one-tile cell was played only at the elevated stake (3 mines at ${PROD_BASE_STAKE.toFixed(2)} were played at depths 2, 4, 6 and 8), so this shows the same engine and the same payout rules at both stakes, not the same cell at two stakes`));
   }
 
   // ── Step 19: Artifact Integrity (dataset pin + derived-figure artifact) ─────
@@ -163,8 +208,8 @@ export function run(ctx: VerifyContext): StepResult[] {
       try {
         const onDisk = JSON.parse(fs.readFileSync(figPath, 'utf-8'));
         const derived: any = computeAuditFigures({
-          bets: ctx.bets, seeds: ctx.seeds, seedMap: ctx.seedMap, phaseD: ctx.phaseD,
-          outputsDir: ctx.outputsDir, datasetSha256: ctx.datasetSha256,
+          bets: ctx.bets, seeds: ctx.seeds, seedMap: ctx.seedMap,
+          outputsDir: ctx.outputsDir, datasetSha256: ctx.datasetSha256, prodCapture: ctx.prodCapture,
         });
         // The `simulation` section is derived from outputs/simulation-results.json, which is
         // regenerated by every `npm test` and is legitimately ABSENT in a fresh clone that has
@@ -202,7 +247,7 @@ export function run(ctx: VerifyContext): StepResult[] {
         ? 'FAIL'
         : figState === 'stale' ? 'FLAG' : 'PASS';
     out.push(step(19, 'Artifact Integrity (dataset pin + derived figures)', status,
-      `SHA-256 of data/mines-master-6900bets.json = ${ctx.datasetSha256.slice(0, 16)}… ${pinOk ? 'matches' : '≠'} the pin ${ctx.expectedDatasetHash.slice(0, 16)}… (loader aborts on mismatch before any step runs); `
+      `SHA-256 of ${DATASET_RELATIVE_PATH} = ${ctx.datasetSha256.slice(0, 16)}… ${pinOk ? 'matches' : '≠'} the pin ${ctx.expectedDatasetHash.slice(0, 16)}… (loader aborts on mismatch before any step runs); `
       + `outputs/${AUDIT_FIGURES_FILE} re-derived from src/config.ts + the pinned dataset + the simulation artifact and compared field-for-field against the copy on disk: ${figState}${figDetail}`
       + (figState === 'absent'
         ? ` — HARD FAIL: the derived-figure artifact is shipped with this repo and every quantitative claim in the report is quoted from it. Its absence is not a fresh clone, it is a missing artifact of record, and until 2026-09-09 deleting it scored [PASS] Step 19 with a 21/21 Full Pass — a guard whose evidence can be deleted is not a guard. Regenerate deliberately with \`npm run figures\`, then re-run.`
@@ -271,27 +316,42 @@ export function run(ctx: VerifyContext): StepResult[] {
   }
 
   // ── Step 21: Reveal-Position Independence ───────────────────────────────────
-  // The mine layout is fixed by the seed alone and does not depend on which tiles are opened.
-  // This is a layout-parity check (same recomputation as Steps 5/15) over a SWEPT first-pick
-  // window plus a distinct-set count — NOT a statistical independence test: the Phase E capture
-  // sweeps the first pick consecutively (first = ((nonce+1) mod 25)+1, each start tile ~16×,
-  // later picks truncated by busts), so the opened positions are systematic, not free choice.
+  // The mine layout is fixed by the seed alone and does not depend on which tiles are opened. Every
+  // round's opening order was drawn per round by the runner (crypto.getRandomValues Fisher–Yates over
+  // tiles 1..25, src/prod-capture.ts) and written into the capture's plan BEFORE any bet, so the
+  // positions are a pre-registered random choice. Asserted over every
+  // round: the opened tiles are a prefix of the round's planned order in the raw capture, the layout
+  // still recomputes, the opened sets vary and all 25 positions occur as a first pick. The count of
+  // first picks that hit a mine is printed against its expectation Σ m/25 (informational).
   {
-    const e = ctx.phaseE;
+    const e = bets;
+    const planned = ctx.prodCapture.plannedTilesById;
     const sets = new Set(e.map((b) => [...(b.openTiles || [])].sort((a, z) => a - z).join(',')));
     const firsts = new Set(e.map((b) => (b.openTiles || [])[0]).filter((t) => t !== undefined));
-    let chk = 0, bad = 0;
+    let chk = 0, bad = 0, notPrefix = 0, firstMine = 0, firstMineExp = 0, firstMineVar = 0;
     for (const b of e) {
+      const plan = planned.get(b.id);
+      const ot = b.openTiles || [];
+      if (!plan || plan.length !== b.reveals || ot.length > plan.length || ot.some((t, i) => t !== plan[i])) notPrefix++;
       const ss = seedMap.get(b.hashedServerSeed);
       if (!ss) continue;
       chk++;
-      if (!sameMines(revealMines(ss, b.clientSeed, b.nonce, b.mineCount), b.mineTiles)) bad++;
+      const mines = revealMines(ss, b.clientSeed, b.nonce, b.mineCount);
+      if (!sameMines(mines, b.mineTiles)) bad++;
+      if (ot.length > 0 && mines.includes(ot[0])) firstMine++;
+      const p = b.mineCount / GRID;
+      firstMineExp += p; firstMineVar += p * (1 - p);
     }
-    const ok = chk === e.length && chk > 0 && bad === 0 && sets.size > 1 && firsts.size === GRID;
+    const z = firstMineVar > 0 ? (firstMine - firstMineExp) / Math.sqrt(firstMineVar) : NaN;
+    const ok = chk === e.length && chk === EXPECTED_BETS && bad === 0 && notPrefix === 0 && sets.size > 1 && firsts.size === GRID
+      && ctx.prodCapture.problem === null;
     out.push(step(21, 'Reveal-Position Independence', ok ? 'PASS' : 'FLAG',
-      `${e.length} multi-reveal (Phase E) rounds span ${sets.size} distinct opened-tile sets and ${firsts.size}/${GRID} board positions as a first pick (all ${GRID} required); ` +
-      `all ${chk}/${e.length} layouts still recompute (${bad} mismatch) regardless of which positions were opened — a layout-parity check over a swept first-pick window (first = ((nonce+1) mod 25)+1), not a statistical independence test` +
-      (chk === 0 ? '; COVERAGE FAIL: 0 Phase E layouts recomputed' : '')));
+      `${e.length} production rounds span ${sets.size} distinct opened-tile sets and ${firsts.size}/${GRID} board positions as a first pick (all ${GRID} required); ` +
+      `${e.length - notPrefix}/${e.length} opened sequences are a prefix of the round's planned order in the raw captures (drawn per round by the runner's CSPRNG and written into the plan before any bet); ` +
+      `all ${chk}/${e.length} layouts still recompute (${bad} mismatch) regardless of which positions were opened; ` +
+      `first pick on a mine: ${firstMine} rounds against ${firstMineExp.toFixed(1)} expected (Σ m/25), z = ${Number.isFinite(z) ? z.toFixed(3) : 'n/a'} (printed, not gated). A layout-parity check over pre-registered random positions, not a proof of independence for positions never opened` +
+      (chk === 0 ? '; COVERAGE FAIL: 0 layouts recomputed' : '') +
+      (ctx.prodCapture.problem ? `; RAW CAPTURE NOT LOADED: ${ctx.prodCapture.problem}` : '')));
   }
 
   return out;

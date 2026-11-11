@@ -22,11 +22,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { loadDataset } from './loader';
-import { EXPECTED_DATASET_HASH } from './pins';
+import { EXPECTED_DATASET_HASH, DATASET_RELATIVE_PATH } from './pins';
+import { loadProdCapture } from './prod-capture';
 import { computeAuditFigures, AUDIT_FIGURES_FILE } from './figures';
 import type { Bet, Seed } from './types';
 
-const DATASET_PATH = path.join(__dirname, '../data/mines-master-6900bets.json');
+const DATASET_PATH = path.join(__dirname, '..', DATASET_RELATIVE_PATH);
 const OUTPUTS_DIR = path.join(__dirname, '../outputs');
 /**
  * Where the figures are WRITTEN. outputs/run/ by default: outputs/audit-figures.json is an
@@ -54,9 +55,9 @@ const existed = fs.existsSync(target);
 
 const figures = computeAuditFigures({
   bets, seeds, seedMap,
-  phaseD: bets.filter(b => b.phase === 'D'),
   outputsDir: OUTPUTS_DIR,
   datasetSha256: ds.sha256,
+  prodCapture: loadProdCapture(path.join(__dirname, '..')),
 });
 // No run metadata (MINES-27): the same inputs produce the same bytes.
 fs.writeFileSync(target, JSON.stringify(figures, null, 2));

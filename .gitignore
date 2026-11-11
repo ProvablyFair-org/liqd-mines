@@ -15,7 +15,4 @@ outputs/run/
 # (src/pins.ts ARTIFACT_PINS) is named here, and Step 19 checks that each one is (MINES-27).
 !outputs/rtp-convergence.html
 !outputs/bootstrap-nulls.float64le
-# The next-capture script (capture/capture-mines.mjs) writes its checkpoint here; a capture is
-# promoted into data/ deliberately, never committed from here.
-capture/out/
 !outputs/rtp-claim-table.json

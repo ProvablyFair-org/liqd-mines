@@ -23,11 +23,15 @@
  *   FWER: Bonferroni α/24. Serial z-critical from inverseCriticalZ(0.01/24).
  *
  * Pass 2 — casino seeds from the captured dataset's revealed serverSeeds:
- *   Early window = nonces 0..49 (the real served depth per epoch); late window = 50..9999.
- *   Statistic = first-draw uniformity chi² over the window. At n=50 with 25 cells the
- *   expected count is 2 (<5), so the analytic chi² distribution is invalid — the null is
- *   built by a PARAMETRIC BOOTSTRAP: for each mineCount present, 10,000 fair replicates of
- *   50 first-draws over 25 tiles (via revealMines with seeds expanded from the recorded
+ *   Early window = nonces 0..PASS2_EARLY_WINDOW−1 = 0..99, the first 100 nonces of every seed: the
+ *   longest prefix all 36 production epochs played in full (their lengths are 100, 124, 190 and
+ *   200); late window = the rest of 0..9999, which for the longer epochs includes the nonces they
+ *   played after the 100th. The served-configuration test of Step 17 uses each epoch's own full
+ *   captured range instead.
+ *   Statistic = first-draw uniformity chi² over the window. The null is built by a PARAMETRIC
+ *   BOOTSTRAP (at 100 first draws the expected count is 4 per cell, too few for the analytic chi²):
+ *   for each mineCount present, 10,000 fair replicates of PASS2_EARLY_WINDOW first-draws over 25
+ *   tiles (via revealMines with seeds expanded from the recorded
  *   masterSeed, so the null itself is replayable) give the
  *   empirical first-draw-chi² distribution. Each captured seed's early-window chi² → an
  *   empirical p from that bootstrap. Cherry-pick flag if earlyBootstrapP<0.05 AND lateP≥0.05.
@@ -55,7 +59,7 @@ import { randomBytes, createHash } from 'node:crypto';
 import { revealMines } from './rng';
 import { deriveSeedHex, isMasterSeed, SEED_DERIVATION_VERSION } from './seed-derivation';
 import { loadDataset } from './loader';
-import { EXPECTED_DATASET_HASH } from './pins';
+import { EXPECTED_DATASET_HASH, DATASET_RELATIVE_PATH, PASS2_EARLY_WINDOW } from './pins';
 import {
   combination,
   chiSquaredTest,
@@ -101,7 +105,7 @@ const REPLAY = (() => {
 
 const ROUNDS_PER_CONFIG = REPLAY ? REPLAY.rounds : (Number(process.env.ROUNDS_PER_CONFIG) || 1_000_000);
 const PASS2_NONCES = REPLAY ? REPLAY.nonces : (Number(process.env.PASS2_NONCES) || 10_000);
-const PASS2_EARLY = 50;                 // real served depth per epoch (nonces 0..49)
+const PASS2_EARLY = PASS2_EARLY_WINDOW; // nonces 0..99: the longest prefix every production epoch played in full
 const BOOTSTRAP_REPS = REPLAY ? REPLAY.reps : (Number(process.env.BOOTSTRAP_REPS) || 10_000);
 
 /**
@@ -130,7 +134,7 @@ const MASTER_SEED = (() => {
   return REPLAY ? REPLAY.masterSeed : randomBytes(32).toString('hex');
 })();
 
-const DATASET_PATH = path.join(__dirname, '..', 'data', 'mines-master-6900bets.json');
+const DATASET_PATH = path.join(__dirname, '..', DATASET_RELATIVE_PATH);
 
 // ── Dataset pin enforced BEFORE any work happens ───────────────────────────────
 // Calling the pinned loader at the top of Pass 2 — i.e. AFTER the ~30-minute Pass-1 loop has
@@ -195,7 +199,7 @@ function clearLine(): void {
 
 /**
  * First-draw uniformity chi² over 25 tiles: single-outcome-per-round multinomial.
- * At the Pass-2 early-window n=50, chiSquaredTest pools the end cells (expected 2 → <5),
+ * At the Pass-2 early-window n=100, chiSquaredTest pools the end cells (expected 4 → <5),
  * yielding a nonstandard statistic — valid here only because the Pass-2 empirical p-value
  * runs the observed value and every bootstrap replicate through this identical pooling
  * (symmetry), not because the analytic chi² distribution applies.
@@ -406,11 +410,11 @@ console.log(`  Mean simulated RTP (k=1): ${(meanSimRTP * 100).toFixed(4)}%  (the
 console.log(`  Time: ${(pass1ElapsedMs / 1000).toFixed(1)}s\n`);
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  PASS 2 — Casino seeds (cherry-pick test, bootstrap null over 0..49 window)
+//  PASS 2 — Casino seeds (cherry-pick test, bootstrap null over the early window 0..PASS2_EARLY−1)
 // ══════════════════════════════════════════════════════════════════════════════
 
 console.log('═'.repeat(60));
-console.log('  LIQD MINES — PASS 2: casino seeds (cherry-pick, 0..49 bootstrap null)');
+console.log(`  LIQD MINES — PASS 2: casino seeds (cherry-pick, 0..${PASS2_EARLY - 1} bootstrap null)`);
 console.log('═'.repeat(60) + '\n');
 
 interface Pass2SeedResult {
@@ -433,7 +437,7 @@ let cherryPickFlags = 0;
 // and BEFORE Pass 1 ran — see the dataset-pin note there. Nothing is re-read here.
 
 // ── Bootstrap the first-draw-chi² null ONCE per distinct mineCount in the seed set ──
-// The early window is n=50 first-draws over 25 tiles (expected count 2 per cell), so the
+// The early window is n=100 first-draws over 25 tiles (expected count 4 per cell), so the
 // analytic chi² is invalid. Build the empirical null: BOOTSTRAP_REPS fair replicates of 50
 // first-draws (revealMines[0]) with throwaway random seeds, sorted ascending for lookup.
 const presentMineCounts = Array.from(new Set(revealedSeeds.map(s => mineCountByHash.get(s.hashedServerSeed) ?? 3)));
@@ -482,8 +486,8 @@ for (let si = 0; si < revealedSeeds.length; si++) {
   const s = revealedSeeds[si];
   const mineCount = mineCountByHash.get(s.hashedServerSeed) ?? 3;
 
-  const earlyFreq = new Array(GRID).fill(0);   // first-drawn tile, nonces 0..49
-  const lateFreq = new Array(GRID).fill(0);    // first-drawn tile, nonces 50..PASS2_NONCES-1
+  const earlyFreq = new Array(GRID).fill(0);   // first-drawn tile, nonces 0..PASS2_EARLY−1
+  const lateFreq = new Array(GRID).fill(0);    // first-drawn tile, nonces PASS2_EARLY..PASS2_NONCES-1
   for (let nonce = 0; nonce < PASS2_NONCES; nonce++) {
     const mines = revealMines(s.serverSeed as string, s.clientSeed, nonce, mineCount);
     if (nonce < PASS2_EARLY) earlyFreq[mines[0] - 1]++;
@@ -492,7 +496,7 @@ for (let si = 0; si < revealedSeeds.length; si++) {
 
   const earlyChi2 = firstDrawChi2(earlyFreq, PASS2_EARLY).chi2;
   const earlyP = bootstrapP(bootstrapNull.get(mineCount) as Float64Array, earlyChi2);
-  // Late window is large (n = PASS2_NONCES-50 = 9,950 first-draws, expected ~398/cell) →
+  // Late window is large (n = PASS2_NONCES − PASS2_EARLY = 9,900 first-draws, expected 396/cell) →
   // analytic chi² is valid there.
   const lateRes = firstDrawChi2(lateFreq, PASS2_NONCES - PASS2_EARLY);
   const lateP = lateRes.pValue;
@@ -553,7 +557,7 @@ const PASS2_DESCRIPTION = `Reproducible first-draw analysis of ${revealedSeeds.l
 
 const output = {
   audit: 'LIQD Mines',
-  algorithm: 'HMAC-SHA256 (key = hex-decoded serverSeed); sequential Fisher-Yates over 25 tiles, cursor = currentMine, range 25→1; first mineCount tiles are the mines in draw order; payout = minesMultiplierExact(mineCount, tilesRevealed) (exact, credited; the displayed multiplier field is floored 2-dp, cosmetic)',
+  algorithm: 'HMAC-SHA256 (key = hex-decoded serverSeed); sequential Fisher-Yates over 25 tiles, cursor = currentMine, range 25→1; first mineCount tiles are the mines in draw order; multiplier = minesMultiplierExact(mineCount, tilesRevealed) (exact; the booked amount and the wallet field in the reply are floored from it; the displayed multiplier field is floored 2-dp, cosmetic)',
   houseEdge: 0.01,
   pass1_fresh_seeds: {
     description: PASS1_DESCRIPTION,
@@ -618,7 +622,7 @@ fs.writeFileSync(path.join(OUTPUTS_DIR, 'bootstrap-nulls.float64le'), nullBytes)
 const digest = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
 const provenance = {
   format: 'liqd-mines-simulation-provenance-v1',
-  dataset: { file: 'data/mines-master-6900bets.json', sha256: EXPECTED_DATASET_HASH },
+  dataset: { file: DATASET_RELATIVE_PATH, sha256: EXPECTED_DATASET_HASH },
   simulation: { file: 'outputs/simulation-results.json', sha256: digest(simulationBytes) },
   // No recording timestamps (analysisRecordedAt / inputsRecordedAt were removed 2026-09-24): they
   // are run metadata, and a repository timestamp authenticates nothing (recordingNote says so).

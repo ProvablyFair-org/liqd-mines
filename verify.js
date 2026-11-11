@@ -251,7 +251,6 @@ const PAIRS = exactly((config_1.GRID * (config_1.GRID - 1)) / 2, 'tile pairs of 
 const MULT = D('a multiplier ≥ 1', v => Number.isFinite(v) && v >= 1);
 const STAKE = D('a stake > 0', v => Number.isFinite(v) && v > 0);
 const MONEY = D('a money amount ≥ 0', v => Number.isFinite(v) && v >= 0);
-const SIGNED_MONEY = D('a signed money amount', v => Number.isFinite(v));
 const SIMULATION = {
     'houseEdge': PROB,
     'pass1_fresh_seeds.configs': exactly(CONFIGS, 'src/config.ts MINE_COUNTS'),
@@ -347,17 +346,35 @@ const FIGURES = {
     'moduloBiasRejectionCensus.rejectionsObserved': intIn(0, pins_1.EXPECTED_BETS * config_1.GRID, 'draws'),
     'moduloBiasRejectionCensus.rejectionsExpected': NONNEG,
     'moduloBiasRejectionCensus.probabilityCaptureWitnessesBranch': PROB,
-    'phaseDTimestampPatternEpochs.epochs': SEEDS, 'phaseDTimestampPatternEpochs.bets': BETS,
-    'phaseDTimestampPatternEpochs.staked': MONEY, 'phaseDTimestampPatternEpochs.credited': MONEY,
-    'phaseDTimestampPatternEpochs.netToPlayer': SIGNED_MONEY, 'phaseDTimestampPatternEpochs.nonFiniteMoneyRows': BETS,
+    'timestampPatternEpochs.epochs': SEEDS, 'timestampPatternEpochs.bets': BETS,
+    'walletLeg.rounds': BETS, 'walletLeg.stakedUnits': INT, 'walletLeg.paidUnits': INT,
+    'walletLeg.staked': MONEY, 'walletLeg.paid': MONEY, 'walletLeg.liveRTP': NONNEG,
+    'walletLeg.liveRTPPercent': PCT_ANY, 'walletLeg.minStake': MONEY, 'walletLeg.maxStake': MONEY,
+    'walletLeg.settlementFloorAtMinStake.stake': STAKE, 'walletLeg.settlementFloorAtMinStake.mineCount': MINES,
+    'walletLeg.settlementFloorAtMinStake.tilesRevealed': DEPTH, 'walletLeg.settlementFloorAtMinStake.deficitOfTurnover': PROB,
+    'walletLeg.settlementFloorAtMinStake.settledRTP': NONNEG,
     'clientSeedProvenance.epochs': SEEDS, 'clientSeedProvenance.auditFormatSeeds': SEEDS,
-    'clientSeedProvenance.distinctAuditFormatSeeds': SEEDS, 'clientSeedProvenance.customPhaseDSeeds': SEEDS,
+    'clientSeedProvenance.distinctAuditFormatSeeds': SEEDS, 'clientSeedProvenance.playerSetSeeds': SEEDS,
+    'clientSeedProvenance.distinctPlayerSetSeeds': SEEDS,
     'clientSeedProvenance.hexNibblesSampled': INT, 'clientSeedProvenance.hexNibbleChi2': NONNEG,
     'clientSeedProvenance.hexNibbleDf': exactly(15, '16 hex digits − 1'),
     'liveAggregate.bets': exactly(pins_1.EXPECTED_BETS, 'src/pins.ts EXPECTED_BETS'), 'liveAggregate.wins': BETS,
-    'liveAggregate.losses': BETS, 'liveAggregate.winRate': PROB, 'liveAggregate.wagered': MONEY,
-    'liveAggregate.returned': MONEY, 'liveAggregate.liveRTP': NONNEG, 'liveAggregate.liveRTPPercent': PCT_ANY,
+    'liveAggregate.losses': BETS, 'liveAggregate.winRate': PROB,
+    'liveAggregate.multiRevealRounds': BETS, 'liveAggregate.singleRevealRounds': BETS,
+    'liveAggregate.tilesOpened': intIn(0, pins_1.EXPECTED_BETS * config_1.GRID, 'bets × 25 tiles'),
+    'liveAggregate.cellsPlayed': intIn(0, 300, 'the 300 legal (m,k) cells'), 'liveAggregate.mineCountsPlayed': CFG,
+    'liveAggregate.autoFinishRounds': BETS, 'liveAggregate.settingsRecords': BETS, 'liveAggregate.maxDisplayedMultiplier': NONNEG,
     'liveAggregate.nonFiniteBetAmounts': BETS, 'liveAggregate.nonFiniteWinAmounts': BETS,
+    'byCapture[*].capture': intIn(1, pins_1.PROD_CAPTURES.length, 'a capture index, src/pins.ts PROD_CAPTURES'),
+    'byCapture[*].rounds': BETS, 'byCapture[*].wins': BETS, 'byCapture[*].losses': BETS,
+    'byCapture[*].bookedStakedCents': INT, 'byCapture[*].bookedPaidCents': INT, 'byCapture[*].bookedStaked': MONEY, 'byCapture[*].bookedPaid': MONEY,
+    'byCapture[*].bookedReturnPercent': PCT_ANY, 'byCapture[*].bookedBelowUnrounded': BETS, 'byCapture[*].droppedUnits': INT, 'byCapture[*].dropped': MONEY,
+    'byCapture[*].walletStakedUnits': INT, 'byCapture[*].walletPaidUnits': INT, 'byCapture[*].walletStaked': MONEY,
+    'byCapture[*].walletPaid': MONEY, 'byCapture[*].walletNet': FINITE, 'byCapture[*].walletReturnPercent': PCT_ANY,
+    'byPhase[*].phaseIndex': intIn(0, Object.keys(pins_1.EXPECTED_PHASE_ID_BETS).length - 1, 'an index into EXPECTED_PHASE_ID_BETS'),
+    'byPhase[*].rounds': BETS, 'byPhase[*].wins': BETS, 'byPhase[*].losses': BETS,
+    'byPhase[*].bookedStakedCents': INT, 'byPhase[*].bookedPaidCents': INT, 'byPhase[*].bookedStaked': MONEY, 'byPhase[*].bookedPaid': MONEY,
+    'byPhase[*].bookedReturnPercent': PCT_ANY, 'byPhase[*].bookedBelowUnrounded': BETS, 'byPhase[*].droppedUnits': INT, 'byPhase[*].dropped': MONEY,
     'flooredDisplayCounterfactual.worstMineCount': MINES, 'flooredDisplayCounterfactual.worstTilesRevealed': DEPTH,
     'flooredDisplayCounterfactual.worstEffectiveEdge': FINITE, 'flooredDisplayCounterfactual.worstEffectiveEdgePercent': FINITE,
     'flooredDisplayCounterfactual.worstLossOn010Stake': FINITE,
@@ -677,9 +694,12 @@ const path = __importStar(require("path"));
 const config_1 = require("./config");
 const rng_1 = require("./rng");
 const false_alarm_1 = require("./false-alarm");
+const prod_capture_1 = require("./prod-capture");
+const pins_1 = require("./pins");
+const config_2 = require("./config");
 exports.AUDIT_FIGURES_FILE = 'audit-figures.json';
 function computeAuditFigures(input) {
-    const { bets, seeds, seedMap, phaseD, outputsDir, datasetSha256 } = input;
+    const { bets, seeds, seedMap, outputsDir, datasetSha256, prodCapture } = input;
     const referenceGrid = [];
     for (const m of config_1.MINE_COUNTS) {
         for (let k = 1; k <= config_1.GRID - m; k++) {
@@ -694,9 +714,7 @@ function computeAuditFigures(input) {
         }
     }
     const THEORY_RTP = Number(config_1.EDGE_NUM) / Number(config_1.EDGE_DEN);
-    const stakesUsed = [...new Set(bets.map(b => Number(b.betAmount)))].filter(a => Number.isFinite(a) && a > 0).sort((a, b) => a - b);
-    const settlementFloor = stakesUsed.map(stake => {
-        const stakeUnits = BigInt(Math.round(stake * 1e8));
+    const worstFloor = (stakeUnits, scale, floorMultFirst, stake) => {
         let worst = { stake, mineCount: 0, tilesRevealed: 0, deficitOfTurnover: 0, settledRTP: THEORY_RTP };
         for (const m of config_1.MINE_COUNTS) {
             for (let k = 1; k <= config_1.GRID - m; k++) {
@@ -705,18 +723,42 @@ function computeAuditFigures(input) {
                     num *= BigInt(config_1.GRID - i);
                     den *= BigInt(config_1.GRID - m - i);
                 }
-                const exactUnits = stakeUnits * num;
-                const fracUnits = Number(exactUnits - (exactUnits / den) * den) / Number(den);
-                const deficit = (0, config_1.winProbability)(m, k) * (fracUnits / 1e8) / stake;
+                let cn = num, cd = den;
+                if (floorMultFirst) {
+                    cn = (100000000n * num) / den;
+                    cd = 100000000n;
+                }
+                const flooredUnits = (stakeUnits * cn) / cd;
+                const lostUnits = Number(stakeUnits * num - flooredUnits * den) / Number(den);
+                const deficit = (0, config_1.winProbability)(m, k) * (lostUnits / scale) / stake;
                 if (Number.isFinite(deficit) && deficit > worst.deficitOfTurnover) {
                     worst = { stake, mineCount: m, tilesRevealed: k, deficitOfTurnover: deficit, settledRTP: THEORY_RTP - deficit };
                 }
             }
         }
         return worst;
-    });
+    };
+    const stakesUsed = [...new Set(bets.map(b => Number(b.betAmount)))].filter(a => Number.isFinite(a) && a > 0).sort((a, b) => a - b);
+    const settlementFloor = stakesUsed.map(stake => worstFloor(BigInt(Math.round(stake * 100)), 100, false, stake));
+    let walletMin = null, walletMax = null;
+    let walletStaked = 0n, walletPaid = 0n, walletRounds = 0;
+    for (const { rec } of prodCapture.bets) {
+        const st = (0, prod_capture_1.decimalUnits)(rec?.placeRaw?.betAmountWallet, 8);
+        const w = rec?.settleRaw?.winningAmountWallet;
+        const pd = w === undefined || w === null ? 0n : (0, prod_capture_1.decimalUnits)(w, 8);
+        if (st === null || pd === null)
+            continue;
+        walletRounds++;
+        walletStaked += st;
+        walletPaid += pd;
+        if (walletMin === null || st < walletMin)
+            walletMin = st;
+        if (walletMax === null || st > walletMax)
+            walletMax = st;
+    }
+    const walletFloor = walletMin !== null ? worstFloor(walletMin, 1e8, true, Number(walletMin) / 1e8) : null;
     const clientSeeds = seeds.map(s => s.clientSeed);
-    const auditSeeds = clientSeeds.filter(c => /^audit[0-9a-f]{12}$/.test(c));
+    const auditSeeds = clientSeeds.filter(c => pins_1.AUDIT_SEED_FORMAT.test(c));
     const nibbleFreq = new Array(16).fill(0);
     for (const c of auditSeeds)
         for (const ch of c.slice(5))
@@ -726,9 +768,65 @@ function computeAuditFigures(input) {
     const nibbleChi2 = nibbleExp > 0 ? nibbleFreq.reduce((s, o) => s + ((o - nibbleExp) ** 2) / nibbleExp, 0) : 0;
     const nonFiniteBetAmounts = bets.filter(b => !Number.isFinite(Number(b.betAmount))).length;
     const nonFiniteWinAmounts = bets.filter(b => !Number.isFinite(Number(b.winningAmount))).length;
-    const wagered = bets.reduce((s, b) => s + (Number.isFinite(Number(b.betAmount)) ? Number(b.betAmount) : 0), 0);
-    const returned = bets.reduce((s, b) => s + (Number.isFinite(Number(b.winningAmount)) ? Number(b.winningAmount) : 0), 0);
     const wins = bets.filter(b => b.result === 'won').length;
+    const cents = (v) => (Number.isFinite(Number(v)) ? BigInt(Math.round(Number(v) * 100)) : 0n);
+    const rawByCapture = new Map();
+    for (const { rec, capture } of prodCapture.bets) {
+        const st = (0, prod_capture_1.decimalUnits)(rec?.placeRaw?.betAmountWallet, 8);
+        const w = rec?.settleRaw?.winningAmountWallet;
+        const pd = w === undefined || w === null ? 0n : (0, prod_capture_1.decimalUnits)(w, 8);
+        if (st === null || pd === null)
+            continue;
+        const g = rawByCapture.get(capture) ?? { staked: 0n, paid: 0n };
+        g.staked += st;
+        g.paid += pd;
+        rawByCapture.set(capture, g);
+    }
+    const moneyGroup = (rows) => {
+        let staked = 0n, paid = 0n, w = 0, below = 0, dropped = 0n;
+        for (const b of rows) {
+            staked += cents(b.betAmount);
+            paid += cents(b.winningAmount);
+            if (b.result !== 'won')
+                continue;
+            w++;
+            const r = (0, config_2.minesMultiplierRational)(b.mineCount, b.openTiles.length);
+            if (!r)
+                continue;
+            const unrounded = (cents(b.betAmount) * 1000000n * r.num) / r.den;
+            const booked = cents(b.winningAmount) * 1000000n;
+            if (unrounded > booked) {
+                below++;
+                dropped += unrounded - booked;
+            }
+        }
+        return {
+            rounds: rows.length, wins: w, losses: rows.length - w,
+            bookedStakedCents: Number(staked), bookedPaidCents: Number(paid),
+            bookedStaked: Number(staked) / 100, bookedPaid: Number(paid) / 100,
+            bookedReturnPercent: staked > 0n ? (Number(paid) / Number(staked)) * 100 : 0,
+            bookedBelowUnrounded: below, droppedUnits: Number(dropped), dropped: Number(dropped) / 1e8,
+        };
+    };
+    const byCapture = pins_1.PROD_CAPTURES.map(c => {
+        const raw = rawByCapture.get(c.capture) ?? { staked: 0n, paid: 0n };
+        return {
+            capture: c.capture, ...moneyGroup(bets.filter(b => b.capture === c.capture)),
+            walletStakedUnits: Number(raw.staked), walletPaidUnits: Number(raw.paid),
+            walletStaked: Number(raw.staked) / 1e8, walletPaid: Number(raw.paid) / 1e8,
+            walletNet: Number(raw.paid - raw.staked) / 1e8,
+            walletReturnPercent: raw.staked > 0n ? (Number(raw.paid) / Number(raw.staked)) * 100 : 0,
+        };
+    });
+    const PHASE_ORDER = Object.keys(pins_1.EXPECTED_PHASE_ID_BETS);
+    const byPhase = PHASE_ORDER.map((id, i) => ({ phaseIndex: i, ...moneyGroup(bets.filter(b => b.phaseId === id)) }));
+    const cellsPlayed = new Set(bets.map(b => `${b.mineCount}:${b.reveals}`)).size;
+    const mineCountsPlayed = new Set(bets.map(b => b.mineCount)).size;
+    const multiRevealRounds = bets.filter(b => b.reveals > 1).length;
+    const tilesOpened = bets.reduce((a, b) => a + b.openTiles.length, 0);
+    const autoFinishRounds = bets.filter(b => b.autoFinish === true).length;
+    const settingsRecords = bets.filter(b => b.currentGameSettings !== undefined && b.currentGameSettings !== null).length;
+    const maxDisplayed = bets.reduce((mx, b) => (b.result === 'won' && Number.isFinite(Number(b.multiplier)) ? Math.max(mx, Number(b.multiplier)) : mx), 0);
     let simFigures = null;
     let simRoundsPerConfig = false_alarm_1.ENFORCED_ROUNDS_PER_CONFIG;
     const simPath = path.join(outputsDir, 'simulation-results.json');
@@ -839,19 +937,28 @@ function computeAuditFigures(input) {
                 probabilityCaptureWitnessesBranch: 1 - Math.exp(-expected),
             };
         })(),
-        phaseDTimestampPatternEpochs: (() => {
-            const sub = phaseD.filter(b => b.epoch >= 120 && b.epoch <= 129);
-            const fin = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
-            const nonFinite = sub.filter(b => !Number.isFinite(Number(b.betAmount)) || !Number.isFinite(Number(b.winningAmount))).length;
-            const staked = sub.reduce((s, b) => s + fin(b.betAmount), 0);
-            const credited = sub.reduce((s, b) => s + fin(b.winningAmount), 0);
-            return { epochs: new Set(sub.map(b => b.epoch)).size, bets: sub.length, staked, credited, netToPlayer: credited - staked, nonFiniteMoneyRows: nonFinite };
+        timestampPatternEpochs: (() => {
+            const sub = bets.filter(b => /\d{13}/.test(b.clientSeed));
+            return { epochs: new Set(sub.map(b => b.epoch)).size, bets: sub.length };
         })(),
+        walletLeg: {
+            rounds: walletRounds,
+            stakedUnits: Number(walletStaked),
+            paidUnits: Number(walletPaid),
+            staked: Number(walletStaked) / 1e8,
+            paid: Number(walletPaid) / 1e8,
+            liveRTP: walletStaked > 0n ? Number(walletPaid) / Number(walletStaked) : 0,
+            liveRTPPercent: walletStaked > 0n ? (Number(walletPaid) / Number(walletStaked)) * 100 : 0,
+            minStake: walletMin === null ? 0 : Number(walletMin) / 1e8,
+            maxStake: walletMax === null ? 0 : Number(walletMax) / 1e8,
+            settlementFloorAtMinStake: walletFloor,
+        },
         clientSeedProvenance: {
             epochs: clientSeeds.length,
             auditFormatSeeds: auditSeeds.length,
             distinctAuditFormatSeeds: new Set(auditSeeds).size,
-            customPhaseDSeeds: clientSeeds.filter(c => /^pfaudit-/.test(c)).length,
+            playerSetSeeds: clientSeeds.filter(c => pins_1.PLAYER_SEED_FORMAT.test(c)).length,
+            distinctPlayerSetSeeds: new Set(clientSeeds.filter(c => pins_1.PLAYER_SEED_FORMAT.test(c))).size,
             hexNibblesSampled: nibbleN,
             hexNibbleChi2: nibbleChi2,
             hexNibbleDf: 15,
@@ -861,13 +968,19 @@ function computeAuditFigures(input) {
             wins,
             losses: bets.length - wins,
             winRate: wins / bets.length,
-            wagered,
-            returned,
-            liveRTP: returned / wagered,
-            liveRTPPercent: (returned / wagered) * 100,
+            multiRevealRounds,
+            singleRevealRounds: bets.length - multiRevealRounds,
+            tilesOpened,
+            cellsPlayed,
+            mineCountsPlayed,
+            autoFinishRounds,
+            settingsRecords,
+            maxDisplayedMultiplier: maxDisplayed,
             nonFiniteBetAmounts,
             nonFiniteWinAmounts,
         },
+        byCapture,
+        byPhase,
         flooredDisplayCounterfactual: (() => {
             const rows = [];
             let worst = { mineCount: 0, tilesRevealed: 0, edge: 0, lossPerDollar: 0 };
@@ -959,84 +1072,302 @@ function phaseBets(bets, phase) {
 "src/pins.js": function(module, exports, require, __filename, __dirname) {
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LEGACY_BOOTSTRAP_FIXTURE_RELATIVE_PATH = exports.LEGACY_BOOTSTRAP_ARTIFACT_SHA256 = exports.LEGACY_EARLY_BOOTSTRAP_P_DIGEST = exports.LEGACY_BOOTSTRAP_ARTIFACT_GENERATED_AT = exports.SITE_VERIFIER_DIR = exports.SITE_VERIFIER_PINS = exports.ARTIFACT_PINS = exports.EXPECTED_UNIT_TESTS = exports.AUDIT_ID = exports.SUPPLEMENT_ON_GRID_TOLERANCE = exports.SUPPLEMENT_HISTORY_GAME_SETTINGS = exports.SUPPLEMENT_HISTORY_DISPLAY_GAP_CELLS = exports.SUPPLEMENT_HISTORY_DISPLAY_CENT_BELOW = exports.SUPPLEMENT_HISTORY_CREDIT_GAP_TOTAL_UNITS = exports.SUPPLEMENT_HISTORY_CREDIT_GAP_UNITS_PER_WIN = exports.SUPPLEMENT_HISTORY_CREDIT_GAP_CELLS = exports.SUPPLEMENT_HISTORY_CREDIT_UNIT_BELOW = exports.SUPPLEMENT_HISTORY_WINS = exports.SUPPLEMENT_HISTORY_BETS = exports.SUPPLEMENT_HISTORY_JOURNAL_HASH = exports.SUPPLEMENT_HISTORY_JOURNAL_RELATIVE_PATH = exports.SUPPLEMENT_HISTORY_DATASET_HASH = exports.SUPPLEMENT_HISTORY_DATASET_RELATIVE_PATH = exports.SUPPLEMENT_HISTORY_CAPTURE_DATE = exports.SUPPLEMENT_GAME_SETTINGS = exports.SUPPLEMENT_DISPLAY_GAP_CELLS = exports.SUPPLEMENT_DISCLOSED_DISPLAY_CENT_BELOW = exports.SUPPLEMENT_CREDIT_GAP_TOTAL_UNITS = exports.SUPPLEMENT_CREDIT_GAP_CELLS = exports.SUPPLEMENT_DISCLOSED_CREDIT_UNIT_BELOW = exports.SUPPLEMENT_DECLARED_PER_STEP_MULTIPLIERS = exports.SUPPLEMENT_MIN_CASHOUT_RUNGS = exports.SUPPLEMENT_DEPTHS = exports.SUPPLEMENT_PER_CONFIG = exports.SUPPLEMENT_EXPECTED_SEEDS = exports.SUPPLEMENT_EXPECTED_BETS = exports.SUPPLEMENT_CAPTURE_DATE = exports.SUPPLEMENT_JOURNAL_HASH = exports.SUPPLEMENT_JOURNAL_RELATIVE_PATH = exports.SUPPLEMENT_DATASET_HASH = exports.SUPPLEMENT_DATASET_RELATIVE_PATH = exports.EXPECTED_CAPTURE_RETRY_GAPS = exports.NONCE_BASE = exports.EXPECTED_PHASE_BETS = exports.EXPECTED_EPOCH_SIZE = exports.EXPECTED_SEEDS = exports.EXPECTED_BETS = exports.DATASET_RELATIVE_PATH = exports.EXPECTED_DATASET_HASH = void 0;
+exports.SITE_VERIFIER_DIR = exports.SITE_VERIFIER_PINS = exports.ARTIFACT_PINS = exports.EXPECTED_UNIT_TESTS = exports.EXPECTED_STEPS = exports.AUDIT_ID = exports.PHASE_D_DISTINCT_SEEDS = exports.PLAYER_SEED_FORMAT = exports.AUDIT_SEED_FORMAT = exports.PROD_ON_GRID_TOLERANCE = exports.PROD_WALLET_CURRENCY_ID = exports.PROD_LEDGER_DEBITS = exports.PROD_GAME_SETTINGS = exports.BOOKED_BELOW_UNROUNDED = exports.PROD_WALLET_BELOW_EXACT_CELLS = exports.PROD_WALLET_BELOW_EXACT_TOTAL_UNITS = exports.PROD_WALLET_BELOW_EXACT = exports.PROD_DECLARED_PER_STEP_MULTIPLIERS = exports.PROD_AUTO_FINISH_ROUNDS = exports.PROD_WINS = exports.PROD_REQUESTS = exports.PROD_CAPTURES = exports.PASS2_EARLY_WINDOW = exports.EXPECTED_CAPTURE_RETRY_GAPS = exports.NONCE_BASE = exports.PHASE_C_MIN_WINS = exports.PROD_HOST = exports.PROD_WALLET_CURRENCY = exports.PROD_ELEVATED_STAKE = exports.PROD_BASE_STAKE = exports.PLAYED_CELLS = exports.SETTINGS_PLAN = exports.PHASE_C_ROUNDS = exports.PHASE_C_SETTING = exports.TOPUP_PER_MINE_COUNT = exports.TOPUP_MINE_COUNTS = exports.PHASE_D_PER_SETTING = exports.PROD_PER_SETTING = exports.PROD_DEPTHS = exports.EXPECTED_CHAIN_LINKS = exports.epochPlan = exports.EPOCH_SIZES = exports.EXPECTED_PHASE_ID_BETS = exports.EXPECTED_PHASE_BETS = exports.EXPECTED_SEEDS = exports.EXPECTED_BETS = exports.EPOCH_PLAN = exports.PHASE_BLOCKS = exports.DATASET_RELATIVE_PATH = exports.EXPECTED_DATASET_HASH = void 0;
 exports.earlyBootstrapPDigest = earlyBootstrapPDigest;
 const crypto_1 = require("crypto");
-exports.EXPECTED_DATASET_HASH = 'c7c2e8a930549e11e3e564a962aea0ca2875b6eb94bc1f4347cc703bc410b222';
-exports.DATASET_RELATIVE_PATH = 'data/mines-master-6900bets.json';
-exports.EXPECTED_BETS = 6900;
-exports.EXPECTED_SEEDS = 138;
-exports.EXPECTED_EPOCH_SIZE = 50;
-exports.EXPECTED_PHASE_BETS = { A: 4800, B: 1000, C: 200, D: 500, E: 400 };
+exports.EXPECTED_DATASET_HASH = '4d684d5e035e0be384685a2b44b9f5ab13b3f638e58686310cd778945c31741b';
+exports.DATASET_RELATIVE_PATH = 'data/mines-prod-full-6574bets.json';
+exports.PHASE_BLOCKS = [
+    { capture: 1, phase: 'A', phaseId: 'A', epochs: 25, size: 200, stake: 0.1, fiat: 'CAD' },
+    { capture: 2, phase: 'D', phaseId: 'D', epochs: 5, size: 100, stake: 0.1, fiat: 'USD' },
+    { capture: 2, phase: 'A', phaseId: 'A+', epochs: 5, size: 190, stake: 0.1, fiat: 'USD' },
+    { capture: 3, phase: 'C', phaseId: 'C', epochs: 1, size: 124, stake: 10, fiat: 'USD' },
+];
+exports.EPOCH_PLAN = (() => {
+    const out = [];
+    const perCapture = new Map();
+    for (const b of exports.PHASE_BLOCKS) {
+        for (let i = 0; i < b.epochs; i++) {
+            const captureEpoch = perCapture.get(b.capture) ?? 0;
+            perCapture.set(b.capture, captureEpoch + 1);
+            out.push({ epoch: out.length, captureEpoch, capture: b.capture, phase: b.phase, phaseId: b.phaseId, size: b.size, stake: b.stake, fiat: b.fiat });
+        }
+    }
+    return out;
+})();
+exports.EXPECTED_BETS = 6574;
+exports.EXPECTED_SEEDS = 36;
+exports.EXPECTED_PHASE_BETS = { A: 5950, C: 124, D: 500 };
+exports.EXPECTED_PHASE_ID_BETS = { A: 5000, 'A+': 950, C: 124, D: 500 };
+exports.EPOCH_SIZES = [...new Set(exports.PHASE_BLOCKS.map(b => b.size))].sort((a, z) => a - z);
+const epochPlan = (epoch) => exports.EPOCH_PLAN[epoch];
+exports.epochPlan = epochPlan;
+exports.EXPECTED_CHAIN_LINKS = exports.EPOCH_PLAN.filter((e, i) => i > 0 && exports.EPOCH_PLAN[i - 1].capture === e.capture).length;
+exports.PROD_DEPTHS = { 1: [2, 5, 10, 15], 3: [2, 4, 6, 8], 5: [2, 3, 5, 6], 8: [2, 3, 4, 5], 12: [2, 3, 4, 5] };
+exports.PROD_PER_SETTING = 250;
+exports.PHASE_D_PER_SETTING = 25;
+exports.TOPUP_MINE_COUNTS = [2, 4, 6, 7, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24];
+exports.TOPUP_PER_MINE_COUNT = 50;
+exports.PHASE_C_SETTING = { mineCount: 3, depth: 1 };
+exports.PHASE_C_ROUNDS = 124;
+exports.SETTINGS_PLAN = (() => {
+    const m = new Map();
+    for (const [mc, ks] of Object.entries(exports.PROD_DEPTHS))
+        for (const k of ks) {
+            m.set(`A|${mc}:${k}`, exports.PROD_PER_SETTING);
+            m.set(`D|${mc}:${k}`, exports.PHASE_D_PER_SETTING);
+        }
+    for (const mc of exports.TOPUP_MINE_COUNTS)
+        m.set(`A+|${mc}:1`, exports.TOPUP_PER_MINE_COUNT);
+    m.set(`C|${exports.PHASE_C_SETTING.mineCount}:${exports.PHASE_C_SETTING.depth}`, exports.PHASE_C_ROUNDS);
+    return m;
+})();
+exports.PLAYED_CELLS = [...new Set([...exports.SETTINGS_PLAN.keys()].map(k => k.split('|')[1]))];
+exports.PROD_BASE_STAKE = 0.1;
+exports.PROD_ELEVATED_STAKE = 10;
+exports.PROD_WALLET_CURRENCY = 'USDT';
+exports.PROD_HOST = 'liqd.com';
+exports.PHASE_C_MIN_WINS = 100;
 exports.NONCE_BASE = 0;
 exports.EXPECTED_CAPTURE_RETRY_GAPS = 0;
-exports.SUPPLEMENT_DATASET_RELATIVE_PATH = 'data/liqd-mines-capture-v3-2026-10-03T11-58-54-479Z.json';
-exports.SUPPLEMENT_DATASET_HASH = 'a7737572394215b0262eb467eec4fe5ff083e87c0d132746aa6e66c271277b45';
-exports.SUPPLEMENT_JOURNAL_RELATIVE_PATH = 'data/liqd-mines-capture-v3-2026-10-03T11-58-54-479Z.journal.ndjson';
-exports.SUPPLEMENT_JOURNAL_HASH = 'db16421c70d55331049ce186d03fa1c60367c84b208252f920e8e91f2074e9c9';
-exports.SUPPLEMENT_CAPTURE_DATE = '2026-10-03';
-exports.SUPPLEMENT_EXPECTED_BETS = 1000;
-exports.SUPPLEMENT_EXPECTED_SEEDS = 20;
-exports.SUPPLEMENT_PER_CONFIG = 50;
-exports.SUPPLEMENT_DEPTHS = { 1: [2, 5, 10, 15], 3: [2, 4, 6, 8], 5: [2, 3, 5, 6], 8: [2, 3, 4, 5], 12: [2, 3, 4, 5] };
-exports.SUPPLEMENT_MIN_CASHOUT_RUNGS = 20;
-exports.SUPPLEMENT_DECLARED_PER_STEP_MULTIPLIERS = 0;
-exports.SUPPLEMENT_DISCLOSED_CREDIT_UNIT_BELOW = 0;
-exports.SUPPLEMENT_CREDIT_GAP_CELLS = {};
-exports.SUPPLEMENT_CREDIT_GAP_TOTAL_UNITS = 0;
-exports.SUPPLEMENT_DISCLOSED_DISPLAY_CENT_BELOW = 0;
-exports.SUPPLEMENT_DISPLAY_GAP_CELLS = {};
-exports.SUPPLEMENT_GAME_SETTINGS = {
-    records: 607,
-    value: '{"minOdds":1.01,"houseEdge":1,"minBet":0.01,"maxBet":10000,"maxExposure":50000,"maxExposureUsdc":50000,"maxBetUsdc":"10000.00000000","exposureSource":"global","maxBetSource":"game"}',
+exports.PASS2_EARLY_WINDOW = 100;
+exports.PROD_CAPTURES = [
+    {
+        capture: 1, file: 'data/liqd-mines-prod-capture-2026-11-09T04-45-17-843Z.ndjson',
+        sha256: 'f4a35b0635fd8a196d31ebccd64fa3b617ab127716def789a0f1529b9ffe7d60', lines: 38801,
+        events: { meta: 1, pre: 1, rotate: 26, epoch: 25, intent: 5000, step: 23745, bet: 5000, 'bets-done': 1, verify: 5000, done: 1, 'export-note': 1 },
+        requests: { 'place-bet': 5000, 'open-tile': 16766, 'cash-out': 1979 },
+        rounds: 5000, wins: 1979, fiat: 'CAD', dates: '2026-11-08/09', runnerBuild: '218861d920b8', exportBuild: '218861d920b8',
+        walletStakedUnits: 35452607511n, walletPaidUnits: 35395401893n, bookedStakedCents: 50000n, bookedPaidCents: 48762n,
+    },
+    {
+        capture: 2, file: 'data/liqd-mines-prod-capture-2026-11-10T06-06-19-772Z.ndjson',
+        sha256: '3b8f81d5de58ccbf60fc809a53a34174d2c088aa78aba67ab1a0742a6d866141', lines: 9038,
+        events: { meta: 1, option: 1, pre: 1, rotate: 11, epoch: 10, intent: 1450, step: 4658, bet: 1450, stop: 1, 'resume-check': 1, recovered: 1, 'bets-done': 1, verify: 1450, done: 1, 'export-note': 1 },
+        requests: { 'place-bet': 1450, 'open-tile': 2608, 'cash-out': 600 },
+        rounds: 1450, wins: 603, fiat: 'USD', dates: '2026-11-10', runnerBuild: '4dbf8ae8f846', exportBuild: 'bfa80f1fc59d',
+        walletStakedUnits: 14500000000n, walletPaidUnits: 14088221236n, bookedStakedCents: 14500n, bookedPaidCents: 13739n,
+    },
+    {
+        capture: 3, file: 'data/liqd-mines-prod-capture-2026-11-10T10-27-49-259Z.ndjson',
+        sha256: '795825a548d786946d8ab0d9331dcd80d86a59b5b73dcea197707482bf177376', lines: 738,
+        events: { meta: 1, option: 1, pre: 1, rotate: 2, epoch: 1, intent: 124, step: 357, bet: 124, 'bets-done': 1, verify: 124, done: 1, 'export-note': 1 },
+        requests: { 'place-bet': 124, 'open-tile': 124, 'cash-out': 109 },
+        rounds: 124, wins: 109, fiat: 'USD', dates: '2026-11-10', runnerBuild: 'bfa80f1fc59d', exportBuild: 'bfa80f1fc59d',
+        walletStakedUnits: 124000000000n, walletPaidUnits: 122625000000n, bookedStakedCents: 124000n, bookedPaidCents: 122625n,
+    },
+];
+exports.PROD_REQUESTS = (() => {
+    const t = {};
+    for (const c of exports.PROD_CAPTURES)
+        for (const [k, n] of Object.entries(c.requests))
+            t[k] = (t[k] ?? 0) + n;
+    return t;
+})();
+exports.PROD_WINS = exports.PROD_CAPTURES.reduce((a, c) => a + c.wins, 0);
+exports.PROD_AUTO_FINISH_ROUNDS = ['Z6B5Y_EKOsIi9rFGBZ8XX', '4FlJdIKXL00eGGkh2OQkS', 'I_uwyzpsU5tyFl4_rmzfZ'];
+exports.PROD_DECLARED_PER_STEP_MULTIPLIERS = 3;
+exports.PROD_WALLET_BELOW_EXACT = 62;
+exports.PROD_WALLET_BELOW_EXACT_TOTAL_UNITS = 62;
+exports.PROD_WALLET_BELOW_EXACT_CELLS = {
+    '1:2': 3, '3:2': 18, '5:2': 2, '5:3': 1, '5:5': 10, '8:2': 12, '8:4': 5, '8:5': 1, '12:2': 5, '12:3': 4, '12:4': 1,
 };
-exports.SUPPLEMENT_HISTORY_CAPTURE_DATE = '2026-09-26';
-exports.SUPPLEMENT_HISTORY_DATASET_RELATIVE_PATH = 'data/liqd-mines-capture-v3-2026-09-26T16-46-41-121Z.json';
-exports.SUPPLEMENT_HISTORY_DATASET_HASH = '023c17920d103954ec3c27eab4be55bdeef027884c06d33bd5434139bb569309';
-exports.SUPPLEMENT_HISTORY_JOURNAL_RELATIVE_PATH = 'data/liqd-mines-capture-v3-2026-09-26T16-46-41-121Z.journal.ndjson';
-exports.SUPPLEMENT_HISTORY_JOURNAL_HASH = '4f464fba88a515692e3f8ddaad4f6466345a1cc8180a96910a96f7461ac25fdc';
-exports.SUPPLEMENT_HISTORY_BETS = 1000;
-exports.SUPPLEMENT_HISTORY_WINS = 404;
-exports.SUPPLEMENT_HISTORY_CREDIT_UNIT_BELOW = 50;
-exports.SUPPLEMENT_HISTORY_CREDIT_GAP_CELLS = { '1:10': 29, '1:15': 21 };
-exports.SUPPLEMENT_HISTORY_CREDIT_GAP_UNITS_PER_WIN = 1;
-exports.SUPPLEMENT_HISTORY_CREDIT_GAP_TOTAL_UNITS = 50;
-exports.SUPPLEMENT_HISTORY_DISPLAY_CENT_BELOW = 29;
-exports.SUPPLEMENT_HISTORY_DISPLAY_GAP_CELLS = { '1:10': 29 };
-exports.SUPPLEMENT_HISTORY_GAME_SETTINGS = {
-    records: 596,
-    value: '{"minOdds":1.01,"houseEdge":1,"minBet":0.01,"maxBet":10000}',
-};
-exports.SUPPLEMENT_ON_GRID_TOLERANCE = 1e-6;
+exports.BOOKED_BELOW_UNROUNDED = [
+    { capture: 1, wins: 1979, droppedUnits: 1156861635n },
+    { capture: 2, wins: 603, droppedUnits: 349221236n },
+    { capture: 3, wins: 0, droppedUnits: 0n },
+];
+exports.PROD_GAME_SETTINGS = [
+    { capture: 1, records: 413, value: '{"minOdds":1.01,"houseEdge":1,"minBet":0.01,"maxBet":7060,"maxExposure":70600,"maxExposureUsdc":50000,"maxBetUsdc":"5000.00000000","exposureSource":"game","maxBetSource":"game"}' },
+    { capture: 1, records: 2608, value: '{"minOdds":1.01,"houseEdge":1,"minBet":0.01,"maxBet":7050,"maxExposure":70500,"maxExposureUsdc":50000,"maxBetUsdc":"5000.00000000","exposureSource":"game","maxBetSource":"game"}' },
+    { capture: 2, records: 850, value: '{"minOdds":1.01,"houseEdge":1,"minBet":0.01,"maxBet":5000,"maxExposure":50000,"maxExposureUsdc":50000,"maxBetUsdc":"5000.00000000","exposureSource":"game","maxBetSource":"game"}' },
+    { capture: 3, records: 15, value: '{"minOdds":1.01,"houseEdge":1,"minBet":0.01,"maxBet":5000,"maxExposure":50000,"maxExposureUsdc":50000,"maxBetUsdc":"5000.00000000","exposureSource":"game","maxBetSource":"game"}' },
+];
+exports.PROD_LEDGER_DEBITS = [
+    { capture: 1, records: 3021, amountNotWalletStake: 3021 },
+    { capture: 2, records: 850, amountNotWalletStake: 0 },
+    { capture: 3, records: 15, amountNotWalletStake: 0 },
+];
+exports.PROD_WALLET_CURRENCY_ID = '3';
+exports.PROD_ON_GRID_TOLERANCE = 0.000001;
+exports.AUDIT_SEED_FORMAT = /^audit[0-9a-f]{12}$/;
+exports.PLAYER_SEED_FORMAT = /^pfaudit-prod-mines-d([1-5])-[0-9a-f]{12}$/;
+exports.PHASE_D_DISTINCT_SEEDS = 5;
 exports.AUDIT_ID = 'PF-2026-LQ02';
-exports.EXPECTED_UNIT_TESTS = 49;
+exports.EXPECTED_STEPS = 22;
+exports.EXPECTED_UNIT_TESTS = 43;
 exports.ARTIFACT_PINS = [
-    { file: 'outputs/simulation-results.json', sha256: '8854fc57e7f22f1960b9c89f6c8e003a5e92e19d899a3ecf20e0c0170e44fc2c' },
-    { file: 'outputs/simulation-provenance.json', sha256: '4eee6b2b2259244fd2402a825c829089e270d36e8700ef0b9e3f1f8b1660eaa6' },
-    { file: 'outputs/bootstrap-nulls.float64le', sha256: '477c58267cf890751abadaf48a723b569207838be7838d7a20da9b2e2d09cf18' },
+    { file: 'outputs/simulation-results.json', sha256: '50bef42d729a973376dee69e274900a037d6baa1d4b17a600c144beb46b329e6' },
+    { file: 'outputs/simulation-provenance.json', sha256: '036f4b3c0c4f9d241206bff2317a3d8632c3547844335653cdd89f9ed8532a86' },
+    { file: 'outputs/bootstrap-nulls.float64le', sha256: 'c8a946c806faa4e8896d68a70f66c6f20fa282571cfc4e14ef29fd29dae160a0' },
     { file: 'outputs/rtp-convergence.html', sha256: 'ad969c106e979f3f0eabcea69b5d2d881eb4a44be248e670a215e6a561989d2d' },
     { file: 'outputs/deep-replay-report.json', sha256: '6de3935092af3db155c9e608f7f5993b68b31ac25364ad24ac0c0ce021c8d6bc' },
-    { file: 'outputs/bootstrap-replay-report.json', sha256: 'a0395e57d8ccda10a9950334211380a43a02f4f01ab923b1472347fd43148573' },
-    { file: 'outputs/audit-figures.json', sha256: '942ba10e301d2c99a502cfbec4ad3441055f27df0d1ca907df2b8f95f8dc69ca' },
-    { file: 'outputs/verification-results.json', sha256: '25db7665027a4c0df089d1b711fb15c68449214be153ee0cd468d93eaf1ba745' },
+    { file: 'outputs/bootstrap-replay-report.json', sha256: '2064e369b17b74d7798dfa5440cbc8f4a71427cb49212fbd270e4aedb3c68d4e' },
+    { file: 'outputs/audit-figures.json', sha256: '5319211bcaf7011b2c88f8e264705ba583cfc2a7e8c68a634a436c187d3d6d9e' },
+    { file: 'outputs/verification-results.json', sha256: 'e1142b07f920b2702a46d9b5e240cdcfc829bc77d9946f879632deb240cbfb33' },
 ];
 exports.SITE_VERIFIER_PINS = [
     { file: 'games/mines/derive.js', sitePath: 'src/components/VerifyBets/games/mines/derive.js',
-        sha256: 'fa4dbd19b80e7ce74fc63bd57630fb76e89ce6a5794d81aacf4a1f0ec38ffb82' },
+        sha256: '0ee08caf082e0e1a88b6e1ff0123b6bdae06ff372303fdf4512161d2340d2d11' },
     { file: 'lib/hmac-sha256.js', sitePath: 'src/components/VerifyBets/lib/hmac-sha256.js',
         sha256: '2095571fecd77f536bb3363c801cd70786856e687d108e0ff2102a4e2a18b847' },
 ];
 exports.SITE_VERIFIER_DIR = 'verifier-parity';
-exports.LEGACY_BOOTSTRAP_ARTIFACT_GENERATED_AT = '2026-08-05T16:41:40.964Z';
-exports.LEGACY_EARLY_BOOTSTRAP_P_DIGEST = '292d8d546f924cf4cc469bb01061e271c1892f4657f2f28754a2793dba08bc6d';
-exports.LEGACY_BOOTSTRAP_ARTIFACT_SHA256 = 'bf1838490a7e9c173a04c06c1255a59e2bf17e114cca02e9d9b491c72fea0461';
-exports.LEGACY_BOOTSTRAP_FIXTURE_RELATIVE_PATH = 'tests/fixtures/legacy-simulation-results.json';
 function earlyBootstrapPDigest(rows) {
     const canon = [...rows]
         .sort((a, b) => (a?.epoch ?? -1) - (b?.epoch ?? -1))
         .map(r => `${r?.epoch}:${r?.earlyBootstrapP}`)
         .join('\n');
     return (0, crypto_1.createHash)('sha256').update(canon, 'utf8').digest('hex');
+}
+
+},
+"src/prod-capture.js": function(module, exports, require, __filename, __dirname) {
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.loadProdCapture = loadProdCapture;
+exports.unitsToDecimal = unitsToDecimal;
+exports.decimalUnits = decimalUnits;
+const node_crypto_1 = require("node:crypto");
+const node_fs_1 = require("node:fs");
+const path = __importStar(require("node:path"));
+const pins_1 = require("./pins");
+const empty = (problem) => ({
+    problem, files: [], lines: 0, rotates: [], epochs: [],
+    intents: new Map(), bets: [], steps: new Map(), firstStepLine: new Map(), verify: new Map(), plannedTilesById: new Map(),
+});
+let cached = null;
+function loadProdCapture(repoRoot) {
+    if (cached && cached.root === repoRoot)
+        return cached.cap;
+    const cap = { ...empty(''), problem: null };
+    let problem = null;
+    for (const pin of pins_1.PROD_CAPTURES) {
+        const p = path.join(repoRoot, pin.file);
+        if (!(0, node_fs_1.existsSync)(p)) {
+            problem = `${pin.file} is absent`;
+            break;
+        }
+        const raw = (0, node_fs_1.readFileSync)(p);
+        const sha256 = (0, node_crypto_1.createHash)('sha256').update(raw).digest('hex');
+        if (sha256 !== pin.sha256) {
+            problem = `${pin.file} hashes to ${sha256}, pinned ${pin.sha256}`;
+            break;
+        }
+        const text = raw.toString('utf8').split('\n');
+        if (text[text.length - 1] === '')
+            text.pop();
+        const events = [];
+        let bad = -1;
+        text.forEach((l, i) => { try {
+            events.push(JSON.parse(l));
+        }
+        catch {
+            if (bad < 0)
+                bad = i + 1;
+        } });
+        if (bad >= 0) {
+            problem = `${pin.file} line ${bad} is not JSON`;
+            break;
+        }
+        const epochOffset = pins_1.EPOCH_PLAN.findIndex(e => e.capture === pin.capture);
+        const file = { capture: pin.capture, file: pin.file, sha256, lines: text.length, events, meta: null, pre: null, epochOffset };
+        cap.files.push(file);
+        cap.lines += text.length;
+        events.forEach((ev, line) => {
+            switch (ev.t) {
+                case 'meta':
+                    file.meta = ev.meta ?? null;
+                    break;
+                case 'pre':
+                    file.pre = ev;
+                    break;
+                case 'rotate':
+                    cap.rotates.push({ ...ev, capture: pin.capture });
+                    break;
+                case 'epoch':
+                    cap.epochs.push({ ...ev, capture: pin.capture, datasetEpoch: epochOffset + Number(ev.epoch) });
+                    break;
+                case 'intent':
+                    cap.intents.set(String(ev.key), { ev, capture: pin.capture, line });
+                    break;
+                case 'step': {
+                    const key = String(ev.key);
+                    const a = cap.steps.get(key) ?? [];
+                    a.push(ev);
+                    cap.steps.set(key, a);
+                    if (!cap.firstStepLine.has(key))
+                        cap.firstStepLine.set(key, line);
+                    break;
+                }
+                case 'bet': {
+                    cap.bets.push({ rec: ev.rec, capture: pin.capture, epoch: epochOffset + Number(ev.rec?.epoch), line, at: ev.at });
+                    const id = ev.rec?.settleRaw?.id ?? ev.rec?.betId;
+                    if (typeof id === 'string' && Array.isArray(ev.rec?.plannedTiles))
+                        cap.plannedTilesById.set(id, ev.rec.plannedTiles);
+                    break;
+                }
+                case 'verify':
+                    if (typeof ev.betId === 'string')
+                        cap.verify.set(ev.betId, ev);
+                    break;
+                default: break;
+            }
+        });
+    }
+    const out = problem ? empty(problem) : cap;
+    cached = { root: repoRoot, cap: out };
+    return out;
+}
+function unitsToDecimal(u, digits) {
+    const neg = u < 0n, a = neg ? -u : u, scale = 10n ** BigInt(digits);
+    return `${neg ? '-' : ''}${a / scale}.${String(a % scale).padStart(digits, '0')}`;
+}
+function decimalUnits(v, scaleDigits) {
+    const s = typeof v === 'number' ? (Number.isFinite(v) ? v.toFixed(scaleDigits + 4) : '') : typeof v === 'string' ? v.trim() : '';
+    const m = /^(-?)(\d+)(?:\.(\d+))?$/.exec(s);
+    if (!m)
+        return null;
+    const frac = (m[3] ?? '');
+    const head = frac.slice(0, scaleDigits).padEnd(scaleDigits, '0');
+    const tail = frac.slice(scaleDigits);
+    if (/[1-9]/.test(tail))
+        return null;
+    const u = BigInt(m[2]) * 10n ** BigInt(scaleDigits) + BigInt(head || '0');
+    return m[1] === '-' ? -u : u;
 }
 
 },
@@ -1048,76 +1379,53 @@ exports.profileCoverageBlock = profileCoverageBlock;
 exports.labelFor = labelFor;
 exports.PROFILE_GAME = 'mines';
 exports.PROFILE_VERSION = '1.0.2';
+const NO_RUNG = 'PARTIAL: the profile asks for per-step multipliers on every intermediate rung. LIQD answers a safe '
+    + 'open-tile with `{ mineTile: false }` and nothing else, so no intermediate rung exists to check: the only '
+    + 'open-tile replies carrying a multiplier are the 3 rounds LIQD settled by itself on their last safe tile '
+    + '(src/pins.ts PROD_DECLARED_PER_STEP_MULTIPLIERS, asserted against the data by Step 22). The cash-out rung is '
+    + 'checked on every win';
 exports.STEP_CLAIMS = {
     1: {
         claims: [{
                 id: 'MINES-01', coverage: 'full',
-                note: 'commitHash(serverSeed) == hashedServerSeed for every revealed seed, PAIRED PER ENTRY '
-                    + '(a loop over seed records, not a set-membership test), under the one declared encoding '
-                    + 'SHA-256(utf8(serverSeed hex STRING)) — src/rng.ts commitHash. The denominator is '
-                    + 'EXPECTED_SEEDS in src/pins.ts, a code constant, and is ALSO required to equal '
-                    + 'seeds.length, so a capture shipping fewer seed records FAILs rather than reporting its '
-                    + 'own count back to itself; `checked === seeds.length` makes 0 reveals a FAIL instead of a '
-                    + 'vacuous pass on `fails === 0`. The competing encoding is rejected rather than merely '
-                    + 'unused: tests/mutations.json M10 rewrites commitHash to hash the DECODED 16 bytes and '
-                    + 'this step is the one that must FAIL',
+                note: 'commitHash(serverSeed) == hashedServerSeed for every revealed seed, paired per seed record, under the one '
+                    + 'declared encoding SHA-256(utf8(serverSeed hex string)) — src/rng.ts commitHash. The denominator is '
+                    + 'EXPECTED_SEEDS (36) in src/pins.ts and must also equal seeds.length; 0 reveals is a FAIL',
             }],
     },
     2: {
         claims: [{
                 id: 'MINES-02', coverage: 'full',
-                note: 'all 137 rotations recomputed from the RAW fields — seeds[i].nextHashedServerSeed must '
-                    + 'equal seeds[i+1].hashedServerSeed after sorting by epoch — and never from the capture\'s '
-                    + 'own chainLinkOk / commitVerified booleans, which no predicate here reads. The '
-                    + 'pre-capture anchor the profile requires is asserted in both halves and its ABSENCE is a '
-                    + 'FAIL: meta.preCapture.revealedServerSeed must hash to meta.preCapture.hashedServerSeed, '
-                    + 'and meta.preCapture.nextHashedServerSeed must equal epoch 0\'s hashedServerSeed, so the '
-                    + 'chain is anchored before the first captured epoch. Since 2026-10-02 (external QA, A10) the '
-                    + 'step also asserts the RECORDED ORDER on the capture\'s own clock: each epoch\'s commitment '
-                    + '(the pre-capture record for epoch 0, the previous seed record\'s next-hash after that) was '
-                    + 'recorded before the epoch\'s first bet (138/138), each seed record before its epoch\'s first '
-                    + 'bet (138/138), and each rotation after the retiring epoch\'s last bet (137/137) — the order '
-                    + 'the capture recorded, not an operator-side event order; forgery D24 moves one record and '
-                    + 'FAILs the step. Mutation M56 (the chain walked in reverse epoch order) FAILs it',
+                note: 'the dataset holds three captures, each its own run. Within a capture every rotation is recomputed from the '
+                    + 'raw fields (seeds[i].nextHashedServerSeed == seeds[i+1].hashedServerSeed): EXPECTED_CHAIN_LINKS = 33 '
+                    + 'transitions (24 + 9 + 0), never from the capture\'s own chainLinkOk / commitVerified booleans. Each capture '
+                    + 'has its own pre-capture anchor (meta.captures[].preCapture), asserted in both halves — its revealed seed '
+                    + 'hashes to its commitment and its next hash is the capture\'s first epoch — and an absent anchor FAILs. No '
+                    + 'link between captures is recorded or claimed: other games were played on the account between the runs. '
+                    + 'The recorded order (commitment before first bet, seed record before first bet, reveal after last bet) is '
+                    + 'asserted on the capture\'s own clock',
             }],
     },
     3: {
         claims: [{
                 id: 'MINES-03', coverage: 'full',
-                note: 'the server-seed-hash half: bets are grouped BY EPOCH (betsByEpoch keyed on b.epoch) '
-                    + 'and each group\'s hashedServerSeed set must have size 1 — grouping by hash, which would '
-                    + 'be tautological, is not what this does. The number of epoch groups is bound to '
-                    + 'EXPECTED_SEEDS in src/pins.ts as well as to seeds.length. That field is written onto each '
-                    + 'bet row by the capture script — LIQD\'s bet responses carry no hash — so since 2026-10-02 '
-                    + '(external QA, A9) the step also reads the one seed reference LIQD serves on every settle, '
-                    + 'serverSeedId: one value within each epoch and 138 distinct values across the 138 epochs, '
-                    + 'otherwise HARD FAIL (forgery D25 swaps one and FAILs the step). The same-client-seed half '
-                    + 'of the check is Step 4',
+                note: 'bets are grouped by EPOCH (not by hash) and every epoch must carry one hashedServerSeed; the count of epochs '
+                    + 'is EXPECTED_SEEDS. That field is written onto each row by the capture (LIQD\'s mines replies carry no hash — '
+                    + 'measured in this step over every place-bet, open-tile and cash-out reply of the raw captures), so the '
+                    + 'operator-served reference is asserted too: serverSeedId is one value within each epoch and distinct across '
+                    + 'the 36 epochs. The one-client-seed-per-epoch half is Step 4',
             }],
     },
     4: {
         claims: [
-            {
-                id: 'MINES-03', coverage: 'full',
-                note: 'the client-seed half: per epoch exactly one client seed (Set size 1, otherwise HARD '
-                    + 'FAIL) — tests/steps/commitment.ts. The server-seed-hash half is Step 3',
-            },
+            { id: 'MINES-03', coverage: 'full', note: 'the client-seed half: every epoch carries exactly one client seed' },
             {
                 id: 'MINES-04', coverage: 'full',
-                note: 'the window is DECLARED: every epoch\'s nonces must be exactly NONCE_BASE … '
-                    + 'NONCE_BASE+EXPECTED_EPOCH_SIZE−1 (src/pins.ts, 0 … 49) — a code constant, not the '
-                    + 'minimum observed and not the seed record\'s nonceStart, which is now checked AGAINST '
-                    + 'the declaration (a record/declaration disagreement hard-fails). No repeat '
-                    + '(Set(nonces).size === bets), no reorder (the capture sequence must be strictly '
-                    + 'increasing within an epoch), no nonce outside the window. Gaps are counted against '
-                    + 'EXPECTED_CAPTURE_RETRY_GAPS (declared 0): an undeclared gap — the operator-side case — '
-                    + 'hard-fails, and a gap count equal to a non-zero declaration is a capture-origin FLAG '
-                    + '(`origin: capture`, verdict-neutral; tests/verify.ts separates capture-origin from '
-                    + 'operator-origin flags). Measured: 138/138 epochs '
-                    + 'exactly 0 … 49, 0 gaps. Mutations M34 (NONCE_BASE 0→1) and M35 (declared gaps 0→1) '
-                    + 'FAIL the step; forgeries D13 and D15 (window and record shifted together) FAIL it; D21 '
-                    + '(a declared gap) shows the [FLAG:capture] branch. Limit, printed by the step: the '
-                    + 'window is what the capture requested, not an operator-side counter (MANIFEST DL-9)',
+                note: 'per epoch the nonces are exactly NONCE_BASE … NONCE_BASE + size − 1 in capture order, with no gap, repeat '
+                    + 'or reorder, where size is the epoch\'s length in the plan (src/pins.ts EPOCH_PLAN: 200, 100, 190 or 124). '
+                    + 'The base is a declared constant, and each seed record\'s own nonceStart / nonceEnd are checked against the '
+                    + 'declaration. A gap is counted against EXPECTED_CAPTURE_RETRY_GAPS (0): an undeclared gap FAILs, a declared '
+                    + 'one would be a capture-origin FLAG',
             },
         ],
     },
@@ -1125,92 +1433,42 @@ exports.STEP_CLAIMS = {
         claims: [
             {
                 id: 'MINES-07', coverage: 'full',
-                note: 'revealMines(serverSeed, clientSeed, nonce, mineCount) is recomputed for EVERY bet in '
-                    + 'the population — wins and losses alike, no filter — and compared with mineTiles by '
-                    + 'sameMines, which is ORDER-SENSITIVE (element by element, same length), so the comparison is '
-                    + 'the DRAW-ORDER list the operator serves rather than a sorted set; there is no tolerance. '
-                    + 'A skipped round is a failure, not a smaller sample: `skipped === 0` is part of the pass '
-                    + 'condition, and the denominator is EXPECTED_BETS from src/pins.ts rather than '
-                    + 'bets.length, so "6,900/6,900" cannot be true of whatever the file happens to contain',
+                note: 'every one of the EXPECTED_BETS (6,574) rounds recomputes: revealMines(serverSeed, clientSeed, nonce, '
+                    + 'mineCount) equals the served mineTiles as an ORDERED list (draw order); a skipped round is a FAIL',
             },
             {
                 id: 'MINES-08', coverage: 'full',
-                note: 'the draw-bias bound is stated IN THE STEP DETAIL as a computed quantity: maxFair for '
-                    + 'each of the 25 ranges the shuffle uses (read from src/rng.ts maxFairFor, the one '
-                    + 'ceiling the draw itself reads), the exact per-value bias conditional on acceptance '
-                    + '(integer arithmetic, src/bias.ts drawBias on src/rng.ts maxFairFor), the worst per-draw rejection probability '
-                    + '(4.889e-9 at range 25) and the rejection census over the population (0 of 172,500 '
-                    + 'draws, 2.024e-4 expected). The declared design is rejection sampling, so the gate is '
-                    + 'EXACT ZERO bias at every range (a fortiori ≤ 2^-32) — deliberately stricter than the '
-                    + 'bound, because a plain chunk % range with no rejection is biased by less than 2^-32 '
-                    + 'at every range 1..25 and would pass the bound alone. The branch the capture never '
-                    + 'takes is exercised on a vector inside the step (nonce 760455 / cursor 12 / range 13 '
-                    + 'must draw 6; deletion draws 1). Mutation M12 (maxFair = 2^32), a declared survivor '
-                    + 'until 2026-09-23, now FAILs this step. Scope, printed by the step: this bounds the '
-                    + 'AUDITOR\'S draw; the operator\'s branch stays ASSUMED (MANIFEST DL-3)',
+                note: 'the declared draw is rejection sampling: maxFair is printed per range and is a whole multiple of the range '
+                    + 'at all 25 ranges, so the per-value bias conditional on acceptance is exactly 0; the rejection census over '
+                    + 'the population is printed against its expectation, and because no captured round takes the branch it is '
+                    + 'exercised on a fixed vector inside the step. That the operator\'s server takes the same branch is ASSUMED '
+                    + '(MANIFEST DL-3)',
             },
             {
                 id: 'MINES-24', coverage: 'full',
-                note: 'the player-verifier parity arm. The Mines verifier a player uses on the ProvablyFair.org '
-                    + 'site — VerifyBets games/mines/derive.js and the one library file it imports, '
-                    + 'lib/hmac-sha256.js — is vendored byte-for-byte in verifier-parity/ and both files\' '
-                    + 'SHA-256 digests are recorded in src/pins.ts SITE_VERIFIER_PINS (derive.js fa4dbd19…, '
-                    + 'hmac-sha256.js 2095571f…). The step hashes the vendored copies against the pins, loads '
-                    + 'them with only the ES-module keywords removed (src/site-verifier.ts; any other import or '
-                    + 'export form is a load FAIL), runs deriveMines on all 6,900 captured rounds and requires '
-                    + 'the draw-order minePositions to EQUAL src/rng.ts revealMines — the computeLayout every '
-                    + 'other layout step uses — with the denominator pinned to EXPECTED_BETS. Measured '
-                    + '2026-09-24: 6,900/6,900 equal (and 6,900/6,900 equal to the served mineTiles); '
-                    + 'displayCents equal at 300/300 legal cells (printed, not scored). Mutation M44 edits one '
-                    + 'byte of the vendored derive.js logic and this step FAILs on the hash; a re-pinned copy of '
-                    + 'the same edit FAILs on layout parity (probe 2026-09-24). '
-                    + 'scripts/check-site-verifier.mjs compares a site checkout with the same pins (exit 1 on '
-                    + 'mismatch). What this parity is: hash-pinned behavioural equality on every captured '
-                    + 'round, not a derive.js generated from src/rng.ts. Where the two differ, on inputs no captured '
-                    + 'round reaches: all eight chunks of a digest rejected (the site redraws at cursor + 1,000,000; '
-                    + 'src/rng.ts, rebuilt from docs/ALGORITHM.md, which leaves it unspecified (O1), throws), and '
-                    + 'non-hex server seeds (the site keys the HMAC with their UTF-8 bytes; src/rng.ts throws). The '
-                    + 'operator\'s own verify endpoint is a different thing and remains unprobed',
+                note: 'the ProvablyFair.org site verifier (verifier-parity/, two files hash-pinned in src/pins.ts '
+                    + 'SITE_VERIFIER_PINS) is run on every round and must give the same draw-order layout as src/rng.ts; a hash '
+                    + 'or layout mismatch FAILs. scripts/check-site-verifier.mjs compares a live site checkout with the same pins',
             },
         ],
     },
     6: {
         claims: [{
                 id: 'MINES-06', coverage: 'full',
-                note: 'the whole-dataset control half, over every bet (6,900/6,900, denominator pinned): each '
-                    + 'layout is recomputed under an EMPTY client seed and under a fixed WRONG client seed, and '
-                    + 'the survivors are gated at the rate the MODEL predicts — E + 5σ of chance collisions '
-                    + 'with E = Σ 1/P(25,m) for the draw-order comparison (9.269, gate 24.197; measured 9 wrong '
-                    + '/ 7 empty) and E = Σ 1/C(25,m) for the set comparison (59.610, gate 97.458; measured 47 '
-                    + '/ 48), over the tested bets\' own mine counts — replacing the arbitrary ≥ 95% gate, which '
-                    + 'passed a first-mine-only comparator at 286 survivors, 6,614/6,900 = 95.86% changed (probe, 2026-09-23). 0% change '
-                    + 'fails by construction (M17). The A–C generator is disclosed '
-                    + '(capture/capture-mines.reference.mjs, `audit${randomBytes(6)…}`, Node\'s CSPRNG) and BOUND '
-                    + 'to the data: all 128 non-Phase-D epoch client seeds must match /^audit[0-9a-f]{12}$/ and '
-                    + 'be distinct, or the step fails. The Phase D half — every player-set seed recomputes and '
-                    + 'the predictable seeds are enumerated by epoch — is Step 14 (MANIFEST DL-13)',
+                note: 'the influence half: a wrong client seed and an empty client seed are run over all 6,574 rounds and the '
+                    + 'surviving layouts are compared with the model-predicted chance collisions over those rounds\' own mine '
+                    + 'counts (E + 5σ, in draw order and as a set); 0 change FAILs. The generator of phases A, A+ and C is asserted '
+                    + 'from the data: every such epoch seed matches /^audit[0-9a-f]{12}$/ and all are distinct. The Phase D half '
+                    + 'is Step 14',
             }],
     },
     7: {
         claims: [
-            {
-                id: 'MINES-11', coverage: 'full',
-                note: 'the loss half of the payout check, at exact zero with no epsilon: every losing round '
-                    + 'must carry multiplier 0-or-absent AND winningAmount exactly 0 ((b.multiplier ?? 0) !== '
-                    + '0 || Number(b.winningAmount) !== 0 counts a violation), over a coverage total bound to '
-                    + 'EXPECTED_BETS. The winning-credit half is Step 8',
-            },
+            { id: 'MINES-11', coverage: 'full', note: 'the loss half: every loss carries no multiplier and winningAmount 0. The booked win amount is Step 8, the wallet field Step 22' },
             {
                 id: 'MINES-13', coverage: 'full',
-                note: 'the display-rounding arm the profile allows for ("or on the declared display '
-                    + 'rounding with the exact value credited"): for EVERY winning bet at its opened depth, '
-                    + 'the operator\'s served `multiplier` field must equal floor2(minesMultiplierExact(m, '
-                    + 'openTiles.length)) at 1e-9 (tests/steps/payouts.ts:62-66), the wins where the display '
-                    + 'sits below the exact reference are counted and emitted, and a non-finite reference '
-                    + 'hard-fails rather than scoring as agreement. The exact credited value is Step 8; the '
-                    + '300-cell closed form is Step 10; the independent anchor is Step 13; the depth-5 arm '
-                    + 'is Step 15. No operator-supplied odds field enters the derivation: '
-                    + 'minesMultiplierExact takes (m, k) only',
+                note: 'the served `multiplier` on every win equals floor2 of the exact closed form at the depth actually opened '
+                    + '(1e-9); it is a display value, below the exact multiplier wherever that is not a whole number of cents',
             },
         ],
     },
@@ -1218,586 +1476,249 @@ exports.STEP_CLAIMS = {
         claims: [
             {
                 id: 'MINES-11', coverage: 'full',
-                note: 'the winning-credit half, on the settlement value domain rather than at a float '
-                    + 'epsilon: winningAmount in 1e-8 units must EQUAL floor8(stake x multExact) computed as '
-                    + 'a BigInt rational with ZERO tolerance (floor8CreditUnits, retention factor '
-                    + 'EDGE_NUM/EDGE_DEN derived from HOUSE_EDGE and not a re-typed 99n/100n), which is what '
-                    + 'rejects the uniform +/-1e-8 shift a +/-2e-8 residual band cannot see (forgery D02). An '
-                    + 'ON-GRID test runs BEFORE any rounding, so a credit carrying a ninth decimal is '
-                    + 'rejected on its own terms. Money is summed only after it is proven finite, and a '
-                    + 'non-finite stake or credit hard-fails rather than poisoning the turnover the report '
-                    + 'quotes. Losses-credit-exactly-zero is Step 7 and is re-asserted here. A win credited one '
-                    + '1e-8 unit below floor8(stake x exact) hard-fails THIS step (forgery D26) — 0 such wins on '
-                    + 'this dataset (3,104/3,104 exact) — and, since 2026-10-03, fails Step 22 on the scored '
-                    + '2026-10-03 supplement too, whose declared gap is 0: one severity for one shortfall in '
-                    + 'every scored dataset. OPEN RULING 2 (profile owner: FAIL or FLAG?) now bears only on how '
-                    + 'the dated 2026-09-26 history is classed (50 short credits, held at a Step 22 FLAG from '
-                    + '2026-10-01 to 2026-10-03), not on any status',
+                note: 'the declared settlement rule for the amount LIQD BOOKS: winningAmount == floor2(betAmount × exact rational '
+                    + 'multiplier) in BigInt cents, 0 tolerance, in the fiat the round was staked in (CAD in capture 1, USD in '
+                    + 'captures 2 and 3; nothing converted) — 2,691 of 2,691 wins; every loss books 0. Per capture the booked '
+                    + 'totals and the wins booked below the unrounded amount must equal the declaration (src/pins.ts '
+                    + 'PROD_CAPTURES, BOOKED_BELOW_UNROUNDED). The wallet field of the reply follows a second rule, scored by '
+                    + 'Step 22',
             },
-            {
-                id: 'MINES-10', coverage: 'full',
-                note: 'the win ⇔ no-mine half, as it bears on payment: a "won" round that opened any mine '
-                    + 'tile and a "lost" round that opened none are both labelViolations and hard-fail, and '
-                    + 'the credit is computed from openTiles.length — the tiles ACTUALLY opened — never from '
-                    + '`reveals`. The recomputed-layout form of the check, the bust-on-the-last-tile clause '
-                    + 'and the opened-count-equals-recorded-depth clause are Step 20',
-            },
+            { id: 'MINES-10', coverage: 'full', note: 'the label half: a round is `won` exactly when no opened tile is a mine of the served layout. The recomputed-layout half is Step 20' },
         ],
     },
     9: {
         claims: [
             {
                 id: 'MINES-15', coverage: 'full',
-                note: 'the Phase A half, asserted against the plan in code: all 24 mineCounts at exactly 200 '
-                    + 'rounds each, against MINE_COUNTS.length x PHASE_A_PER_MC, and the Phase-A total must '
-                    + 'equal that product, so a phase short of the plan FLAGs rather than passing on "no '
-                    + 'missing mineCount" — 4,800 rounds, above the 50-per-config floor. The multi-reveal '
-                    + 'half ("several depths and mine counts") is Step 22 on the v3 supplement (5 mine counts '
-                    + 'x 4 depths x 50, asserted against SUPPLEMENT_DEPTHS in src/pins.ts); the first-pick '
-                    + 'span is Step 21; the all-cells reference artifact is Step 19',
+                note: 'the plan is a code constant (src/pins.ts SETTINGS_PLAN, 60 phase settings) and every setting must hold '
+                    + 'exactly its planned rounds, with none off plan. Phase A covers every mine count 1…24 with at least 50 '
+                    + 'rounds: 5 mine counts × 1,000 in capture 1 and the other 19 × 50 in the phase A top-up of capture 2. The '
+                    + 'multi-reveal depths and first-pick span are Steps 15 and 21',
             },
             {
                 id: 'MINES-22', coverage: 'full',
-                note: 'both fits, computed in the step from the captured rows against pure combinatorics: '
-                    + '(a) the first-drawn mine position (mineTiles[0]) over all 6,900 layouts against the '
-                    + 'uniform 25-tile lattice — chi² 15.978 on 24 df, p = 0.8889; (b) the win count in each '
-                    + 'of the 25 (mineCount, planned reveals) groups against the binomial at '
-                    + 'winProbability(m,k) — Σz² 13.424 on 25 df, p = 0.9709, largest |z| 1.883. '
-                    + 'Informational (policy INFORMATIONAL, 2026-09-29): a p-value below the pre-registered '
-                    + 'LIVE_FIT_ALPHA = 1e-3 is reported as INFO — never counted, never a FLAG or a FAIL (mutation '
-                    + 'M36 raises the level to 0.95: the step reports INFO and the verdict stays Full Pass)',
+                note: 'the live-sample fit, informational: first-drawn mine position over all rounds against the uniform lattice '
+                    + '(chi-squared, 24 df) and win counts per (mine count, planned depth) group against the binomial; a p-value '
+                    + 'below the pre-registered level is reported as INFO and never counted',
             },
         ],
     },
     10: {
         claims: [
-            {
-                id: 'MINES-13', coverage: 'full',
-                note: 'the closed form at EVERY legal cell: the full-grid sweep evaluates all 300 legal '
-                    + '(m,k) cells (m=1..24, k=1..25-m; the count is asserted === 300) and requires '
-                    + 'theoreticalRTP(m,k) = winProbability(m,k) x minesMultiplierExact(m,k) to equal '
-                    + 'PUBLISHED_RTP within 1e-9, which is algebraically the profile\'s claim that '
-                    + 'mult(m,k) = C(25,k)/C(25-m,k) x (1-edge). The two factors are INDEPENDENTLY WRITTEN in '
-                    + 'src/config.ts — winProbability as the binomial ratio via combination(), '
-                    + 'minesMultiplierExact as the product (1-edge) x prod (25-i)/(25-m-i) — and Step 13 '
-                    + 'anchors the probability factor against a product form and an integer subset tally, so '
-                    + 'this is not the module agreeing with itself. PUBLISHED_RTP = 0.99 is deliberately a '
-                    + 'LITERAL and not 1 - HOUSE_EDGE, which would make the comparison vacuous. A corrupted '
-                    + 'cell is caught: M05 sets minesMultiplierExact(4,2) to 1 and this step FLAGs; M04 sets '
-                    + 'it to NaN and it FAILs',
-            },
-            {
-                id: 'MINES-18', coverage: 'full',
-                note: 'the identity half of anti-circularity — P(survive to k) x multiplier(m,k) == '
-                    + '(1-edge) at all 300 legal cells with no operator data anywhere in the computation. '
-                    + 'Non-finite is separated from off-target as its own fault class, because '
-                    + 'Math.abs(NaN - 0.99) > 1e-9 is FALSE and an unguarded sweep would print "300/300 '
-                    + 'clean": a cell at 70% FLAGs, a cell that is not a number hard-FAILS. The counting '
-                    + 'anchor and negative control are Step 13',
-            },
+            { id: 'MINES-13', coverage: 'full', note: 'the closed form at every legal cell: all 300 (m,k) cells are evaluated and must equal the published RTP within 1e-9' },
+            { id: 'MINES-18', coverage: 'full', note: 'the identity half of anti-circularity: P(survive k) × multiplier(m,k) == 1 − edge at all 300 cells with no operator data; a non-finite reference value FAILs as its own fault class' },
             {
                 id: 'MINES-19', coverage: 'full',
-                note: 'the effective edge is DERIVED per cell — all 300 legal (m,k) cells evaluated as '
-                    + 'winProbability x minesMultiplierExact against the published 99.0000% claim, the '
-                    + 'off-target count asserted at 0 (FLAG otherwise) with the observed min/max range '
-                    + 'printed as the magnitude — and the settlement-floor arm re-enumerates the same 300 '
-                    + 'cells in BigInt at the capture\'s smallest stake, DERIVED from the distinct betAmount '
-                    + 'values in the pinned bets and cross-checked against meta.phases (a disagreement is a '
-                    + 'hard fail, mutation M24), naming its worst cell. No operator edge field is read: the '
-                    + 'edge factor is EDGE_NUM = round((1-HOUSE_EDGE)*1e8) and this step hard-fails on '
-                    + 'edgeRationalIsExact() (mutation M26) and on a non-finite reference cell (the '
-                    + 'reference-formula guard, mutation M04); M27 (EDGE_NUM rebuilt at 1e2 scale, the same '
-                    + 'rational at a 1% edge) is a declared survivor (tests/survivors.json, DL-11). Both arms '
-                    + 'can fail (M05 reports GRID-OFF, M04/M26 FAIL). Scope, stated in the step itself: this is a property of '
-                    + 'the auditor\'s reference formula plus the settlement floor; only 25 of the 300 cells '
-                    + 'are operator-witnessed (Step 8), the other 275 are formula-only (limitation DL-4). '
-                    + 'OPEN RULING 1 (profile owner: which statement on LIQD\'s page LIQD is held to): the '
-                    + 'enforced RTP-CLAIM gate holds the page\'s flat 99% and passes 300/300; the same page\'s '
-                    + 'edge range 0.64%-1.44% (RTP 98.56%-99.36%), run through the same rule by this step, would '
-                    + 'FAIL "no range wider than reality" (published min -0.44 pp, published max +0.36 pp, band '
-                    + '0.10 pp) — printed, not scored',
+                note: 'the effective edge is derived per cell over all 300 cells against the published claim, and the two '
+                    + 'settlement floors are quantified in BigInt: the booked cent floor at the smallest stake played and the '
+                    + 'wallet rule at the smallest wallet stake in the raw captures. The RTP-CLAIM gate holds the per-setting '
+                    + 'table to the claim shown to players. RULING 1 (11 November 2026): LIQD is held to the page\'s flat 99%, '
+                    + 'which the wallet field meets; the page\'s rounding sentence is recorded as a discrepancy, as published '
+                    + 'on 1 Oct 2026',
             },
             {
                 id: 'MINES-14', coverage: 'full',
-                note: 'FLAG POLICY ON THE MONOTONICITY HALF; THE CAP HALF IS DISCLOSED, NOT SCORED, SINCE 2026-10-15. '
-                    + '(a) the exact multiplier is STRICTLY increasing in '
-                    + 'depth k for every m and in mine count m for every k, over all 552 adjacent legal cell '
-                    + 'pairs, compared as exact rationals (BigInt cross-multiplication) — 0 violations; '
-                    + 'mutation M37 flattens the ladder at an unreached cell (m=20, k=5) and the step reports '
-                    + 'NON-MONOTONE. (b) the cap half: the profile owner ruled on 2026-10-15 that payout caps are '
-                    + 'excluded from the audit and multiplier caps stay in scope, and LIQD stated the same day that '
-                    + 'Mines has had no multiplier cap since the end of August 2026 (the 10,000x setting removed from '
-                    + 'the configuration) and that a per-round payout limit ends the round and pays the full '
-                    + 'multiplier for the tiles already revealed. The scored 2026-10-03 build\'s 607 settings '
-                    + 'records carry no maxOdds (src/pins.ts SUPPLEMENT_GAME_SETTINGS, bound by Step 22), which '
-                    + 'agrees with that statement; maxExposure 50000 (exposureSource "global") is the round payout '
-                    + 'limit, excluded and not tested. Printed as history, not scored: the audited July build\'s '
-                    + '3,844 records carry maxOdds 10000 (MAX_ODDS_DECLARED, src/config.ts) and all 6,208 quoted '
-                    + 'multipliers lie within it (largest 24.75x); the reference formula exceeds it at 44 of 300 '
-                    + 'cells, none reached by a captured bet. From 2026-10-02 to 2026-10-15 the step FLAGged on the '
-                    + 'scored build\'s missing maxOdds; mutation M58 re-scores that figure and the step FLAGs again '
-                    + '(SUPPLEMENT-SETTINGS-NO-DECLARED-CAP), and M38 lowers the July declaration to 20x and the step '
-                    + 'stays PASS. Open ruling 3 (reading R2) is closed by the 2026-10-15 ruling',
+                note: 'monotonicity, scored: the exact multiplier is strictly increasing in depth and in mine count over all 552 '
+                    + 'adjacent legal cell pairs, compared as exact rationals. The cap half is disclosed and not scored: payout '
+                    + 'caps are excluded by the profile owner (2026-10-15) and the production settings records carry no maxOdds '
+                    + 'key (src/pins.ts PROD_GAME_SETTINGS, bound to the raw captures by Step 22)',
             },
         ],
     },
     11: {
         claims: [{
                 id: 'MINES-05', coverage: 'full',
-                note: 'the population and phase-plan half of G-BIND: bets.length === EXPECTED_BETS and every '
-                    + 'per-phase count === EXPECTED_PHASE_BETS[p], both from src/pins.ts — code constants, '
-                    + 'never meta.plannedTotal or the sum of the phase counts in the file being scored — and '
-                    + 'the pin table\'s OWN arithmetic is asserted (sum EXPECTED_PHASE_BETS === EXPECTED_BETS). '
-                    + 'A mismatch is a HARD FAIL. Mutation M22 re-derives EXPECTED_BETS from the dataset and '
-                    + 'this step is the one that must FAIL. The seed/epoch-size half is Step 12; this package '
-                    + 'has one dataset file, so there is no secondary file to pin',
+                note: 'bets per phase letter and per phase id equal EXPECTED_PHASE_BETS / EXPECTED_PHASE_ID_BETS, every row carries '
+                    + 'the phase, capture and capture-epoch the plan gives its epoch, and the total equals EXPECTED_BETS — code '
+                    + 'constants, never the dataset\'s own header',
             }],
     },
     12: {
         claims: [{
                 id: 'MINES-05', coverage: 'full',
-                note: 'the seed, epoch and epoch-size half: seeds.length === EXPECTED_SEEDS, the number of '
-                    + 'distinct epochs in the bets === EXPECTED_SEEDS, min and max bets per epoch both === '
-                    + 'EXPECTED_EPOCH_SIZE, and the three pins asserted mutually consistent (EXPECTED_SEEDS x '
-                    + 'EXPECTED_EPOCH_SIZE === EXPECTED_BETS). Mutation M23 moves EXPECTED_EPOCH_SIZE off 50 '
-                    + 'and this step must FAIL. The dataset SHA-256 pin is enforced before any parse by '
-                    + 'src/loader.ts and re-asserted as a scored step in Step 19',
+                note: 'every epoch of EPOCH_PLAN holds exactly its planned number of bets (200, 100, 190 or 124), there are '
+                    + 'EXPECTED_SEEDS epochs and seed records, and the pinned constants are mutually consistent (Σ epoch sizes == '
+                    + 'EXPECTED_BETS; each capture\'s rounds == Σ of its epochs)',
             }],
     },
     13: {
         claims: [
-            {
-                id: 'MINES-18', coverage: 'full',
-                note: 'the anti-circular derivation, the COUNTING ANCHOR and the negative control: '
-                    + 'winProbability is shown to be pure combinatorics with no call into the multiplier '
-                    + 'module and no operator data — (1) at k=1 the outcome space sums to exactly 1 for '
-                    + 'every m; (2) the binomial form C(25-m,k)/C(25,k) equals the product form '
-                    + 'prod (25-m-i)/(25-i), recomputed locally, over every reachable (m,k); (3) every '
-                    + 'k-subset of the 25 tiles is ENUMERATED by a depth-first walk and the tallies compared '
-                    + 'with INTEGER equality to C(25,k) and C(25-m,k). Mutation M00 shifts winProbability to '
-                    + 'C(26-m,k) and this step must FAIL — the corrupted-model control the profile asks for. '
-                    + 'The enumeration is exhaustive at k <= 5 (the deepest depth the capture reaches); leg '
-                    + '(2) covers all 300 cells and the p x mult identity at all 300 cells is Step 10',
-            },
-            {
-                id: 'MINES-13', coverage: 'full',
-                note: 'the independent-oracle half of the formula check: the multiplier equality Step 10 '
-                    + 'asserts is only as good as the probability factor in it, and this step anchors that '
-                    + 'factor outside the audited closed form — against a locally recomputed product form at '
-                    + 'every reachable cell and against an integer subset tally. A compensating pair of '
-                    + 'corruptions (a wrong winProbability matched by a wrong multiplier) is caught here '
-                    + 'rather than cancelling inside Step 10\'s identity',
-            },
+            { id: 'MINES-18', coverage: 'full', note: 'winProbability is pure combinatorics: the binomial form equals the product form at every reachable cell, and k-subsets are enumerated and counted with integer equality — every m at k ≤ 5 plus the played settings deeper than 5' },
+            { id: 'MINES-13', coverage: 'full', note: 'the probability half of the multiplier ladder: the survival probability the closed form divides by is derived here without the multiplier module' },
         ],
     },
     14: {
         claims: [{
                 id: 'MINES-06', coverage: 'full',
-                note: 'the Phase D half: all 500 Phase-D rounds recompute their mine layout under the client '
-                    + 'seeds ACTUALLY used (10 distinct pfaudit- seeds), with a coverage guard (tested === '
-                    + 'phaseD.length) so a run that recomputed nothing cannot pass on 0 === 0, and at least 2 '
-                    + 'distinct client seeds required (the profile floor). The predictable construction is '
-                    + 'disclosed WITH THE EXPOSED EPOCHS ENUMERATED by the step from the data: every Phase-D '
-                    + 'client seed of the form pfaudit-<13-digit stamp>-<its own epoch> is listed — epochs '
-                    + '120–129, 500 bets, one stamp 1785428583504 decoded to 2026-07-30T16:23:03.504Z — and '
-                    + 'carried as MANIFEST DL-13. Mutation M39 drops the client seed from the HMAC message and '
-                    + 'this step FLAGs. The whole-dataset controls and the A–C generator binding are Step 6',
+                note: 'the Phase D half: 500 rounds in 5 epochs under 5 distinct PLAYER-SET client seeds (floor 2), each of the '
+                    + 'declared form, named in the capture\'s meta before its anchor rotation, submitted in a rotation recorded as '
+                    + 'player-set, and returned by LIQD\'s reply as the active seed; every Phase D round recomputes under its seed. '
+                    + 'The predictable-seed census (a 13-digit timestamp in a client seed) is enumerated and is 0, so there is no '
+                    + 'exposed epoch to list. For all 36 epochs the client seed was submitted in the rotation whose reply made the '
+                    + 'epoch\'s commitment active, recorded before the epoch\'s first bet',
             }],
     },
     15: {
         claims: [
             {
                 id: 'MINES-17', coverage: 'partial',
-                note: 'the multi-reveal layout and cash-out arm: all 400 Phase-E rounds are asserted to be '
-                    + 'the declared shape (mineCount 3, reveals 5), every layout recomputes with a coverage '
-                    + 'guard (layoutChecked === phaseE.length), and each WIN\'s served multiplier is checked '
-                    + 'at minesMultiplier(3, openTiles.length) — the depth actually opened, not the planned '
-                    + '`reveals` — with a non-finite reference hard-failing. The outcome split is produced '
-                    + 'rather than asserted in prose (216 cashed out at depth 5, those that hit a mine on the '
-                    + 'fifth reveal, those that busted at depths 1-4). WHAT IS MISSING, package-wide: no '
-                    + 'per-step multiplier is recorded (gameModel.multiReveal.perStepMultipliersRecorded is '
-                    + 'false) — and the v3 supplement shows why: LIQD does not serve one on the wire (Step 22: '
-                    + '0 of 3,314 open-tile responses carry a multiplier on the scored 2026-10-03 capture, 0 of '
-                    + '3,418 on the 2026-09-26 one), so no intermediate rung can be '
-                    + 'checked against the formula at its depth and the rung check is limited to the '
-                    + 'cash-out, which the profile\'s declarationTruth says makes the check partial. Reveal '
-                    + 'ORDER independence at the cash-out rung and the cash-out rung at 20 (mineCount, depth) '
-                    + 'cells are Step 22; the mine-set invariance and per-reveal status arm is Step 20; the '
-                    + 'position arm is Step 21',
+                note: 'the multi-reveal rounds are every round of phases A and D (5,500; production has no separate multi-reveal '
+                    + 'phase): each is at a setting of the plan, its layout recomputes, a win opened exactly its planned depth '
+                    + 'and its cash-out multiplier equals the closed form at that depth. ' + NO_RUNG,
             },
-            {
-                id: 'MINES-13', coverage: 'full',
-                note: 'the depth arm: every Phase-E win\'s served multiplier equals the closed form at the '
-                    + 'depth actually opened (minesMultiplier(3, openTiles.length), display rounding), with '
-                    + 'the reveal depths reached emitted; a non-finite reference is a hard fail',
-            },
+            { id: 'MINES-13', coverage: 'full', note: 'the cash-out multiplier of every win equals minesMultiplier at the depth opened, at depths 1 to 15' },
         ],
     },
     16: {
         claims: [{
                 id: 'MINES-20', coverage: 'full',
-                note: 'the committed experiment is REPLAYED, not trusted: all 24 x 1,000,000 Pass-1 rounds are '
-                    + 'regenerated inside every verify run from the seed pair each row records (src/replay.ts, '
-                    + 'the expressions src/simulate.ts uses; parallel worker processes of the verifier, '
-                    + 'src/replay-pool.ts — the zero-install bundle re-runs itself as the worker), and every row '
-                    + 'field is compared: the census (all seven convergence counts, df, pair count, worst pair) '
-                    + 'exactly, and every derived statistic — first-draw chi2 and p (first-draw uniformity, the '
-                    + 'profile\'s "first-draw + pairwise co-occurrence" form), joint max|z| and p, lag-1 r and z, '
-                    + 'runs z and p, theoretical and simulated RTP — within the reproduction tolerance (1e-14 + '
-                    + '1e-12·max, src/diff.ts). Every FWER count and verdict arm is computed from the REPLAYED '
-                    + 'statistics and the stored scalars must equal them. The replay\'s prefix shuffle is '
-                    + 'checked against the adapter\'s full revealMines on the first 1,000 rounds of every job. '
-                    + 'Coverage is bound to the plan: 24 rows, one per mineCount 1..24 (MINE_COUNTS), and '
-                    + 'roundsPerConfig must EQUAL ENFORCED_ROUNDS_PER_CONFIG (1,000,000) or nothing is replayed '
-                    + 'and the step fails. The artifact is pinned with no run metadata (Step 19, MINES-27). '
-                    + 'Measured 2026-09-24: 24/24 rows, 0 census mismatches, 0 derived statistics beyond '
-                    + 'tolerance, 0 non-zero differences (bit-identical), 162,000 prefix self-check rounds, 0 '
-                    + 'disagreements. FAIL probed: forgery A31 (the former declared survivor S01, a fully '
-                    + 'self-consistent deep Pass 1, re-pinned), A32 (one n=50,000 convergence count moved by one '
-                    + 'win, re-pinned) and mutation M47 (replay engine one nonce off)',
+                note: '24 mine counts × 1,000,000 rounds; first-draw uniformity, pairwise co-occurrence and first-drawn-tile serial '
+                    + 'statistics with a Bonferroni family; every Pass-1 row is replayed in full from the seed pair it records and '
+                    + 'compared field by field; convergence within 5·SE',
             }],
     },
     17: {
         claims: [{
                 id: 'MINES-21', coverage: 'full',
-                note: 'the SERVED-CONFIG statistic is computed in verify: for each of the 138 revealed epochs, '
-                    + 'the 50 configurations it actually served — mine count and the tiles the capture requested, '
-                    + 'in nonce order, taken from the pinned dataset (never from the artifact) — are replayed '
-                    + 'over the epoch\'s revealed seed for 10,000 nonces (nonce n plays config n mod 50). The '
-                    + 'early window is the captured nonce range 0–49, and its replayed outcomes must EQUAL the '
-                    + '6,900 recorded outcomes; nonces 50–9,999 give 199 later windows of the same sequence. '
-                    + 'Statistic: the window RETURN against the exact per-config mean P(survive k)·mult(m,k) and '
-                    + 'variance P·mult² − μ². Null: a bootstrap over the seed\'s own 199 later windows, '
-                    + 'p = (1 + #later ≤ early)/200. Rule (the SERVED_* constants in tests/steps/simulation.ts, '
-                    + 'written 2026-09-24 before the statistic was first computed): flag at p ≤ 0.01, family gate = binomial upper tail '
-                    + 'at 0.001 (6 of 138), pooled z < −3.090 fails. It was written after this capture\'s seeds '
-                    + 'were revealed. Power printed: 8.6% at a 5% '
-                    + 'early-window return shortfall, 64.1% at 10%, 100.0% at 20%. Measured: 0/138 flagged, pooled '
-                    + 'early-window z = 0.723 (the pooled return and its exact expectation are in the step detail). The tiles a losing round did not reach '
-                    + 'are rebuilt from the capture\'s consecutive-tile rule (capture/capture-mines.reference.mjs '
-                    + 'playRound), which all 6,900 recorded opened sequences satisfy; a round that does not '
-                    + 'satisfy it fails the binding. The first-draw test (bootstrap null replayed from the '
-                    + 'recorded master seed, 138/138) is kept and re-derived. FAIL probed: forgery A36 (a Phase-E '
-                    + 'win\'s opened tiles reversed, re-pinned), mutations M45 (replay plays a tile off the plan) '
-                    + 'and M46 (the pooled-z gate branch)',
+                note: 'every revealed seed (36). The profile\'s statistic is the served-configuration test: each epoch\'s captured '
+                    + 'configurations, in nonce order with each round\'s planned tiles from the raw captures, are replayed over '
+                    + 'the revealed seed for 200 of the epoch\'s own lengths (20,000 to 40,000 nonces, floor 10,000); the early '
+                    + 'window is exactly the epoch\'s captured nonce range and its replayed outcomes must equal the recorded ones; '
+                    + 'the window return is ranked against the seed\'s own later windows; the rule is pre-registered in code and '
+                    + 'the detection power is printed. The first-draw diagnostic beside it uses one early window for all seeds, '
+                    + 'the first PASS2_EARLY_WINDOW (100) nonces — the longest prefix every epoch played in full — over 10,000 '
+                    + 'nonces per seed, with a bootstrap null rebuilt from the recorded master seed',
             }],
     },
     18: {
         claims: [{
                 id: 'MINES-12', coverage: 'full',
-                note: 'all 200 Phase-C hands at $10.00 (100x the Phase-A stake, mineCount 3 — the low mine '
-                    + 'count the profile asks for, 176 wins exercising the payout path) recompute their layout '
-                    + 'in draw order against the same wager-free reference the $0.10 hands are scored by, with '
-                    + 'a coverage guard (chk === phaseC.length and chk > 0) and the distinct stakes present '
-                    + 'emitted. The HMAC message is `${clientSeed}:${nonce}:${cursor}` and revealMines takes '
-                    + 'no stake parameter, so no amount term can enter the derivation. The elevated-stake '
-                    + 'PAYOUT path is settled by the same exact floor8 identity over these same rows in Step 8. '
-                    + 'The step states its own limit: sample layout parity at two recorded stakes, not '
-                    + 'paired-stake causality',
+                note: 'Phase C: 124 rounds at 10.00, 100 times the stake of every other phase, at 3 mines and one tile (a low mine '
+                    + 'count). Every one recomputes from the wager-free engine, and its wins (at least PHASE_C_MIN_WINS = 100 '
+                    + 'required) are booked at floor2(stake × exact) and carry the wallet field floor8(betAmountWallet × floor8(exact)), the '
+                    + 'rules the 0.10 wins are held to. The 3-mine, one-tile cell was played only at the elevated stake (3 mines '
+                    + 'at 0.10 were played at depths 2, 4, 6 and 8), so "the same formula as its base-stake config" is the same '
+                    + 'closed form holding at both stakes, not the same cell at two stakes — stated in the step detail',
             }],
     },
     19: {
         claims: [
-            {
-                id: 'MINES-26', coverage: 'full',
-                note: 'the dataset pin has ONE definition — EXPECTED_DATASET_HASH in src/pins.ts — imported '
-                    + 'by the producer (src/simulate.ts, src/write-figures.ts) and the verifier '
-                    + '(tests/verify.ts) alike; src/loader.ts hashes the raw bytes and exits(1) BEFORE '
-                    + 'JSON.parse, so enforcement precedes any parse and any step; and the pin is '
-                    + 're-asserted here as a scored step. This package has exactly one dataset file and no '
-                    + 'config file (the payout is a formula), so there is no secondary file to pin. The '
-                    + 'immutable legacy simulation fixture is pinned too (LEGACY_BOOTSTRAP_ARTIFACT_SHA256, '
-                    + 'tests/mines/qaRegressionTests.ts QA-05b)',
-            },
+            { id: 'MINES-26', coverage: 'full', note: 'the live SHA-256 of the dataset equals the constant in src/pins.ts and the loader aborts on a mismatch before any step runs; the three raw captures are pinned the same way (src/pins.ts PROD_CAPTURES, src/prod-capture.ts)' },
             {
                 id: 'MINES-27', coverage: 'full',
-                note: 'every artifact the report quotes from outputs/ is pinned by SHA-256 in src/pins.ts '
-                    + 'ARTIFACT_PINS and re-hashed here, ABSENT is a FAIL: simulation-results.json, '
-                    + 'simulation-provenance.json, bootstrap-nulls.float64le, rtp-convergence.html, '
-                    + 'deep-replay-report.json, bootstrap-replay-report.json, audit-figures.json and '
-                    + 'verification-results.json (8/8); each must be un-ignored BY NAME in .gitignore (M48); no '
-                    + 'pinned JSON artifact may carry a run-metadata key (src/domains.ts RUN_METADATA_KEY; '
-                    + 'forgery A33 puts generatedAt back, re-pinned, and is rejected); every numeric leaf of every '
-                    + 'pinned JSON artifact must have a DECLARED value domain with bounds from code and lie in it '
-                    + '(src/domains.ts; A34, an impossible value re-pinned, is rejected by the domain alone); the '
-                    + 'pin arm itself is A35 (one byte, not re-pinned). Run metadata was REMOVED, not excluded, '
-                    + 'on 2026-09-24, each file through its own generator\'s serialiser with every other leaf '
-                    + 'proven identical: simulation-results.json lost generatedAt and two executionTimeMs '
-                    + '(1,884 → 1,881 leaves, 0 changed) and a SIM_REPLAY=1 regeneration by src/simulate.ts '
-                    + 'reproduces it (see MANIFEST "Artifacts of record"); provenance, deep-replay, bootstrap-replay '
-                    + 'and figure artifacts likewise. The producers write to outputs/run/ by default (simulate, '
-                    + 'figures, bootstrap-replay; deep-replay only to --out), verify writes only outputs/run/ '
-                    + 'plus a field-level diff.json against the committed copies at the reproduction tolerance, '
-                    + 'and PF_EMIT=1 is the one deliberate in-place path, re-pinned in the same diff. Named '
-                    + 'exception: tests/fixtures/legacy-simulation-results.json keeps its 2026-08-05 generatedAt '
-                    + '— it is the byte-for-byte copy of a superseded artifact kept as a regression fixture, '
-                    + 'its bytes (timestamp included) are its asserted identity (LEGACY_BOOTSTRAP_ARTIFACT_SHA256, '
-                    + 'QA-05b), and no reported figure is read from it',
-            },
-            {
-                id: 'MINES-15', coverage: 'full',
-                note: 'the committed-artifact half: outputs/audit-figures.json carries `referenceGrid`, a '
-                    + 'row per legal (m,k) cell for all 300 cells, and this step BINDS it by field-for-field '
-                    + 're-derivation, so the all-cells reference is a produced artifact and not prose. The '
-                    + 'artifact does not mark which cells live play reached; that is not in the profile\'s '
-                    + 'asserts, and the live-witnessed cash-out cells are now emitted by a step — the '
-                    + 'audited dataset\'s 25 in Step 10\'s detail and MANIFEST DL-4, the scored supplement\'s 20 in '
-                    + 'Step 22\'s detail. The Phase A half is Step 9; the multi-reveal half is Step 22; the '
-                    + 'first-pick span is Step 21',
+                note: 'every artifact of record is hash-pinned (ARTIFACT_PINS), un-ignored by name, free of run metadata, never '
+                    + 'rewritten by verify (which writes only outputs/run/), and every numeric leaf of every pinned JSON artifact '
+                    + 'has a declared value domain (src/domains.ts); the derived-figure artifact is re-derived and compared field '
+                    + 'by field at the reproduction tolerance',
             },
         ],
     },
     20: {
         claims: [
-            {
-                id: 'MINES-10', coverage: 'full',
-                note: 'every clause, over the whole population and from the RECOMPUTED layout — the mine '
-                    + 'set is revealMines(serverSeed, clientSeed, nonce, m), never the served mineTiles and '
-                    + 'never the result label: a WIN opens no mine AND its opened count equals the recorded '
-                    + 'depth (`reveals`); a LOSS busts on EXACTLY the last opened tile with no earlier mine '
-                    + 'and opens between 1 and `reveals` tiles; every opened tile is a legal index 1..25, '
-                    + 'none repeated, and the served mine list is mineCount distinct legal indices (the '
-                    + 'profile\'s rules.boardStructure note). Coverage: wins + losses === EXPECTED_BETS, both '
-                    + 'present, 0 rounds unrecomputable, 0 labels other than won/lost. Measured 3,104 wins / '
-                    + '3,796 losses, 0 violations of any clause. Forgery D23 truncates a Phase-E win to 4 '
-                    + 'tiles with its multiplier and credit rewritten for depth 4 — every payout step prices '
-                    + 'it at the opened depth and passes; this step FAILs it. D22 ([t,t,t,t,t]) and mutation '
-                    + 'M42 (recomputed set shifted) FAIL it. The label ⇔ mine half as it bears on payment is '
-                    + 'also carried by Step 8',
-            },
-            {
-                id: 'MINES-17', coverage: 'partial',
-                note: 'the per-reveal status and mine-set invariance arm: every opened tile\'s mine/safe '
-                    + 'status is checked against the seed-derived layout for all 6,900 rounds (not only '
-                    + 'Phase E), which is what binds the reveal sequence to the committed layout. `partial` '
-                    + 'for the package-wide reason in Step 15: no per-step multiplier is served on the wire '
-                    + '(Step 22), so no intermediate rung is checked. Reveal ORDER independence at the '
-                    + 'cash-out rung is Step 22',
-            },
+            { id: 'MINES-10', coverage: 'full', note: 'judged against the RECOMPUTED layout: a win opens no mine and exactly its recorded depth; a loss busts on exactly the last opened tile; opened tiles are legal and unrepeated' },
+            { id: 'MINES-17', coverage: 'partial', note: 'the mine set of a round is the recomputed layout whatever was opened, on every multi-reveal round. ' + NO_RUNG },
         ],
     },
     21: {
         claims: [
-            {
-                id: 'MINES-17', coverage: 'partial',
-                note: 'the reveal-POSITION arm: all 400 Phase-E layouts still recompute regardless of which '
-                    + 'positions were opened (chk === phaseE.length, 0 mismatches) and the rounds span more '
-                    + 'than one distinct opened-tile set (measured 107) with ALL 25 board positions as a '
-                    + 'first pick (asserted since 2026-09-23; measured 25/25). The step says out loud that it '
-                    + 'is a layout-parity check over a swept window, not a statistical independence test. '
-                    + 'Reveal ORDER independence is Step 22 on the v3 supplement (CSPRNG reveal orders '
-                    + 'journalled before each bet). WHAT IS MISSING package-wide: no intermediate rungs, '
-                    + 'because LIQD serves no per-step multiplier (Step 22: 0 of 3,314 reveals on 2026-10-03, 0 of '
-                    + '3,418 on 2026-09-26) — a '
-                    + 'property of the operator\'s API, not closable by another capture',
-            },
-            {
-                id: 'MINES-15', coverage: 'full',
-                note: 'the first-pick span half: ALL 25 positions asserted as a first pick (firsts.size === '
-                    + 'GRID, tests/steps/standardization.ts; raised from >= 20 on 2026-09-23), measured 25/25, '
-                    + 'and mutation M43 (shuffle swap removed) makes the step FLAG. The Phase A half is Step '
-                    + '9; the several-depths-and-mine-counts half is Step 22',
-            },
+            { id: 'MINES-17', coverage: 'partial', note: 'independence of reveal position: every opened sequence is a prefix of the round\'s planned order, drawn per round by the runner\'s CSPRNG and written into the capture before any bet, and the layout recomputes whatever was opened. ' + NO_RUNG },
+            { id: 'MINES-15', coverage: 'full', note: 'the reveal positions span all 25 tiles as a first pick (required: 25 of 25)' },
         ],
     },
     22: {
         claims: [
             {
-                id: 'MINES-15', coverage: 'full',
-                note: 'the multi-reveal half, on the scored v3 supplement captured 2026-10-03 '
-                    + '(data/liqd-mines-capture-v3-2026-10-03T11-58-54-479Z.json, SHA-256 pinned with its '
-                    + 'journal in src/pins.ts): exactly 50 rounds at each of the 20 planned (mineCount, depth) '
-                    + 'configurations — mine counts 1, 3, 5, 8, 12 x 4 depths each, asserted against '
-                    + 'SUPPLEMENT_DEPTHS in code, none off plan — and at least SUPPLEMENT_MIN_CASHOUT_RUNGS (20) '
-                    + 'cash-out cells witnessed (measured 20; the fewest wins, 2, at (12, 5)); first picks span '
-                    + '25/25. The Phase A half is Step 9. The same step binds the supplement build\'s operator '
-                    + 'settings (arm j, since 2026-10-02): all 607 settle-response settings records equal '
-                    + 'SUPPLEMENT_GAME_SETTINGS in src/pins.ts (mutation M57 edits the declaration and FAILs the '
-                    + 'step); they carry no maxOdds, which Step 10 discloses (MINES-14 cap half, not scored since 2026-10-15). The 2026-09-26 '
-                    + 'capture of the same plan (19 cells witnessed; (12, 5) 0 wins in 50) is dated history, arm '
-                    + '(k), pinned and not scored',
+                id: 'MINES-11', coverage: 'full',
+                note: 'the wallet leg: every win\'s winningAmountWallet equals LIQD\'s measured rule floor8(betAmountWallet × '
+                    + 'floor8(exact)) on the 1e-8 USDT grid — 2,691 of 2,691; a wallet field below or above the rule FAILs, a loss '
+                    + 'carries no wallet win. Against the exact product the wallet field is one 1e-8 unit lower on 62 wins of capture 1 and '
+                    + 'never higher. RULING 2 (11 November 2026, every LIQD game whose wallet rule rounds down to 8 decimals): '
+                    + 'a floor at 1e-8 produced by the declared rule is DISCLOSED, not a deviation, so it moves no status and '
+                    + 'the Full Pass stands (the dice package treats its floor8 payouts the same way); the disclosure is bound '
+                    + 'to the data (a moved count FAILs). Per capture the wallet totals '
+                    + 'equal the declaration, and on the captures booked in USD the wallet fields exceed the booked wins by '
+                    + 'exactly the amount the cent floor dropped',
             },
             {
                 id: 'MINES-17', coverage: 'partial',
-                note: 'the cash-out rung, the order arm and the per-reveal arm on the 1,000 interactive '
-                    + 'rounds captured 2026-10-03: every layout recomputes (1,000/1,000), every served mine/safe '
-                    + 'status equals the recomputed layout (3,314/3,314 reveals), the reveal order is the CSPRNG '
-                    + 'order journalled before the bet (1,000/1,000), and at each of the 20 witnessed '
-                    + '(mineCount, depth) cells the served multiplier and credit are one value across every '
-                    + 'reveal order (20/20). Every win is scored against the ONE rule the audited dataset is '
-                    + 'held to (credit floor8(stake x exact), display floor2(exact)): 393/393 credits and 393/393 '
-                    + 'displays equal it, 0 above, 0 below — the declared gap is 0, so a short credit FAILs the '
-                    + 'step, the severity MINES-11 (HARD_FAIL, an exact comparison under a declared settlement '
-                    + 'rule) gives it and the one Step 8 gives it on the audited dataset (forgery D26). DATED '
-                    + 'HISTORY, arm (k), pinned and re-derived, not scored: on the 2026-09-26 capture of the same '
-                    + 'plan 50 of 404 wins were credited one 1e-8 unit below the rule ((1,10) x29, (1,15) x21; '
-                    + '$0.0000005 in total; DL-14) and 29 displayed one cent below it, all at (1,10) (DL-15); the '
-                    + 'step was a FLAG on them from 2026-10-01 to 2026-10-03, pending OPEN RULING 2 (is a win '
-                    + 'credited 1e-8 below floor8(stake x exact) a FAIL or a FLAG?), which now bears only on how '
-                    + 'that history is classed; LIQD confirmed a floating-point issue on 2026-09-30 and stated a '
-                    + 'fix for its next release. No rule fitted to the operator\'s output is gated. WHAT IS '
-                    + 'MISSING: the per-step rung — LIQD serves no multiplier on an open-tile response (0 of '
-                    + '3,314 reveals, asserted equal to the declared SUPPLEMENT_DECLARED_PER_STEP_MULTIPLIERS = '
-                    + '0; 0 of 3,418 on 2026-09-26), so no intermediate rung can be checked and the profile\'s '
-                    + 'declarationTruth makes the check partial',
+                note: 'every open-tile reply\'s mine/safe flag equals the recomputed layout (19,498 reveals), every round opened '
+                    + 'its planned tiles in order, and per (cell, stake, fiat) there is one displayed multiplier and one booked '
+                    + 'amount across every reveal order that reached it. ' + NO_RUNG,
             },
+            { id: 'MINES-15', coverage: 'full', note: 'every planned (phase, setting) pair is checked for a witnessing win and the ones without are enumerated in the detail; all pairs outside phase D (25 rounds per setting) must be witnessed' },
         ],
     },
 };
 exports.NOT_APPLICABLE = [
     {
         id: 'MINES-16',
-        reason: 'applies={path: money.balanceField, notNull: true} is false — this capture has no '
-            + 'balance field to reconcile against. Measured over data/mines-master-6900bets.json: no key '
-            + 'matching /balance|wallet/i exists on any of the 6,900 bet records or any of the 138 seed '
-            + 'records, and this operator\'s settle response carries none, so there is no consecutive-bet '
-            + 'wallet delta and no magnitude to state — the quantity was never recorded. This is the '
-            + 'package\'s own declared limitation DL-5 (MANIFEST.md), carried as risk R-CREDIT in '
-            + 'MANIFEST.md#operator-trust and E14 in MANIFEST.md#evidence, with remedy A4 (a follow-up capture '
-            + 'recording delta-balance == winningAmount - betAmount per round). What IS verified is the '
-            + 'settle-response field: on the audited dataset 3,104/3,104 wins credit the exact floor8 '
-            + 'amount and 3,796/3,796 losses credit exactly 0 (Step 8) — which the profile explicitly '
-            + 'does not count as a balance ledger. Neither v3 supplement capture carries a balance field '
-            + 'either (no key matching /balance|wallet/i in data/liqd-mines-capture-v3-2026-10-03T11-58-'
-            + '54-479Z.json or data/liqd-mines-capture-v3-2026-09-26T16-46-41-121Z.json)',
+        reason: 'applies={path: money.balanceField, notNull: true} is false — no reply of the mines game carries a balance '
+            + 'field to reconcile against (the raw captures\' only key matching /balance/i is the runner\'s own balanceGuard '
+            + 'setting in its meta), so there is no consecutive-bet balance delta. This is the package\'s declared limitation '
+            + 'DL-5 (MANIFEST.md). What IS verified per round is the operator\'s settle record in both currencies: the booked '
+            + 'fiat amount (Step 8) and the USDT wallet debit and wallet field, betAmountWallet on every place-bet reply and '
+            + 'winningAmountWallet on every win (Step 22) — which the profile does not count as a balance ledger',
     },
 ];
 exports.PACKAGE_CHECKS = [
     {
         id: 'MINES-09',
-        artifact: 'docs/ALGORITHM.md + src/rng.ts (provenance header) + tests/mines/rngSpecTests.ts + tests/mines/rngTests.ts (+ tests/mines/qaRegressionTests.ts QA-12) — 49 bundled unit specs',
+        artifact: 'docs/ALGORITHM.md + src/rng.ts + tests/mines/rngSpecTests.ts + tests/mines/rngTests.ts + tests/mines/regressionTests.ts',
         coverage: 'partial',
-        note: 'REWRITTEN 2026-10-20. src/rng.ts is rebuilt from a written specification, '
-            + 'docs/ALGORITHM.md (framework games/liqd-mines/ALGORITHM.md), by an implementer who never opened '
-            + 'LIQD\'s code; LIQD\'s code is run as a second check, not used as the source. Until then src/rng.ts '
-            + 'was the auditor\'s reconstruction from LIQD\'s client bundle, checked against the byte-level RNG '
-            + 'specification LIQD supplied privately and cited generically; that module and its citation are '
-            + 'gone. The profile\'s "the adapter cites the operator source line it ports" is superseded for '
-            + 'this package by the 20 Oct 2026 rule that RNG code is rebuilt from a written spec: nothing is '
-            + 'ported, so no operator line is cited; docs/ALGORITHM.md §4 names the source of every step '
-            + '(LIQD\'s public pages, the standard construction, or the 8,900 live rounds). What IS here: '
-            + 'tests/mines/rngSpecTests.ts runs the spec\'s own vectors and properties against src/rng.ts '
-            + '(98/98); the unit specs reproduce CAPTURED bets from their revealed seeds (bet '
-            + 'GbqOuPvhQekqcARNtHZ3_ → [6,20,7]; bet j2ICJ7NM_TrD_UMtv6Av0 → the full 24-tile draw order; '
-            + 'commitHash(8b2f…) → 5d6c4f10…); and, as the second check, the OPERATOR\'S OWN validation '
-            + 'vectors from LIQD\'s private specification (nonce 7 cursor 0 range 25 → 2; nonce 7 cursor 3 '
-            + 'range 52 → 49; Mines nonce 7 mineCount 3 → [3,17,16]). Mutation M16 corrupts a fixture '
-            + 'nibble and mocha fails. PARTIAL because LIQD\'s code itself is not in this package (its '
-            + 'specification is private and not quoted), so the second check here is its three vectors, not an '
-            + 'execution of its code on every round; and the operator\'s live verify endpoint is still not probed',
+        note: 'src/rng.ts is rebuilt from a written specification, docs/ALGORITHM.md, by an implementer who never opened '
+            + 'LIQD\'s code; LIQD\'s code is run as a second check, not used as the source. tests/mines/rngSpecTests.ts runs '
+            + 'the specification\'s vectors — five production rounds of this dataset — and properties against src/rng.ts; '
+            + 'tests/mines/rngTests.ts reproduces two captured production rounds from their revealed seeds and, as the '
+            + 'second check, the operator\'s own validation vectors from the specification LIQD supplied privately. PARTIAL '
+            + 'because LIQD\'s code itself is not in this package (its specification is private and not quoted), so the '
+            + 'second check is its three vectors, not an execution of its code on every round. LIQD\'s live verifier endpoint '
+            + 'IS queried for every round (Step 22 arm j), which is the operator\'s tool agreeing, not its source',
     },
     {
-        id: 'MINES-23', artifact: 'MANIFEST.md#verification-results', coverage: 'full',
-        note: 'the standardized matrix with framework IDs S5-1 … S5-8, the same eight categories and '
-            + 'order the LIQD Dice package uses — seed substitution, client-seed manipulation, '
-            + 'stake-conditional outcome, server-seed cherry-picking, seed-rotation race (TOCTOU), '
-            + 'multiplier tampering, nonce manipulation, modulo bias — each row carrying one of Pass / '
-            + 'Flag / Hard Fail / Not tested — disclosed and a citation to the scored step or capture '
-            + 'evidence that decides it. S5-5 is "Not tested — disclosed": the capture drove the atomic '
-            + 'auto-bet endpoint one round at a time, so no concurrent rotate/round interleaving was '
-            + 'exercised (risk R-RACE in MANIFEST.md#operator-trust, recommendation A5)',
+        id: 'MINES-23', artifact: 'exploit-testing.md', coverage: 'full',
+        note: 'the standardized matrix with framework IDs S5-1 … S5-8, each row carrying Pass / Flag / Hard Fail / Not tested '
+            + '— disclosed and the scored step or capture evidence that decides it. S5-5 (seed-rotation race) is "Not tested '
+            + '— disclosed": the captures played one round at a time and rotated only between epochs',
     },
     {
         id: 'MINES-25',
-        artifact: 'MANIFEST.md#verify-a-bet (steps, script and worked verification examples)',
-        coverage: 'full',
-        note: 'MANIFEST.md "Verify a bet" carries the player path, in the profile\'s '
-            + 'order and in the dataset\'s field names: (1) where the seed is revealed — the Seeds panel '
-            + 'shows the Active Server Seed (Hashed) commitment and the next pair before play (E12, E13), '
-            + 'and rotating the pair reveals the retiring serverSeed, shown under My Bets in the round\'s '
-            + 'Provably Fair section (E21); the player is told to copy the Active Server Seed (Hashed) '
-            + 'before rotating, because that round view lists only Client Seed, Server Seed, Nonce and '
-            + 'Mines (E21); (2) which fields to take — clientSeed, serverSeed, nonce, mineCount from that '
-            + 'section, hashedServerSeed from the Seeds panel before rotating, openTiles and mineTiles '
-            + 'from the player\'s own board; (3) the commitment encoding — SHA-256 of the '
-            + 'serverSeed hex STRING as UTF-8, not of its decoded bytes; (4) the shuffle — HMAC-SHA256 '
-            + 'keyed by the hex-decoded serverSeed over `clientSeed:nonce:cursor`, 4-byte big-endian '
-            + 'chunks, rejection at maxFair, sequential Fisher-Yates; (5) the tile numbering — 1-based, '
-            + '1..25, mines in draw order, numbered across rows from the top-left square (tile t at row '
-            + 'ceil(t/5), column ((t-1) mod 5)+1), settled by E22, the finished board of the E21 round, '
-            + 'whose revealed seed computes mines [12, 1, 25] and whose board shows them at row 1 column '
-            + '1, row 3 column 2 and row 5 column 5 (docs/ALGORITHM.md O5, closed 2026-10-21; until then '
-            + 'this check was claimed full while the numbering was open, external QA 2026-10-21). A copy-paste Node script (node:crypto only) performs steps '
-            + '3-5 and was run against bet GbqOuPvhQekqcARNtHZ3_ (commitment ok, mines [6, 20, 7] = the '
-            + 'recorded mineTiles). The worked verification examples in the same '
-            + 'section carry bets through literally',
+        artifact: 'README.md#verify-a-bet + MANIFEST.md#verify-a-bet',
+        coverage: 'partial',
+        note: 'the player path is stated in the profile\'s order and in the declaration\'s field names: where the seed is '
+            + 'revealed (the rotation reply\'s revealedServerSeed), which fields to take (clientSeed, serverSeed, nonce, '
+            + 'mineCount; the commitment hashedServerSeed read BEFORE rotating), the commitment encoding (SHA-256 of the '
+            + 'serverSeed hex string as UTF-8), the shuffle, and the tile numbering (1-based, 1…25), with a script and worked '
+            + 'production rounds. PARTIAL because the path is evidenced from the production API replies only: no screen of '
+            + 'LIQD\'s provably-fair panel or of a finished board was captured on production, so the panel labels and the '
+            + 'position on screen of each tile number are not evidenced in this package (MANIFEST DL-19)',
     },
     {
         id: 'MINES-28',
-        artifact: 'scripts/check-standalone.mjs + scripts/standalone-runtime.cjs + src/pins.ts (AUDIT_ID, EXPECTED_UNIT_TESTS) + standalone-manifest.json + verify.js / test.js + package.json (engines 22.x) + .nvmrc + src/diff.ts -> outputs/run/diff.json',
+        artifact: 'scripts/run-stages.mjs + scripts/check-standalone.mjs + scripts/standalone-runtime.cjs + src/pins.ts (AUDIT_ID, EXPECTED_UNIT_TESTS) + standalone-manifest.json + verify.js / test.js + package.json (engines 22.x) + .nvmrc + scripts/release-manifest.mjs + .github/workflows/reproduce.yml',
         coverage: 'full',
-        note: 'zero-install verification on a fresh clone: `npm test` is scripts/run-stages.mjs running four '
-            + 'dependency-free stages — check-standalone.mjs, node test.js, node verify.js and '
-            + 'release-manifest.mjs --check — every one of them whatever the verdict (until 2026-10-02 an && '
-            + 'chain stopped at the verifier\'s exit 2 and never reached the release check); it exits with the '
-            + 'verifier\'s verdict code when the other three pass and 1 when one does not; the runtime is pinned (engines 22.x plus '
-            + '.nvmrc); verify writes only outputs/run/ and a field-level diff.json at the profile\'s '
-            + 'reproduction tolerance, exiting 1 beyond it; the bundle inventory is hash-checked. The '
-            + 'PASSING unit-spec count is enforced: the zero-install runner counts every spec that ran '
-            + 'to completion and exits 1 unless it equals EXPECTED_UNIT_TESTS (49) in src/pins.ts. The '
-            + 'audit ID is a constant (AUDIT_ID = PF-2026-LQ02 in src/pins.ts), emitted into '
-            + 'outputs/verification-results.json, and check-standalone.mjs fails unless MANIFEST.md '
-            + 'carries the same ID, the unit-spec count quoted in MANIFEST.md/README.md equals '
-            + 'EXPECTED_UNIT_TESTS, and the scored-step count quoted there equals the steps in the '
-            + 'committed scored record (22); since 2026-10-02 it also scans every shipped chapter for the '
-            + 'current-count phrasings of the unit specs, scored steps, declared mutations, forgeries and '
-            + 'declared limitations and fails on any that disagrees with the registry it counts',
+        note: 'zero-install verification on a fresh clone: `npm test` runs four dependency-free stages — check-standalone.mjs, '
+            + 'node test.js, node verify.js and release-manifest.mjs --check — every one of them whatever the verdict, and '
+            + 'exits with the verifier\'s verdict code when the other three pass and 1 when one does not; the runtime is '
+            + 'pinned (engines 22.x plus .nvmrc); verify writes only outputs/run/ and a field-level diff.json at the '
+            + 'reproduction tolerance, exiting 1 beyond it; the bundle inventory is hash-checked; the passing unit-spec count '
+            + 'must equal EXPECTED_UNIT_TESTS; the audit ID is a constant in src/pins.ts and the documents\' step, unit, '
+            + 'mutation and forgery counts are compared with the suite by check-standalone.mjs. The second-machine job is '
+            + 'defined in .github/workflows/reproduce.yml; its run is not part of the package',
     },
     {
         id: 'MINES-29',
-        artifact: 'tests/mutations.json (48) + tests/survivors.json (11, each tied to a DL row) + tests/forgeries.ts (63 must-fail, 0 declared survivors), run by tests/mutations.ts and tests/forgeries.ts',
+        artifact: 'tests/mutations.json + tests/survivors.json + tests/forgeries.ts, run by tests/mutations.ts and tests/forgeries.ts',
         coverage: 'full',
-        note: 'the registry is step-named and runs in a disposable copy (node_modules symlinked, the '
-            + 'working tree never touched), and every entry NAMES the step that must fire, with the '
-            + 'runner asserting both the VERDICT and that step\'s status (and, where the named step already '
-            + 'carries that status on the unmutated tree, a FLAG REASONS code the unmutated run does not '
-            + 'print — Step 10 since 2026-10-02). EVERY scored step 1–22 has '
-            + 'at least one mutation that kills it: M56 (Step 2, added 2026-10-02 — until then no entry named '
-            + 'Step 2), M33 (Step 3), M34/M35 (4), M12 (5), M36 (9), '
-            + 'M37/M38 (10, FLAG), M39 (14), M40 (15), M41 (18), M42 (20), M43 (21) were added '
-            + '2026-09-23, M44 (5, the vendored site verifier) and M45–M48 (17 served-config binding and '
-            + 'gate, 16 replay engine, 19 .gitignore) on 2026-09-24, M49–M52 (22: display rule, supplement '
-            + 'plan, per-step declaration, DL-14 count) on 2026-09-26, M53–M55 (22: a credit above the '
-            + 'rule, the fitted binary64 model re-adopted as the rule, the credit-gap flag switch) on '
-            + '2026-09-29, M57 (22: the supplement settings declaration) and M58 (10: the supplement '
-            + 'settings arm) on 2026-10-02 — beside the existing entries for steps '
-            + '1, 5, 6, 7, 8, 10, 11, 12, 13, 16, 17, 19. On 2026-10-03, when Step 22 moved to the '
-            + '2026-10-03 capture, four Step 22/10 entries were re-targeted to it rather than left asserting '
-            + 'the 2026-09-26 data: M52 now edits the dated-history count (SUPPLEMENT_HISTORY_CREDIT_UNIT_BELOW), '
-            + 'M55 — whose switch was removed with the FLAG it held — now declares a non-zero gap on the '
-            + 'zero-gap capture, M57 edits the 2026-10-03 settings value, and M58 now expects Full Pass. On '
-            + '2026-10-20, when src/rng.ts was replaced by the module rebuilt from docs/ALGORITHM.md, the nine '
-            + 'entries that edit it (M09, M10, M11, M12, M17, M39, M41, M42, M43) were re-targeted to the same '
-            + 'faults in the rebuilt code (M13\'s line is unchanged). A run '
-            + 'that hits the per-run time limit '
-            + '(PF_MUTATION_TIMEOUT_S, default 1200 s) is reported TIMED OUT, not MISS, and fails the gate '
-            + 'as inconclusive. '
-            + 'The survivor staleness alarm is REACHABLE: a declared survivor is "now caught" when the '
-            + 'verdict is no longer the clean one or its named step fires, and that fails the gate '
-            + '(registry out of date). Every survivor carries a `limitation` field naming its MANIFEST '
-            + 'row (DL-11, and DL-2 for the bootstrap-arm entries). Forged-evidence batteries are '
-            + 'included (dataset, simulation-artifact and figure-artifact forgeries; dataset forgeries '
-            + 're-pin the dataset and, since 2026-09-24, artifact forgeries re-pin every artifact of record '
-            + 'so that only the step re-deriving the content can reject them — A35 is the one that does not, '
-            + 'to test the pin). The one evidence survivor, S01, became must-fail A31 on 2026-09-24',
+        note: 'a step-named source-mutation registry run in a disposable copy (each entry names the step that must FAIL or '
+            + 'FLAG), declared survivors each tied to a limitation row, and a forged-evidence battery over the dataset, the '
+            + 'raw captures and the pinned artifacts. The batteries are run by `npm run test:toolchain`, not by `npm test`',
     },
     {
-        id: 'MINES-30', artifact: 'MANIFEST.md (Declared Limitations DL-1…DL-16, Load-Bearing Premises, Model Anchors) + MANIFEST.md#evidence E01-E20',
+        id: 'MINES-30', artifact: 'MANIFEST.md (declared limitations register, load-bearing premises) + evidence.md (evidence register)',
         coverage: 'full',
-        note: 'the register is present and measured: DL-1…DL-16 each carry a MEASURED MAGNITUDE and the '
-            + 'registry entry or evidence that closes it (DL-1, the deep Pass-1 statistics, is CLOSED since '
-            + '2026-09-24 by the in-verify replay of Step 16 and says so); DL-13 is the predictable Phase D '
-            + 'seeds with the exposed epochs 120–129 enumerated; the load-bearing-premises table marks the '
-            + 'unwitnessed premises ASSUMED; MANIFEST Evidence numbers E01-E20 with an evidential role each. No '
-            + 'internal QA material ships, by the profile\'s own measure (param '
-            + 'package.internalFoldersPresent; conformance C-09 scans file paths for review-rounds/, '
-            + 'qa|review|notes|scratch|internal/, .env, credential files and .pf-*): the two framework '
-            + 'files that shipped at the package root, .pf-assumptions and .pf-declared-constants, were '
-            + 'moved on 2026-09-24 out of the package into the ProvablyFair.org audit framework\'s package '
-            + 'notes (the framework\'s prose checker still looks for them in the package and must be '
-            + 'repointed — a framework change). QA-nn / FIX-nn identifiers remain in shipped prose and test '
-            + 'names as cross-references to the review items that produced a guard; the profile\'s rule '
-            + 'measures shipped files and folders, not identifiers inside them, so they are not counted here',
+        note: 'the register carries each declared limitation with its measured magnitude and what closes it; the '
+            + 'load-bearing-premises table marks the unwitnessed premises ASSUMED; the evidence register numbers every '
+            + 'exhibit with its evidential role. No internal review material ships in the package',
     },
 ];
 function profileCoverageBlock() {
@@ -2820,7 +2741,7 @@ if (!/^0\.\d+$/.test(HELD_RTP))
 exports.RTP_CLAIM = {
     kind: 'flat',
     rtp: HELD_RTP,
-    source: 'LIQD Mines: the game page liqd.com/originals/mines shows "Released: June 2026 | Edge: 1.00%", RTP "99% (99.03% after rounding)" and "99% RTP at every setting" (read 2026-10-01, evidence/rtp-page-labels-2026-10-01.json). The same page also states "the realised edge moves a little with the exact mines-and-picks combination, between 0.64% and 1.44%, around the nominal 1%" (RTP 98.56%-99.36%); which of the two statements LIQD is held to is OPEN, pending the profile owner\'s ruling (MANIFEST "Open rulings", ruling 1). This table holds the flat figure until then; the range, run through the same rule, is printed in Step 10 and not scored. Same figure as HOUSE_EDGE = 0.01, published RTP 99.0000 % (src/config.ts:10, :43; declaration gameModel.edge.claimed 0.01)',
+    source: 'LIQD Mines: the game page liqd.com/originals/mines shows "Released: June 2026 | Edge: 1.00%", RTP "99% (99.03% after rounding)" and "99% RTP at every setting" (read 2026-10-01, evidence/rtp-page-labels-2026-10-01.json). The same page also states "the realised edge moves a little with the exact mines-and-picks combination, between 0.64% and 1.44%, around the nominal 1%" (RTP 98.56%-99.36%); ruling 1 (MANIFEST "Rulings") holds LIQD to the flat figure, which the wallet field in the reply meets, and records that sentence as a discrepancy, as published on 1 Oct 2026; the range, run through the same rule, is printed in Step 10 and not scored. Same figure as HOUSE_EDGE = 0.01, published RTP 99.0000 % (src/config.ts:10, :43; declaration gameModel.edge.claimed 0.01)',
 };
 exports.RTP_CLAIM_PAGE_RANGE = {
     kind: 'range',
@@ -2830,7 +2751,7 @@ exports.RTP_CLAIM_PAGE_RANGE = {
 };
 exports.RTP_CLAIM_STEP = 10;
 exports.RTP_CLAIM_TABLE = path.join(__dirname, '..', 'outputs', 'rtp-claim-table.json');
-exports.RTP_CLAIM_TABLE_SHA256 = 'b8293e56cb2f77d5e58e176b1e7cb3b7cbb732bcd5c6a6131ae292fc23839a4a';
+exports.RTP_CLAIM_TABLE_SHA256 = 'cfd654a112dec6815da92ae700e5fbc47afe9756a335627c5701e23c08fb4211';
 function computeRtpClaim(claim = exports.RTP_CLAIM) {
     const acc = new rtp_claim_1.RtpClaimAccumulator(claim);
     for (const m of config_1.MINE_COUNTS) {
@@ -2847,7 +2768,7 @@ function rtpClaimTableText(r) {
     return (0, rtp_claim_1.rtpClaimTable)(r, {
         package: 'liqd/mines', game: 'mines',
         settingSpace: 'mines 1–24 × cash-out after k = 1 … 25 − m reveals (300 cells)',
-        rtpMethod: 'exact rational: C(25−m,k)/C(25,k) × the credited multiplier EDGE_NUM/EDGE_DEN·Π(25−i)/(25−m−i)',
+        rtpMethod: 'exact rational: C(25−m,k)/C(25,k) × the exact multiplier EDGE_NUM/EDGE_DEN·Π(25−i)/(25−m−i)',
     });
 }
 function runRtpClaimGate() {
@@ -3141,6 +3062,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.run = run;
 const context_1 = require("./context");
 const config_1 = require("../../src/config");
+const pins_1 = require("../../src/pins");
 function run(_ctx) {
     let maxSumDev = 0, worstM = 1;
     let maxProdDev = 0, worstMk = '';
@@ -3182,9 +3104,19 @@ function run(_ctx) {
     }
     let countCases = 0, countMismatches = 0;
     let worstCount = '';
-    for (const m of config_1.MINE_COUNTS) {
-        const kMax = Math.min(5, config_1.GRID - m);
-        for (let k = 1; k <= kMax; k++) {
+    const anchorCases = [];
+    for (const m of config_1.MINE_COUNTS)
+        for (let k = 1; k <= Math.min(5, config_1.GRID - m); k++)
+            anchorCases.push([m, k]);
+    for (const [ms, ks] of Object.entries(pins_1.PROD_DEPTHS))
+        for (const k of ks)
+            if (k > 5)
+                anchorCases.push([Number(ms), k]);
+    let playedDeepCases = 0;
+    for (const [m, k] of anchorCases) {
+        if (k > 5)
+            playedDeepCases++;
+        {
             let total = 0, avoiding = 0;
             const idx = [];
             const walk = (start) => {
@@ -3215,7 +3147,7 @@ function run(_ctx) {
     const s13 = (0, context_1.step)(13, 'Anti-Circularity (Combinatorial Win Probability)', ok ? 'PASS' : 'FAIL', `winProbability(m,k) = C(25-m,k)/C(25,k), pure combinatorics — no operator data (${mCovered}/${config_1.MINE_COUNTS.length} mineCounts, ${mkCovered} (m,k) pairs). `
         + `k=1 outcome space Σ (safe+mine) = 1.0 exactly (max dev ${maxSumDev.toExponential(3)}, m=${worstM}); `
         + `combinatorial form == product Π(25-m-i)/(25-i) over all reachable m,k (max dev ${maxProdDev.toExponential(3)}, ${worstMk}); `
-        + `counting anchor: ${countCases} (m,k) cases enumerated subset-by-subset, integer equality with C(25,k) and C(25-m,k) — ${countMismatches} mismatches; `
+        + `counting anchor: ${countCases} (m,k) cases enumerated subset-by-subset (every m at k ≤ 5, plus the ${playedDeepCases} production settings deeper than 5), integer equality with C(25,k) and C(25-m,k) — ${countMismatches} mismatches; `
         + `reference-formula integrity: ${nonFiniteRef} non-finite results${firstNonFinite ? ` (first: ${firstNonFinite})` : ''} — a NaN deviation satisfies every \`>\` comparison it appears in, so it is counted, not silently skipped`
         + (countMismatches > 0 ? ` (first: ${worstCount})` : '') + '.');
     return [s13];
@@ -3243,20 +3175,36 @@ function run(ctx) {
     const s1 = (0, context_1.step)(1, 'Seed Hash Integrity', fails === 0 && checked === seeds.length && s1PopulationOk ? 'PASS' : 'FAIL', `${checked}/${seeds.length} revealed seeds checked against the pinned population of ${pins_1.EXPECTED_SEEDS} (src/pins.ts EXPECTED_SEEDS, a code constant — not the dataset's own count); SHA-256(utf8(serverSeed)) == hashedServerSeed; ${fails} mismatches`
         + (s1PopulationOk ? '' : `; POPULATION FAIL: ${seeds.length} seed records loaded, ${pins_1.EXPECTED_SEEDS} pinned`));
     const byEpoch = [...seeds].sort((a, b) => a.epoch - b.epoch);
-    let promoChecked = 0, promoFails = 0;
+    const captureOf = (epoch) => pins_1.EPOCH_PLAN[epoch]?.capture;
+    let promoChecked = 0, promoFails = 0, captureLabelFails = 0;
+    for (const sd of byEpoch)
+        if (sd.capture !== captureOf(sd.epoch) || sd.captureEpoch !== pins_1.EPOCH_PLAN[sd.epoch]?.captureEpoch)
+            captureLabelFails++;
     for (let i = 0; i + 1 < byEpoch.length; i++) {
+        if (captureOf(byEpoch[i].epoch) !== captureOf(byEpoch[i + 1].epoch))
+            continue;
         promoChecked++;
         if (byEpoch[i].nextHashedServerSeed !== byEpoch[i + 1].hashedServerSeed)
             promoFails++;
     }
-    const expectedTransitions = seeds.length - 1;
-    const pc = meta?.preCapture ?? null;
-    const firstEpochHash = byEpoch.length > 0 ? byEpoch[0].hashedServerSeed : null;
-    const preRevealOk = !!pc && typeof pc.revealedServerSeed === 'string'
-        && (0, rng_1.commitHash)(pc.revealedServerSeed) === pc.hashedServerSeed;
-    const preChainOk = !!pc && typeof pc.nextHashedServerSeed === 'string'
-        && pc.nextHashedServerSeed === firstEpochHash;
-    const preOk = preRevealOk && preChainOk;
+    const expectedTransitions = pins_1.EXPECTED_CHAIN_LINKS;
+    const metaCaptures = Array.isArray(meta?.captures) ? meta.captures : [];
+    const anchorOf = new Map(metaCaptures.map((c) => [c?.capture, c?.preCapture ?? null]));
+    const firstEpochOf = new Map();
+    for (const sd of byEpoch) {
+        const c = captureOf(sd.epoch);
+        if (c !== undefined && !firstEpochOf.has(c))
+            firstEpochOf.set(c, sd);
+    }
+    let preRevealOk = 0, preChainOk = 0;
+    for (const pin of pins_1.PROD_CAPTURES) {
+        const pc = anchorOf.get(pin.capture);
+        if (pc && typeof pc.revealedServerSeed === 'string' && (0, rng_1.commitHash)(pc.revealedServerSeed) === pc.hashedServerSeed)
+            preRevealOk++;
+        if (pc && typeof pc.nextHashedServerSeed === 'string' && pc.nextHashedServerSeed === firstEpochOf.get(pin.capture)?.hashedServerSeed)
+            preChainOk++;
+    }
+    const preOk = preRevealOk === pins_1.PROD_CAPTURES.length && preChainOk === pins_1.PROD_CAPTURES.length && metaCaptures.length === pins_1.PROD_CAPTURES.length;
     const tAt = (x) => (typeof x === 'string' ? Date.parse(x) : NaN);
     const betsOfEpoch = new Map();
     for (const b of bets) {
@@ -3273,14 +3221,16 @@ function run(ctx) {
         chronoChecked++;
         const times = eb.map(b => tAt(b.at));
         const firstBet = Math.min(...times), lastBet = Math.max(...times);
-        const commitRec = i === 0 ? { at: pc?.at, next: pc?.nextHashedServerSeed } : { at: byEpoch[i - 1].at, next: byEpoch[i - 1].nextHashedServerSeed };
+        const firstOfCapture = i === 0 || captureOf(byEpoch[i - 1].epoch) !== captureOf(s.epoch);
+        const pc = anchorOf.get(captureOf(s.epoch));
+        const commitRec = firstOfCapture ? { at: pc?.at, next: pc?.nextHashedServerSeed } : { at: byEpoch[i - 1].at, next: byEpoch[i - 1].nextHashedServerSeed };
         const commitOk = commitRec.next === s.hashedServerSeed && tAt(commitRec.at) < firstBet;
         const recordOk = tAt(s.at) < firstBet;
         if (commitOk)
             commitBeforeBet++;
         if (recordOk)
             recordBeforeBet++;
-        if (i + 1 < byEpoch.length) {
+        if (i + 1 < byEpoch.length && captureOf(byEpoch[i + 1].epoch) === captureOf(s.epoch)) {
             revealChecked++;
             if (lastBet < tAt(byEpoch[i + 1].at))
                 revealAfterBet++;
@@ -3293,16 +3243,46 @@ function run(ctx) {
             firstChronoFault = `epoch ${s.epoch}: seed record ${s.at} not before first bet ${new Date(firstBet).toISOString()}`;
     });
     const chronoOk = chronoChecked === pins_1.EXPECTED_SEEDS && commitBeforeBet === chronoChecked && recordBeforeBet === chronoChecked
-        && revealChecked === pins_1.EXPECTED_SEEDS - 1 && revealAfterBet === revealChecked;
-    const s2 = (0, context_1.step)(2, 'Next-Seed Pre-Commitment Chain', promoFails === 0 && promoChecked === expectedTransitions && preOk && chronoOk ? 'PASS' : 'FAIL', (promoFails === 0
-        ? `${promoChecked}/${expectedTransitions} transitions: nextHashedServerSeed == next epoch's hashedServerSeed (chain INTACT)`
+        && revealChecked === pins_1.EXPECTED_CHAIN_LINKS && revealAfterBet === revealChecked;
+    const cap0 = ctx.prodCapture;
+    const httpT = (ev) => Date.parse(String(ev?.http?.date ?? ''));
+    let liqdChecked = 0, liqdNotAfter = 0, liqdStrict = 0, liqdSame = 0;
+    let firstLiqdFault = '';
+    const sameSecond = [];
+    for (const ep of cap0.epochs) {
+        liqdChecked++;
+        const file = cap0.files.find(f => f.capture === ep.capture);
+        const pubs = [file?.pre, ...cap0.rotates.filter(r => r.capture === ep.capture)].filter(Boolean);
+        const pub = pubs.find(e => e.raw?.nextServerSeedHash === ep.hashedServerSeed);
+        const rot = cap0.rotates.find(r => r.capture === ep.capture && r.raw?.activeServerSeedHash === ep.hashedServerSeed
+            && r.raw?.clientSeed === ep.clientSeed && r.submitted === ep.clientSeed);
+        const tp = httpT(pub), tr = httpT(rot);
+        if (pub && rot && Number.isFinite(tp) && Number.isFinite(tr) && tp <= tr) {
+            liqdNotAfter++;
+            if (tp < tr)
+                liqdStrict++;
+            else {
+                liqdSame++;
+                sameSecond.push(`epoch ${ep.datasetEpoch} (capture ${ep.capture}, ${pub.t === 'pre' ? 'pre-capture seed read' : 'rotation'} and rotation both dated ${rot.http.date})`);
+            }
+        }
+        else if (!firstLiqdFault) {
+            firstLiqdFault = `epoch ${ep.datasetEpoch}: commitment published ${pub ? (pub.http?.date ?? 'undated') : 'nowhere'}, client seed sent ${rot ? (rot.http?.date ?? 'undated') : 'nowhere'}`;
+        }
+    }
+    const liqdClockOk = cap0.problem === null && liqdChecked === pins_1.EXPECTED_SEEDS && liqdNotAfter === liqdChecked;
+    const s2 = (0, context_1.step)(2, 'Next-Seed Pre-Commitment Chain', promoFails === 0 && promoChecked === expectedTransitions && captureLabelFails === 0 && preOk && chronoOk && liqdClockOk ? 'PASS' : 'FAIL', (promoFails === 0
+        ? `${promoChecked}/${expectedTransitions} transitions between successive epochs of the same capture: nextHashedServerSeed == next epoch's hashedServerSeed (chain INTACT within each of the ${pins_1.PROD_CAPTURES.length} captures; no link between captures is recorded or claimed — each capture is its own run with its own anchor)`
         : `${promoChecked - promoFails}/${expectedTransitions} match; ${promoFails} mismatch`)
-        + `; pre-capture link: reveal→commitment ${preRevealOk ? 'OK' : 'FAIL'}, chains into epoch 0 ${preChainOk ? 'OK' : 'FAIL'}`
+        + `; ${byEpoch.length - captureLabelFails}/${pins_1.EXPECTED_SEEDS} seed records carry the capture and capture-epoch of the plan (src/pins.ts EPOCH_PLAN)`
+        + `; pre-capture link, one per capture: reveal→commitment ${preRevealOk}/${pins_1.PROD_CAPTURES.length}, chains into the capture's first epoch ${preChainOk}/${pins_1.PROD_CAPTURES.length}`
         + `; recorded order (capture clock, the order the capture RECORDED — not an operator-side event order): `
-        + `${commitBeforeBet}/${chronoChecked} epochs' commitment recorded before their first bet (pre-capture record for epoch 0, the previous seed record's next-hash after that), `
+        + `${commitBeforeBet}/${chronoChecked} epochs' commitment recorded before their first bet (the capture's pre-capture record for its first epoch, the previous seed record's next-hash after that), `
         + `${recordBeforeBet}/${chronoChecked} seed records written before their epoch's first bet, `
-        + `${revealAfterBet}/${revealChecked} rotations (the next seed record) written after the retiring epoch's last bet (the closing rotation of the last epoch is not a seed record and is not timed)`
-        + (firstChronoFault ? `; first fault: ${firstChronoFault}` : ''));
+        + `${revealAfterBet}/${revealChecked} rotations (the next seed record of the same capture) written after the retiring epoch's last bet (the closing rotation of each capture's last epoch is not a seed record and is not timed)`
+        + (firstChronoFault ? `; first fault: ${firstChronoFault}` : '')
+        + `; on LIQD's clock (the HTTP Date header of LIQD's own replies, one-second resolution): ${liqdNotAfter}/${liqdChecked} epochs' commitment published in a reply dated no later than the rotation reply that sent the epoch's client seed — ${liqdStrict} strictly earlier, ${liqdSame} in the same second${sameSecond.length ? ` (${sameSecond.join('; ')})` : ''}`
+        + (firstLiqdFault ? `; first fault on LIQD's clock: ${firstLiqdFault}` : ''));
     const betsByEpoch = new Map();
     for (const b of bets) {
         const arr = betsByEpoch.get(b.epoch) ?? [];
@@ -3316,6 +3296,18 @@ function run(ctx) {
             epochsMultipleHashes++;
     }
     const s3CoverageOk = betsByEpoch.size === seeds.length && betsByEpoch.size === pins_1.EXPECTED_SEEDS;
+    const cap = ctx.prodCapture;
+    let repliesScanned = 0, repliesWithHash = 0;
+    for (const evs of cap.steps.values()) {
+        for (const ev of evs) {
+            const r = ev.reply;
+            if (!r || typeof r !== 'object')
+                continue;
+            repliesScanned++;
+            if (Object.keys(r).some(k => /hash/i.test(k)))
+                repliesWithHash++;
+        }
+    }
     let idMissing = 0, epochsMultipleIds = 0;
     const idOfEpoch = new Map();
     for (const [ep, epochBets] of betsByEpoch) {
@@ -3333,9 +3325,10 @@ function run(ctx) {
             idOfEpoch.set(ep, [...ids][0]);
     }
     const distinctIds = new Set(idOfEpoch.values()).size;
-    const idsOk = idMissing === 0 && epochsMultipleIds === 0 && idOfEpoch.size === pins_1.EXPECTED_SEEDS && distinctIds === pins_1.EXPECTED_SEEDS;
+    const idsOk = idMissing === 0 && epochsMultipleIds === 0 && idOfEpoch.size === pins_1.EXPECTED_SEEDS && distinctIds === pins_1.EXPECTED_SEEDS
+        && cap.problem === null && repliesScanned > 0;
     const s3 = (0, context_1.step)(3, 'Hash Consistency Within Epoch', epochsMultipleHashes === 0 && s3CoverageOk && idsOk ? 'PASS' : 'FAIL', `${betsByEpoch.size}/${pins_1.EXPECTED_SEEDS} epochs (pinned in src/pins.ts, not counted from the dataset): all bets within each epoch share the same hashedServerSeed; ${epochsMultipleHashes} violations `
-        + `(that field is written onto each bet row by the capture script from the epoch it opened; LIQD's bet responses carry no hash — none in the auto-bet field list of capture/capture-mines.reference.mjs, none in the 1,000 raw place-bet and settle responses of either multi-reveal supplement capture, 2026-09-26 or 2026-10-03 — so this arm checks the capture's labelling). `
+        + `(that field is written onto each bet row by the capture from the epoch it opened; LIQD's replies carry no hash — measured: ${repliesWithHash} of ${repliesScanned} place-bet, open-tile and cash-out replies in the raw production captures carry a key naming a hash${cap.problem ? `; RAW CAPTURE NOT LOADED: ${cap.problem}` : ''} — so this arm checks the capture's labelling). `
         + `Operator-served seed reference serverSeedId (on every settle response): ${idOfEpoch.size}/${pins_1.EXPECTED_SEEDS} epochs carry one value across all their bets (${epochsMultipleIds} epochs with more than one, ${idMissing} bets without one), `
         + `${distinctIds} distinct across the ${pins_1.EXPECTED_SEEDS} epochs`);
     const hardFailures = [];
@@ -3343,12 +3336,21 @@ function run(ctx) {
     let gapCount = 0;
     let epochsChecked = 0;
     const windowStart = pins_1.NONCE_BASE;
-    const windowEnd = pins_1.NONCE_BASE + pins_1.EXPECTED_EPOCH_SIZE - 1;
+    let windowDisagreements = 0;
     const seedRecordByHash = new Map(seeds.map(s => [s.hashedServerSeed, s]));
     for (const [hash, epochBets] of byHash) {
         const sorted = [...epochBets].sort((a, b) => a.nonce - b.nonce);
         const nonces = sorted.map(b => b.nonce);
         const epochNum = sorted[0].epoch;
+        const planned = pins_1.EPOCH_PLAN[epochNum];
+        if (!planned) {
+            hardFailures.push(`Epoch ${epochNum}: not an epoch of the plan (src/pins.ts EPOCH_PLAN)`);
+            epochsChecked++;
+            continue;
+        }
+        const windowEnd = pins_1.NONCE_BASE + planned.size - 1;
+        if (new Set(sorted.map(b => b.epoch)).size !== 1)
+            hardFailures.push(`Epoch ${epochNum}: bets under one commitment carry more than one epoch number`);
         const phase = sorted[0].phase;
         const clientSeeds = new Set(sorted.map(b => b.clientSeed));
         if (clientSeeds.size !== 1) {
@@ -3370,8 +3372,9 @@ function run(ctx) {
         if (!rec) {
             hardFailures.push(`Epoch ${epochNum}: no seed record for hashedServerSeed ${hash.slice(0, 12)}…`);
         }
-        else if (rec.nonceStart !== windowStart || rec.nonceEnd !== windowEnd) {
-            hardFailures.push(`Epoch ${epochNum}: seed record window [${rec.nonceStart}, ${rec.nonceEnd}] disagrees with the declared [${windowStart}, ${windowEnd}] (src/pins.ts NONCE_BASE, EXPECTED_EPOCH_SIZE)`);
+        else if (rec.nonceStart !== windowStart || rec.nonceEnd !== windowEnd || rec.epoch !== epochNum) {
+            windowDisagreements++;
+            hardFailures.push(`Epoch ${epochNum}: seed record (epoch ${rec.epoch}) window [${rec.nonceStart}, ${rec.nonceEnd}] disagrees with the declared [${windowStart}, ${windowEnd}] (src/pins.ts NONCE_BASE, EPOCH_PLAN)`);
         }
         const missing = [];
         for (let n = windowStart; n <= windowEnd; n++)
@@ -3405,8 +3408,8 @@ function run(ctx) {
     if (gapCount !== pins_1.EXPECTED_CAPTURE_RETRY_GAPS) {
         hardFailures.push(`${gapCount} nonce gap(s) found, ${pins_1.EXPECTED_CAPTURE_RETRY_GAPS} capture-retry gap(s) declared (src/pins.ts EXPECTED_CAPTURE_RETRY_GAPS) — an undeclared gap is not attributable to the capture`);
     }
-    const base = `${epochsChecked}/${pins_1.EXPECTED_SEEDS} epochs: single client seed each, nonces in capture order, unique, and exactly the DECLARED window [${windowStart}, ${windowEnd}] `
-        + `(NONCE_BASE ${pins_1.NONCE_BASE} and EXPECTED_EPOCH_SIZE ${pins_1.EXPECTED_EPOCH_SIZE} are code constants in src/pins.ts — not the minimum observed, and not the seed records' own nonceStart/nonceEnd, which are checked AGAINST the declaration: 0 disagreements). `
+    const base = `${epochsChecked}/${pins_1.EXPECTED_SEEDS} epochs: single client seed each, nonces in capture order, unique, and exactly the DECLARED window [${windowStart}, ${windowStart} + size − 1] of the epoch `
+        + `(NONCE_BASE ${pins_1.NONCE_BASE} and the epoch sizes ${pins_1.EPOCH_SIZES.join(', ')} are code constants in src/pins.ts EPOCH_PLAN: ${pins_1.PROD_CAPTURES.map(c => `capture ${c.capture} ${[...new Set(pins_1.EPOCH_PLAN.filter(e => e.capture === c.capture).map(e => `${e.phaseId} ${pins_1.EPOCH_PLAN.filter(x => x.capture === c.capture && x.phaseId === e.phaseId).length} × ${e.size}`))].join(', ')}`).join('; ')} — not the minimum observed, and not the seed records' own nonceStart/nonceEnd, which are checked AGAINST the declaration: ${windowDisagreements} disagreements). `
         + `Gaps: ${gapCount} found, ${pins_1.EXPECTED_CAPTURE_RETRY_GAPS} capture-retry gap(s) declared. `
         + `The window is what the capture requested under each seed, not an operator-side counter: this establishes that the bet rows are complete against it, not that no other nonce was ever served (selective orphaning — see MANIFEST.md#dataset-and-capture).`;
     let s4;
@@ -3445,54 +3448,89 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.run = run;
 const context_1 = require("./context");
 const pins_1 = require("../../src/pins");
-const PHASES = ['A', 'B', 'C', 'D', 'E'];
+const PHASES = Object.keys(pins_1.EXPECTED_PHASE_BETS).sort();
+const PHASE_IDS = Object.keys(pins_1.EXPECTED_PHASE_ID_BETS).sort();
 function run(ctx) {
     const { bets, seeds } = ctx;
     const phases = new Set(bets.map(b => b.phase));
     const counts = {};
-    for (const b of bets)
+    const idCounts = {};
+    let rowTagFaults = 0, firstTagFault = '';
+    for (const b of bets) {
         counts[b.phase] = (counts[b.phase] ?? 0) + 1;
+        idCounts[b.phaseId] = (idCounts[b.phaseId] ?? 0) + 1;
+        const pl = pins_1.EPOCH_PLAN[b.epoch];
+        if (!pl || pl.phase !== b.phase || pl.phaseId !== b.phaseId || pl.capture !== b.capture || pl.captureEpoch !== b.captureEpoch) {
+            rowTagFaults++;
+            if (!firstTagFault)
+                firstTagFault = `bet ${b.id}: epoch ${b.epoch} tagged ${b.phase}/${b.phaseId}/capture ${b.capture}/${b.captureEpoch}, plan ${pl ? `${pl.phase}/${pl.phaseId}/capture ${pl.capture}/${pl.captureEpoch}` : 'has no such epoch'}`;
+        }
+    }
     const hasAll = PHASES.every(p => phases.has(p));
+    const extraLabels = [...phases].filter(p => !PHASES.includes(p));
     const countsOk = PHASES.every(p => counts[p] === pins_1.EXPECTED_PHASE_BETS[p]);
+    const idsOk = PHASE_IDS.every(p => idCounts[p] === pins_1.EXPECTED_PHASE_ID_BETS[p]) && Object.keys(idCounts).every(p => PHASE_IDS.includes(p));
     const planSum = PHASES.reduce((a, p) => a + pins_1.EXPECTED_PHASE_BETS[p], 0);
-    const planSelfConsistent = planSum === pins_1.EXPECTED_BETS;
+    const idSum = PHASE_IDS.reduce((a, p) => a + pins_1.EXPECTED_PHASE_ID_BETS[p], 0);
+    const epochSum = pins_1.EPOCH_PLAN.reduce((a, e) => a + e.size, 0);
+    const planSelfConsistent = planSum === pins_1.EXPECTED_BETS && idSum === pins_1.EXPECTED_BETS && epochSum === pins_1.EXPECTED_BETS
+        && PHASE_IDS.every(p => pins_1.EPOCH_PLAN.filter(e => e.phaseId === p).reduce((a, e) => a + e.size, 0) === pins_1.EXPECTED_PHASE_ID_BETS[p]);
     const totalOk = bets.length === pins_1.EXPECTED_BETS;
     const summary = PHASES.map(p => `${p}=${counts[p] ?? 0}`).join(' ');
+    const idSummary = PHASE_IDS.map(p => `${p}=${idCounts[p] ?? 0}`).join(' ');
     const s11Faults = [];
     if (!hasAll)
         s11Faults.push(`missing phase label(s): ${PHASES.filter(p => !phases.has(p)).join(', ')}`);
+    if (extraLabels.length)
+        s11Faults.push(`phase label(s) outside the plan: ${extraLabels.join(', ')}`);
     if (!countsOk)
         s11Faults.push(`phase count(s) off plan: ${PHASES.filter(p => counts[p] !== pins_1.EXPECTED_PHASE_BETS[p]).map(p => `${p}=${counts[p] ?? 0}≠${pins_1.EXPECTED_PHASE_BETS[p]}`).join(', ')}`);
+    if (!idsOk)
+        s11Faults.push(`phase id count(s) off plan: ${idSummary}`);
+    if (rowTagFaults)
+        s11Faults.push(`${rowTagFaults} row(s) whose phase / capture tags are not the plan's for their epoch (first: ${firstTagFault})`);
     if (!totalOk)
         s11Faults.push(`POPULATION: ${bets.length} bets loaded, ${pins_1.EXPECTED_BETS} pinned in src/pins.ts EXPECTED_BETS — the audited population is not the file's to declare`);
     if (!planSelfConsistent)
-        s11Faults.push(`pin table inconsistent: Σ EXPECTED_PHASE_BETS = ${planSum} != EXPECTED_BETS ${pins_1.EXPECTED_BETS}`);
-    const s11 = (0, context_1.step)(11, 'Phase Labels', hasAll && countsOk && totalOk && planSelfConsistent ? 'PASS' : 'FAIL', `Phases present: ${[...phases].sort().join(', ')} (${summary}); plan A=${pins_1.EXPECTED_PHASE_BETS.A} B=${pins_1.EXPECTED_PHASE_BETS.B} C=${pins_1.EXPECTED_PHASE_BETS.C} D=${pins_1.EXPECTED_PHASE_BETS.D} E=${pins_1.EXPECTED_PHASE_BETS.E} (src/pins.ts EXPECTED_PHASE_BETS, Σ=${planSum}); `
+        s11Faults.push(`pin table inconsistent: Σ EXPECTED_PHASE_BETS = ${planSum}, Σ EXPECTED_PHASE_ID_BETS = ${idSum}, Σ EPOCH_PLAN sizes = ${epochSum}, EXPECTED_BETS ${pins_1.EXPECTED_BETS}`);
+    const s11 = (0, context_1.step)(11, 'Phase Labels', hasAll && extraLabels.length === 0 && countsOk && idsOk && rowTagFaults === 0 && totalOk && planSelfConsistent ? 'PASS' : 'FAIL', `Phases present: ${[...phases].sort().join(', ')} (${summary}); plan ${PHASES.map(p => `${p}=${pins_1.EXPECTED_PHASE_BETS[p]}`).join(' ')} (src/pins.ts EXPECTED_PHASE_BETS, Σ=${planSum}); `
+        + `by phase id (A+ is the phase A top-up): ${idSummary}; plan ${PHASE_IDS.map(p => `${p}=${pins_1.EXPECTED_PHASE_ID_BETS[p]}`).join(' ')} (EXPECTED_PHASE_ID_BETS, Σ=${idSum}); `
+        + `${bets.length - rowTagFaults}/${pins_1.EXPECTED_BETS} rows carry the phase, phase id, capture and capture-epoch the plan gives their epoch (EPOCH_PLAN); `
+        + `there is no separate multi-reveal phase: phase A is multi-reveal on every round and phase D replays its settings (Step 15); `
         + `total ${bets.length}/${pins_1.EXPECTED_BETS} bets and ${seeds.length}/${pins_1.EXPECTED_SEEDS} seed records, both against CODE constants in src/pins.ts — not against meta.plannedTotal or any other field of the dataset being scored. `
         + `The published population and phase plan are fixed in source independently of the dataset header.`
         + (s11Faults.length ? `. FAULTS: ${s11Faults.join('; ')}` : ''));
     const epochSizes = new Map();
     for (const b of bets)
         epochSizes.set(b.epoch, (epochSizes.get(b.epoch) ?? 0) + 1);
-    const sizes = [...epochSizes.values()];
-    const minSize = sizes.length ? Math.min(...sizes) : 0;
-    const maxSize = sizes.length ? Math.max(...sizes) : 0;
     const seedCountOk = seeds.length === pins_1.EXPECTED_SEEDS;
     const epochCountOk = epochSizes.size === pins_1.EXPECTED_SEEDS;
-    const sizeOk = sizes.length > 0 && minSize === pins_1.EXPECTED_EPOCH_SIZE && maxSize === pins_1.EXPECTED_EPOCH_SIZE;
-    const arithmeticOk = pins_1.EXPECTED_SEEDS * pins_1.EXPECTED_EPOCH_SIZE === pins_1.EXPECTED_BETS;
+    const wrongSize = pins_1.EPOCH_PLAN.filter(e => epochSizes.get(e.epoch) !== e.size);
+    const offPlanEpochs = [...epochSizes.keys()].filter(e => !pins_1.EPOCH_PLAN[e]);
+    const sizeOk = wrongSize.length === 0 && offPlanEpochs.length === 0;
+    const seedTagFaults = seeds.filter(sd => { const pl = pins_1.EPOCH_PLAN[sd.epoch]; return !pl || pl.phase !== sd.phase || pl.phaseId !== sd.phaseId || pl.capture !== sd.capture || pl.captureEpoch !== sd.captureEpoch; }).length;
+    const seedEpochsOk = new Set(seeds.map(sd => sd.epoch)).size === seeds.length && seedTagFaults === 0;
+    const captureSumsOk = pins_1.PROD_CAPTURES.every(c => pins_1.EPOCH_PLAN.filter(e => e.capture === c.capture).reduce((a, e) => a + e.size, 0) === c.rounds);
+    const arithmeticOk = pins_1.EPOCH_PLAN.length === pins_1.EXPECTED_SEEDS && pins_1.EPOCH_PLAN.reduce((a, e) => a + e.size, 0) === pins_1.EXPECTED_BETS && captureSumsOk;
+    const perCapture = pins_1.PROD_CAPTURES.map(c => {
+        const eps = pins_1.EPOCH_PLAN.filter(e => e.capture === c.capture);
+        const got = eps.reduce((a, e) => a + (epochSizes.get(e.epoch) ?? 0), 0);
+        return `capture ${c.capture}: ${eps.length} epochs, ${got}/${c.rounds} rounds`;
+    }).join('; ');
     const s12Faults = [];
     if (!seedCountOk)
         s12Faults.push(`POPULATION: ${seeds.length} seed records, ${pins_1.EXPECTED_SEEDS} pinned`);
     if (!epochCountOk)
         s12Faults.push(`POPULATION: ${epochSizes.size} distinct epochs in the bets, ${pins_1.EXPECTED_SEEDS} pinned`);
     if (!sizeOk)
-        s12Faults.push(`epoch size min=${minSize} max=${maxSize}, ${pins_1.EXPECTED_EPOCH_SIZE} pinned`);
+        s12Faults.push(`epoch size off plan: ${wrongSize.slice(0, 4).map(e => `epoch ${e.epoch} has ${epochSizes.get(e.epoch) ?? 0}, planned ${e.size}`).join('; ')}${offPlanEpochs.length ? `; epochs outside the plan: ${offPlanEpochs.slice(0, 4).join(', ')}` : ''}`);
+    if (!seedEpochsOk)
+        s12Faults.push(`seed records: ${seedTagFaults} whose tags are not the plan's, ${seeds.length - new Set(seeds.map(sd => sd.epoch)).size} duplicate epoch numbers`);
     if (!arithmeticOk)
-        s12Faults.push(`pin arithmetic: ${pins_1.EXPECTED_SEEDS} × ${pins_1.EXPECTED_EPOCH_SIZE} != ${pins_1.EXPECTED_BETS}`);
-    const s12 = (0, context_1.step)(12, 'Epoch Size', seedCountOk && epochCountOk && sizeOk && arithmeticOk ? 'PASS' : 'FAIL', `${epochSizes.size}/${pins_1.EXPECTED_SEEDS} epochs and ${seeds.length}/${pins_1.EXPECTED_SEEDS} seed records (src/pins.ts EXPECTED_SEEDS); `
-        + `min=${minSize}, max=${maxSize} bets per epoch against EXPECTED_EPOCH_SIZE ${pins_1.EXPECTED_EPOCH_SIZE}; `
-        + `${pins_1.EXPECTED_SEEDS} × ${pins_1.EXPECTED_EPOCH_SIZE} = ${pins_1.EXPECTED_SEEDS * pins_1.EXPECTED_EPOCH_SIZE} must equal EXPECTED_BETS ${pins_1.EXPECTED_BETS}. `
+        s12Faults.push(`pin arithmetic: EPOCH_PLAN has ${pins_1.EPOCH_PLAN.length} epochs summing to ${pins_1.EPOCH_PLAN.reduce((a, e) => a + e.size, 0)}; EXPECTED_SEEDS ${pins_1.EXPECTED_SEEDS}, EXPECTED_BETS ${pins_1.EXPECTED_BETS}; capture sums ${captureSumsOk ? 'ok' : 'DIFFER'}`);
+    const s12 = (0, context_1.step)(12, 'Epoch Size', seedCountOk && epochCountOk && sizeOk && seedEpochsOk && arithmeticOk ? 'PASS' : 'FAIL', `${epochSizes.size}/${pins_1.EXPECTED_SEEDS} epochs and ${seeds.length}/${pins_1.EXPECTED_SEEDS} seed records (src/pins.ts EXPECTED_SEEDS); `
+        + `${pins_1.EPOCH_PLAN.length - wrongSize.length}/${pins_1.EPOCH_PLAN.length} epochs hold exactly their planned number of bets (src/pins.ts EPOCH_PLAN: sizes ${pins_1.EPOCH_SIZES.join(', ')}; ${perCapture}); ${offPlanEpochs.length} epochs outside the plan; `
+        + `Σ planned epoch sizes = ${pins_1.EPOCH_PLAN.reduce((a, e) => a + e.size, 0)} must equal EXPECTED_BETS ${pins_1.EXPECTED_BETS}. `
         + `The source constants fix the expected seed and bet population.`
         + (s12Faults.length ? `. FAULTS: ${s12Faults.join('; ')}` : ''));
     return [s11, s12];
@@ -3692,9 +3730,9 @@ function run(ctx) {
         + `empty clientSeed reproduces ${emptyReproduce}/${tested} in draw order (${pct(emptyReproduce)}%, ${emptyMineCount1} at mineCount 1) and ${emptySet} as a set; `
         + `${changed}/${tested} bets change under a wrong seed. `
         + `Model-predicted chance collisions over these bets' own mine counts: draw order E = Σ 1/P(25,m) = ${ordered.expected.toFixed(3)} (σ ${ordered.sd.toFixed(3)}, gate E+5σ = ${ordered.bound.toFixed(3)}); as a set E = Σ 1/C(25,m) = ${unordered.expected.toFixed(3)} (σ ${unordered.sd.toFixed(3)}, gate ${unordered.bound.toFixed(3)}) — all four survivor counts ${withinModel ? 'within' : 'ABOVE'} the model. `
-        + `A–C generator (capture/capture-mines.reference.mjs, \`audit\${randomBytes(6).toString('hex')}\`, a CSPRNG): ${nonDSeeds.length - badFormat.length}/${nonDSeeds.length} non-Phase-D epoch client seeds match /^audit[0-9a-f]{12}$/, ${distinctNonD} distinct`
+        + `client-seed generator of phases A, A+ and C (declared in each raw capture's meta: "audit" + 6 bytes of crypto.getRandomValues as hex, a CSPRNG): ${nonDSeeds.length - badFormat.length}/${nonDSeeds.length} epoch client seeds match /^audit[0-9a-f]{12}$/, ${distinctNonD} distinct; the ${new Set(bets.filter(b => b.phase === 'D').map(b => b.epoch)).size} phase D epochs use player-set seeds (Step 14)`
         + (badFormat.length ? ` — NOT OF THE DISCLOSED FORM: ${badFormat.slice(0, 3).join(', ')}` : '')
-        + `. The Phase D seeds are predictable by construction and are enumerated by Step 14 (MANIFEST DL-13).`);
+        + `. Step 14 enumerates the client seeds per epoch and the order in which each was submitted.`);
     return [s5, s6];
 }
 
@@ -3702,28 +3740,34 @@ function run(ctx) {
 "tests/steps/payouts.js": function(module, exports, require, __filename, __dirname) {
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.FIAT_SCALE = void 0;
 exports.run = run;
 const context_1 = require("./context");
 const config_1 = require("../../src/config");
 const stats_1 = require("../../src/stats");
 const LIVE_FIT_ALPHA = 1e-3;
 const pins_1 = require("../../src/pins");
+const prod_capture_1 = require("../../src/prod-capture");
 const rtp_settings_1 = require("../../src/rtp-settings");
-function floor8CreditUnits(betAmount, mineCount, k) {
+exports.FIAT_SCALE = 100n;
+function floor2BookedCents(betAmount, mineCount, k) {
     if (k < 1 || k > config_1.GRID - mineCount)
         return null;
-    const stakeUnits = BigInt(Math.round(betAmount * 1e8));
+    const c = betAmount * 100;
+    if (!Number.isFinite(c) || Math.abs(c - Math.round(c)) > pins_1.PROD_ON_GRID_TOLERANCE)
+        return null;
+    const stakeCents = BigInt(Math.round(c));
     let num = config_1.EDGE_NUM, den = config_1.EDGE_DEN;
     for (let i = 0; i < k; i++) {
         num *= BigInt(config_1.GRID - i);
         den *= BigInt(config_1.GRID - mineCount - i);
     }
-    return (stakeUnits * num) / den;
+    return (stakeCents * num) / den;
 }
 function run(ctx) {
-    const { bets, seeds, phaseA } = ctx;
+    const { bets } = ctx;
     const expectedBets = pins_1.EXPECTED_BETS;
-    const planConsistent = pins_1.EXPECTED_SEEDS * pins_1.EXPECTED_EPOCH_SIZE === pins_1.EXPECTED_BETS;
+    const planConsistent = pins_1.EPOCH_PLAN.length === pins_1.EXPECTED_SEEDS && pins_1.EPOCH_PLAN.reduce((a, e) => a + e.size, 0) === pins_1.EXPECTED_BETS;
     let wonChecked = 0, wonErrors = 0, lostChecked = 0, lostErrors = 0, displayBelowPaid = 0;
     let s7NonFiniteRef = 0;
     for (const b of bets) {
@@ -3747,17 +3791,20 @@ function run(ctx) {
         }
     }
     const s7Covered = wonChecked + lostChecked;
-    const s7 = (0, context_1.step)(7, 'Displayed Multiplier Field (floored, cosmetic)', wonErrors === 0 && lostErrors === 0 && s7NonFiniteRef === 0 && s7Covered === expectedBets ? 'PASS' : 'FAIL', `SCOPE: the audited dataset (data/mines-master-6900bets.json) only — the v3 multi-reveal supplement's displayed multipliers are Step 22, against the same rule; `
-        + `${s7Covered}/${expectedBets} bets checked; ${wonChecked} wins: displayed multiplier == floor2(exact) at 1e-9 (${wonErrors} mismatches); `
-        + `${displayBelowPaid} wins where the displayed field is below the exact reference multiplier; reported settlement amounts are checked separately in Step 8; `
+    const s7 = (0, context_1.step)(7, 'Displayed Multiplier Field (floored, cosmetic)', wonErrors === 0 && lostErrors === 0 && s7NonFiniteRef === 0 && s7Covered === expectedBets ? 'PASS' : 'FAIL', `SCOPE: the scored production dataset (${pins_1.PROD_HOST}); `
+        + `${s7Covered}/${expectedBets} bets checked; ${wonChecked} wins: displayed multiplier == floor2(exact) at the opened depth, at 1e-9 (${wonErrors} mismatches); `
+        + `${displayBelowPaid} wins where the displayed field is below the exact reference multiplier (for example 1.12 displayed for the exact 1.125 at 3 mines, one tile; the booked amount there is the exact 11.25 on a 10.00 stake); the booked amounts are checked in Step 8 and the USDT wallet fields in Step 22; `
         + `${lostChecked} losses: no payout — multiplier 0/absent and winningAmount == 0 (${lostErrors} violations); `
         + `reference-formula integrity: ${s7NonFiniteRef} wins where minesMultiplier/minesMultiplierExact returned a non-finite value (a NaN/Infinity in the auditor's own reference makes every comparison here vacuous — hard fail, not a mismatch)`);
-    const S8_TOL = 2e-8;
+    const S8_TOL = 0.01 + 1e-9;
     let payErrors = 0, paidExact = 0, paidFloored = 0, labelViolations = 0, s8Covered = 0;
     let maxResidual = 0, flooredBelowExact = 0, totalShortfall = 0, totalStaked = 0;
-    let floor8Violations = 0, offGridCredits = 0, s8NonFiniteRef = 0;
-    let nonFiniteStakes = 0, nonFiniteCredits = 0, firstNonFiniteMoney = '';
-    let firstOffGrid = '';
+    const byFiat = new Map();
+    const byCapture = new Map();
+    let fiatOff = 0, firstFiatOff = '';
+    let floorViolations = 0, offGridAmounts = 0, s8NonFiniteRef = 0;
+    let nonFiniteStakes = 0, nonFiniteAmounts = 0, firstNonFiniteMoney = '';
+    let firstOffGrid = '', firstFloorViolation = '';
     for (const b of bets) {
         s8Covered++;
         const stakeNum = Number(b.betAmount);
@@ -3771,11 +3818,48 @@ function run(ctx) {
             totalStaked += stakeNum;
         }
         if (!Number.isFinite(winAmtNum)) {
-            nonFiniteCredits++;
+            nonFiniteAmounts++;
             if (!firstNonFiniteMoney)
                 firstNonFiniteMoney = `bet ${b.id}: winningAmount ${JSON.stringify(b.winningAmount)}`;
         }
         const winAmt = winAmtNum;
+        const planFiat = pins_1.EPOCH_PLAN[b.epoch]?.fiat;
+        if (b.fiatCurrency !== planFiat) {
+            fiatOff++;
+            if (!firstFiatOff)
+                firstFiatOff = `bet ${b.id}: booked in ${JSON.stringify(b.fiatCurrency)}, plan ${planFiat}`;
+        }
+        const ff = byFiat.get(b.fiatCurrency) ?? { rounds: 0, wins: 0, stakedCents: 0n, paidCents: 0n, below: 0, droppedUnits: 0n };
+        const cc = byCapture.get(b.capture) ?? { wins: 0, below: 0, droppedUnits: 0n, stakedCents: 0n, paidCents: 0n, fiats: new Set() };
+        ff.rounds++;
+        cc.fiats.add(b.fiatCurrency);
+        if (Number.isFinite(stakeNum)) {
+            const sc = BigInt(Math.round(stakeNum * 100));
+            ff.stakedCents += sc;
+            cc.stakedCents += sc;
+        }
+        if (Number.isFinite(winAmtNum)) {
+            const pc = BigInt(Math.round(winAmtNum * 100));
+            ff.paidCents += pc;
+            cc.paidCents += pc;
+        }
+        if (b.result === 'won' && Number.isFinite(stakeNum) && Number.isFinite(winAmtNum)) {
+            const r = (0, config_1.minesMultiplierRational)(b.mineCount, b.openTiles.length);
+            ff.wins++;
+            cc.wins++;
+            if (r) {
+                const unrounded = (BigInt(Math.round(stakeNum * 100)) * 1000000n * r.num) / r.den;
+                const booked = BigInt(Math.round(winAmtNum * 100)) * 1000000n;
+                if (unrounded > booked) {
+                    ff.below++;
+                    cc.below++;
+                    ff.droppedUnits += unrounded - booked;
+                    cc.droppedUnits += unrounded - booked;
+                }
+            }
+        }
+        byFiat.set(b.fiatCurrency, ff);
+        byCapture.set(b.capture, cc);
         const mineSet = new Set(b.mineTiles);
         const openedMine = b.openTiles.some((t) => mineSet.has(t));
         if (b.result === 'won') {
@@ -3789,26 +3873,30 @@ function run(ctx) {
             }
             const residual = bet * exact - winAmt;
             if (Number.isFinite(winAmt)) {
-                const units = winAmt * 1e8;
-                if (Math.abs(units - Math.round(units)) > 1e-6) {
-                    offGridCredits++;
+                const units = winAmt * 100;
+                if (Math.abs(units - Math.round(units)) > pins_1.PROD_ON_GRID_TOLERANCE) {
+                    offGridAmounts++;
                     if (!firstOffGrid)
-                        firstOffGrid = `bet ${b.id}: winningAmount ${b.winningAmount} is ${(units).toFixed(6)} units of 1e-8`;
+                        firstOffGrid = `bet ${b.id}: winningAmount ${b.winningAmount} is ${units.toFixed(6)} cents`;
                 }
             }
             if (Number.isFinite(winAmt) && Number.isFinite(bet)) {
-                const credUnits = floor8CreditUnits(bet, b.mineCount, b.openTiles.length);
-                if (credUnits === null || BigInt(Math.round(winAmt * 1e8)) !== credUnits)
-                    floor8Violations++;
+                const credCents = floor2BookedCents(bet, b.mineCount, b.openTiles.length);
+                const recCents = BigInt(Math.round(winAmt * 100));
+                if (credCents === null || recCents !== credCents) {
+                    floorViolations++;
+                    if (!firstFloorViolation)
+                        firstFloorViolation = `bet ${b.id} (m=${b.mineCount}, k=${b.openTiles.length}): recorded ${b.winningAmount}, rule ${credCents === null ? 'n/a' : (Number(credCents) / 100).toFixed(2)}`;
+                    const dispCents = BigInt(Math.floor(bet * 100 * (0, config_1.minesMultiplier)(b.mineCount, b.openTiles.length) + 1e-9));
+                    if (recCents === dispCents)
+                        paidFloored++;
+                }
             }
             if (!Number.isFinite(winAmt) || !Number.isFinite(bet)) {
                 payErrors++;
             }
-            else if (Math.abs(residual) > S8_TOL) {
-                if (Math.abs(bet * (0, config_1.minesMultiplier)(b.mineCount, b.openTiles.length) - winAmt) <= 1e-6)
-                    paidFloored++;
-                else
-                    payErrors++;
+            else if (residual < -1e-9 || residual > S8_TOL) {
+                payErrors++;
             }
             else {
                 paidExact++;
@@ -3828,32 +3916,55 @@ function run(ctx) {
         }
     }
     const s8FullCoverage = s8Covered === expectedBets;
-    const moneyFinite = nonFiniteStakes === 0 && nonFiniteCredits === 0
+    const moneyFinite = nonFiniteStakes === 0 && nonFiniteAmounts === 0
         && Number.isFinite(totalStaked) && totalStaked > 0 && Number.isFinite(totalShortfall);
-    const s8Hard = payErrors > 0 || labelViolations > 0 || floor8Violations > 0
-        || offGridCredits > 0 || s8NonFiniteRef > 0 || !s8FullCoverage
-        || !moneyFinite || !planConsistent;
-    const s8 = (0, context_1.step)(8, 'Payout Math + Win-Condition (wins: betAmount × EXACT multiplier == winningAmount; losses: 0; label ⇔ mine opened)', !s8Hard && paidFloored === 0 ? 'PASS' : (s8Hard ? 'FAIL' : 'FLAG'), `SCOPE: the audited dataset (data/mines-master-6900bets.json) only — the v3 multi-reveal supplement's credits are Step 22, against the same rule; `
-        + `${s8Covered}/${expectedBets} bets at 2e-8 (expected total pinned in src/pins.ts EXPECTED_BETS, a code constant — not seeds×50 read from the dataset${planConsistent ? '' : `; PLAN INCONSISTENT: ${pins_1.EXPECTED_SEEDS}×${pins_1.EXPECTED_EPOCH_SIZE} != ${pins_1.EXPECTED_BETS}`}) (credit floored at the 8th decimal): ${paidExact} wins matching the exact-multiplier settlement within the stated residual tolerance, `
-        + `${paidFloored} wins matching only the displayed-multiplier payout candidate, ${payErrors} errors; `
-        + `exact floor8 identity (winningAmount == floor8(stake × multExact) in BigInt rational arithmetic, 0 tolerance — rejects ±1e-8 over/under-credit): ${floor8Violations} violations; `
-        + `on-grid check applied BEFORE any rounding (winningAmount × 1e8 must already be an integer — a ninth decimal cannot be held in a 1e-8 ledger and must not be rounded onto the grid by the identity above): ${offGridCredits} off-grid credits${firstOffGrid ? ` (first: ${firstOffGrid})` : ''}; `
+    const cents = (c) => `${c / 100n}.${String(c % 100n).padStart(2, '0')}`;
+    const units8 = (u) => `${u / 100000000n}.${String(u % 100000000n).padStart(8, '0')}`;
+    const bookedDeclOk = pins_1.PROD_CAPTURES.every(c => {
+        const g = byCapture.get(c.capture), d = pins_1.BOOKED_BELOW_UNROUNDED.find(x => x.capture === c.capture);
+        return !!g && !!d && g.wins === c.wins && g.stakedCents === c.bookedStakedCents && g.paidCents === c.bookedPaidCents
+            && g.below === d.wins && g.droppedUnits === d.droppedUnits && g.fiats.size === 1 && g.fiats.has(c.fiat);
+    }) && byCapture.size === pins_1.PROD_CAPTURES.length;
+    const s8Hard = payErrors > 0 || labelViolations > 0 || floorViolations > 0
+        || offGridAmounts > 0 || s8NonFiniteRef > 0 || !s8FullCoverage
+        || !moneyFinite || !planConsistent || fiatOff > 0 || !bookedDeclOk;
+    const fiatLine = [...byFiat].sort(([a], [z]) => a.localeCompare(z)).map(([f, x]) => `${f}: ${x.rounds} rounds, ${cents(x.stakedCents)} staked, ${cents(x.paidCents)} booked as won over ${x.wins} wins`).join('; ');
+    const captureLine = pins_1.PROD_CAPTURES.map(c => {
+        const g = byCapture.get(c.capture);
+        return g ? `capture ${c.capture} (${c.fiat}): ${g.below} of ${g.wins} wins booked below the unrounded amount, ${units8(g.droppedUnits)} ${c.fiat} dropped in total (booked ${cents(g.paidCents)} of ${cents(g.stakedCents)} staked)` : `capture ${c.capture}: NO ROWS`;
+    }).join('; ');
+    const s8 = (0, context_1.step)(8, 'Payout Math + Win-Condition (wins: winningAmount == floor2(betAmount × EXACT multiplier), the booked fiat amount; losses: 0; label ⇔ mine opened)', !s8Hard && paidFloored === 0 ? 'PASS' : (s8Hard ? 'FAIL' : 'FLAG'), `SCOPE: the scored production dataset (${pins_1.PROD_HOST}), the amounts LIQD BOOKED in the fiat each round was staked in (CAD in capture 1, USD in captures 2 and 3; nothing converted); the ${pins_1.PROD_WALLET_CURRENCY} wallet field of each reply is Step 22; `
+        + `${s8Covered}/${expectedBets} bets (expected total pinned in src/pins.ts EXPECTED_BETS, a code constant${planConsistent ? '' : '; PLAN INCONSISTENT: EPOCH_PLAN does not sum to EXPECTED_BETS'}): `
+        + `exact floor2 identity (winningAmount == floor2(stake × multExact) in BigInt cents, 0 tolerance — rejects a one-cent over- or under-statement): ${floorViolations} violations${firstFloorViolation ? ` (first: ${firstFloorViolation})` : ''}; `
+        + `${paidExact} wins inside the cent-floor band [stake × exact − 0.01, stake × exact], ${paidFloored} wins matching only the stake × displayed multiplier floored to cents, ${payErrors} errors; `
+        + `on-grid check applied BEFORE any rounding (winningAmount × 100 must already be an integer): ${offGridAmounts} off-grid amounts${firstOffGrid ? ` (first: ${firstOffGrid})` : ''}; `
+        + `booked fiat = the plan's for the row's capture: ${bets.length - fiatOff}/${bets.length}${firstFiatOff ? ` (first: ${firstFiatOff})` : ''}; `
         + `reference-formula integrity: ${s8NonFiniteRef} wins where minesMultiplierExact returned a non-finite value (hard fail — the auditor's reference is corrupt, not the operator's payout); `
-        + `money-field integrity: ${nonFiniteStakes} bets whose betAmount is not a finite number, ${nonFiniteCredits} whose winningAmount is not${firstNonFiniteMoney ? ` (first: ${firstNonFiniteMoney})` : ''} — hard fail, because a NaN entering the turnover total makes every ratio computed from it vacuous rather than wrong; `
-        + `credit-floor residuals: max ${maxResidual.toExponential(3)}, ${flooredBelowExact} wins below the unrounded value, `
-        + `total shortfall $${totalShortfall.toExponential(3)} on $${Number.isFinite(totalStaked) ? totalStaked.toFixed(2) : 'NOT-FINITE'} staked (${moneyFinite ? (totalShortfall / totalStaked).toExponential(1) : 'n/a — turnover not finite'} of turnover); `
+        + `money-field integrity: ${nonFiniteStakes} bets whose betAmount is not a finite number, ${nonFiniteAmounts} whose winningAmount is not${firstNonFiniteMoney ? ` (first: ${firstNonFiniteMoney})` : ''} — hard fail; `
+        + `booked totals per fiat (never summed across currencies): ${fiatLine}; `
+        + `THE BOOKED WIN IS FLOORED TO THE CENT, THE WALLET FIELD IS NOT — ${captureLine} — ${bookedDeclOk ? 'equal to' : 'NOT EQUAL TO'} the declaration (src/pins.ts PROD_CAPTURES, BOOKED_BELOW_UNROUNDED). `
+        + `On the USD captures the served rate is 1.00000000, so the amount dropped is the amount by which the wallet fields exceed the booked wins (Step 22 scores the wallet fields); no balances were captured, so which amount moved the balance is not verified; `
+        + `largest cent-floor residual ${maxResidual.toFixed(8)} of the booked fiat, ${flooredBelowExact} wins below the unrounded value; `
         + `win-condition consistency (won ⇔ no mine opened): ${labelViolations} label violations. `
-        + `SEVERITY OF A SHORT CREDIT: here a win credited one 1e-8 unit below floor8(stake × exact) is a floor8 violation and HARD-FAILS this step (MINES-11 HARD_FAIL as written; forgery D26); this dataset has ${floor8Violations} such wins. `
-        + `The scored ${pins_1.SUPPLEMENT_CAPTURE_DATE} supplement gives a short credit the same severity: its declared gap is ${pins_1.SUPPLEMENT_DISCLOSED_CREDIT_UNIT_BELOW}, so one FAILs Step 22. `
-        + `OPEN RULING 2 (profile owner: is a win credited 1e-8 short a FAIL or a FLAG?) now bears only on how the dated history is classed — the ${pins_1.SUPPLEMENT_HISTORY_CAPTURE_DATE} capture's ${pins_1.SUPPLEMENT_HISTORY_CREDIT_UNIT_BELOW} short credits in ${pins_1.SUPPLEMENT_HISTORY_WINS} wins, held at a Step 22 FLAG from 2026-10-01 to 2026-10-03 (Step 22 arm k, MANIFEST DL-14) — not on this step's status or the verdict`);
-    const PHASE_A_PER_MC = 200;
-    const expectedPhaseA = config_1.MINE_COUNTS.length * PHASE_A_PER_MC;
-    const perMineCount = new Map();
-    for (const b of phaseA)
-        perMineCount.set(b.mineCount, (perMineCount.get(b.mineCount) ?? 0) + 1);
-    const missing = config_1.MINE_COUNTS.filter(m => !perMineCount.has(m));
-    const wrongCount = config_1.MINE_COUNTS.filter(m => (perMineCount.get(m) ?? 0) !== PHASE_A_PER_MC);
-    const s9CoverageOk = phaseA.length === expectedPhaseA;
+        + `SEVERITY OF A SHORT AMOUNT: a win booked one cent below floor2(stake × exact) is a violation of the declared rule and HARD-FAILS this step (MINES-11 HARD_FAIL as written); this dataset has ${floorViolations}. `
+        + `The wallet leg is held to LIQD's measured rule floor8(betAmountWallet × floor8(exact)) in Step 22, where the ${pins_1.PROD_WALLET_BELOW_EXACT} wins whose wallet field is one 1e-8 ${pins_1.PROD_WALLET_CURRENCY} unit below floor8(betAmountWallet × exact) (${pins_1.PROD_WALLET_BELOW_EXACT_TOTAL_UNITS} units in total, all in capture 1) are DISCLOSED, not a deviation (ruling 2, MANIFEST "Rulings"): a floor at 1e-8 produced by LIQD's declared 8-decimal rule moves no status`);
+    const planCells = [...pins_1.SETTINGS_PLAN.keys()];
+    const perCell = new Map();
+    for (const b of bets) {
+        const key = `${b.phaseId}|${b.mineCount}:${b.reveals}`;
+        perCell.set(key, (perCell.get(key) ?? 0) + 1);
+    }
+    const missing = planCells.filter(c => !perCell.has(c));
+    const wrongCount = planCells.filter(c => (perCell.get(c) ?? 0) !== pins_1.SETTINGS_PLAN.get(c));
+    const offPlan = [...perCell.keys()].filter(c => !pins_1.SETTINGS_PLAN.has(c));
+    const planTotal = [...pins_1.SETTINGS_PLAN.values()].reduce((a, n) => a + n, 0);
+    const phaseAByMineCount = new Map();
+    for (const b of bets)
+        if (b.phase === 'A')
+            phaseAByMineCount.set(b.mineCount, (phaseAByMineCount.get(b.mineCount) ?? 0) + 1);
+    const MINES15_FLOOR = pins_1.TOPUP_PER_MINE_COUNT;
+    const belowFloor = config_1.MINE_COUNTS.filter(m => (phaseAByMineCount.get(m) ?? 0) < MINES15_FLOOR);
+    const s9CoverageOk = planTotal === expectedBets && bets.length === expectedBets && belowFloor.length === 0;
     const firstCounts = new Array(config_1.GRID + 1).fill(0);
     let firstN = 0;
     for (const b of ctx.bets) {
@@ -3896,17 +4007,21 @@ function run(ctx) {
     const pWin = dfWin > 0 ? (0, stats_1.chiSquaredPValue)(chiWin, dfWin) : NaN;
     const liveFitPopOk = firstN === expectedBets && Number.isFinite(pFirst) && Number.isFinite(pWin);
     const liveFitStatOk = pFirst >= LIVE_FIT_ALPHA && pWin >= LIVE_FIT_ALPHA;
-    const s9 = (0, context_1.step)(9, 'Config Completeness (Phase A: 24 mineCounts × 200)', !(missing.length === 0 && wrongCount.length === 0 && s9CoverageOk && liveFitPopOk) ? 'FLAG'
-        : liveFitStatOk ? 'PASS' : 'INFO', `Phase A: ${perMineCount.size}/${config_1.MINE_COUNTS.length} mineCounts present, each with ${PHASE_A_PER_MC} bets (${phaseA.length}/${expectedPhaseA} total)`
+    const s9 = (0, context_1.step)(9, `Config Completeness (the production plan: ${planCells.length} phase settings, every mine count)`, !(missing.length === 0 && wrongCount.length === 0 && offPlan.length === 0 && s9CoverageOk && liveFitPopOk) ? 'FLAG'
+        : liveFitStatOk ? 'PASS' : 'INFO', `Plan (src/pins.ts SETTINGS_PLAN — code constants): phase A, the 20 multi-reveal settings (mine counts ${Object.keys(pins_1.PROD_DEPTHS).join(', ')} × 4 depths: ${Object.entries(pins_1.PROD_DEPTHS).map(([m, ks]) => `${m}: ${ks.join('/')}`).join(' · ')}) × ${pins_1.PROD_PER_SETTING}; phase D, the same 20 settings × ${pins_1.PHASE_D_PER_SETTING}; phase A+ (the top-up), the other ${pins_1.TOPUP_MINE_COUNTS.length} mine counts (${pins_1.TOPUP_MINE_COUNTS.join(', ')}) at one tile × ${pins_1.TOPUP_PER_MINE_COUNT}; phase C, ${pins_1.PHASE_C_SETTING.mineCount} mines at one tile × ${pins_1.PHASE_C_ROUNDS}; `
+        + `${planCells.length - missing.length}/${planCells.length} settings present, ${planCells.length - wrongCount.length}/${planCells.length} with exactly their planned rounds, ${offPlan.length} settings outside the plan (${bets.length}/${planTotal} rounds)`
         + (missing.length > 0 ? `; missing: ${missing.slice(0, 5).join(', ')}` : '')
-        + (wrongCount.length > 0 ? `; wrong count: ${wrongCount.slice(0, 5).map(m => `${m}=${perMineCount.get(m)}`).join(', ')}` : '')
+        + (wrongCount.length > 0 ? `; wrong count: ${wrongCount.slice(0, 5).map(c => `${c}=${perCell.get(c) ?? 0}`).join(', ')}` : '')
+        + (offPlan.length > 0 ? `; off plan: ${offPlan.slice(0, 5).join(', ')}` : '')
+        + `. Every mine count 1…24 in phase A (A and A+): ${config_1.MINE_COUNTS.length - belowFloor.length}/${config_1.MINE_COUNTS.length} with at least ${MINES15_FLOOR} rounds (fewest ${Math.min(...config_1.MINE_COUNTS.map(m => phaseAByMineCount.get(m) ?? 0))})${belowFloor.length ? ` — BELOW: ${belowFloor.join(', ')}` : ''}. ${pins_1.PLAYED_CELLS.length} of the 300 legal (mine count, depth) cells were played; the reference formula covers the rest (Step 10)`
         + `. Live-sample fit (informational; pre-registered deviation level p < ${LIVE_FIT_ALPHA}, reported as INFO, never counted): first-drawn mine position over ${firstN}/${expectedBets} captured layouts vs the uniform 25-tile lattice, chi² ${chiFirst.toFixed(3)} on ${config_1.GRID - 1} df, p = ${pFirst.toFixed(4)}; `
         + `win counts in ${groups.size} (mineCount, planned reveals) groups vs the binomial at winProbability(m,k), Σz² ${chiWin.toFixed(3)} on ${dfWin} df, p = ${pWin.toFixed(4)}, largest |z| ${maxAbsZ.toFixed(3)} at ${worstGroup || 'n/a'}. A variance illustration of the live sample, not RTP evidence.`);
     const rtpCases = [];
     for (const m of config_1.MINE_COUNTS)
         rtpCases.push([m, 1]);
-    for (let k = 2; k <= 5; k++)
-        rtpCases.push([3, k]);
+    for (const [m, ks] of Object.entries(pins_1.PROD_DEPTHS))
+        for (const k of ks)
+            rtpCases.push([Number(m), k]);
     let minRTP = Infinity, maxRTP = -Infinity, sumRTP = 0;
     let caseNonFinite = 0;
     for (const [m, k] of rtpCases) {
@@ -3924,7 +4039,7 @@ function run(ctx) {
     const meanRTP = sumRTP / rtpCases.length;
     const flat99 = caseNonFinite === 0 && Number.isFinite(minRTP) && Number.isFinite(maxRTP)
         && minRTP >= config_1.PUBLISHED_RTP - 1e-9 && maxRTP <= config_1.PUBLISHED_RTP + 1e-9;
-    const expectedCases = config_1.MINE_COUNTS.length + 4;
+    const expectedCases = config_1.MINE_COUNTS.length + Object.values(pins_1.PROD_DEPTHS).reduce((a, ks) => a + ks.length, 0);
     const coverageOk = rtpCases.length === expectedCases;
     let allCells = 0, allCellsOff = 0, allCellsNonFinite = 0, allMin = Infinity, allMax = -Infinity;
     let firstNonFinite = '';
@@ -3951,13 +4066,14 @@ function run(ctx) {
     const betStakes = [...new Set(bets.map(b => Number(b.betAmount)))]
         .filter(a => Number.isFinite(a) && a > 0).sort((a, z) => a - z);
     const headerStakes = Object.values((ctx.meta?.phases ?? {}))
-        .map(p => Number(p?.amount)).filter(a => Number.isFinite(a) && a > 0);
+        .flatMap(p => [Number(p?.amount), ...(Array.isArray(p?.amounts) ? p.amounts.map(Number) : [])]).filter(a => Number.isFinite(a) && a > 0);
     const headerMinStake = headerStakes.length > 0 ? Math.min(...headerStakes) : 0;
     const minStake = betStakes.length > 0 ? betStakes[0] : 0;
     const stakeSourcesAgree = minStake > 0 && Math.abs(headerMinStake - minStake) < 1e-12;
-    let floorDeficit = 0, floorWorst = '';
-    if (minStake > 0) {
-        const stakeUnits = BigInt(Math.round(minStake * 1e8));
+    const worstDeficit = (stakeUnits, scale, floorMultFirst) => {
+        let worst = 0, at = '';
+        if (stakeUnits <= 0n)
+            return { worst, at };
         for (const m of config_1.MINE_COUNTS) {
             for (let k = 1; k <= config_1.GRID - m; k++) {
                 let num = config_1.EDGE_NUM, den = config_1.EDGE_DEN;
@@ -3965,20 +4081,80 @@ function run(ctx) {
                     num *= BigInt(config_1.GRID - i);
                     den *= BigInt(config_1.GRID - m - i);
                 }
+                if (floorMultFirst) {
+                    num = (100000000n * num) / den;
+                    den = 100000000n;
+                }
                 const exactUnits = stakeUnits * num;
-                const creditedUnits = exactUnits / den;
-                const fracUnits = Number(exactUnits - creditedUnits * den) / Number(den);
-                const deficit = (0, config_1.winProbability)(m, k) * (fracUnits / 1e8) / minStake;
-                if (Number.isFinite(deficit) && deficit > floorDeficit) {
-                    floorDeficit = deficit;
-                    floorWorst = `m=${m},k=${k}`;
+                const flooredUnits = exactUnits / den;
+                let xn = config_1.EDGE_NUM, xd = config_1.EDGE_DEN;
+                for (let i = 0; i < k; i++) {
+                    xn *= BigInt(config_1.GRID - i);
+                    xd *= BigInt(config_1.GRID - m - i);
+                }
+                const lostUnits = Number(stakeUnits * xn - flooredUnits * xd) / Number(xd);
+                const d = (0, config_1.winProbability)(m, k) * lostUnits / Number(stakeUnits);
+                if (Number.isFinite(d) && d > worst) {
+                    worst = d;
+                    at = `m=${m},k=${k}`;
                 }
             }
         }
+        void scale;
+        return { worst, at };
+    };
+    const fiat = worstDeficit(BigInt(Math.round(minStake * 100)), exports.FIAT_SCALE, false);
+    const floorDeficit = fiat.worst, floorWorst = fiat.at;
+    let walletMinUnits = null;
+    for (const { rec } of ctx.prodCapture.bets) {
+        const u = (0, prod_capture_1.decimalUnits)(rec?.placeRaw?.betAmountWallet, 8);
+        if (u !== null && u > 0n && (walletMinUnits === null || u < walletMinUnits))
+            walletMinUnits = u;
     }
+    const wallet = walletMinUnits !== null ? worstDeficit(walletMinUnits, 100000000n, true) : { worst: NaN, at: '' };
+    const fiatOfCapture = new Map(pins_1.PROD_CAPTURES.map(c => [c.capture, c.fiat]));
+    const servedMinBets = new Set();
+    const servedLimits = new Map();
+    for (const g of pins_1.PROD_GAME_SETTINGS) {
+        try {
+            const o = JSON.parse(g.value);
+            servedMinBets.add(Number(o.minBet));
+            const f = fiatOfCapture.get(g.capture) ?? '?';
+            servedLimits.set(`${f} ${Number(o.maxExposure)}`, { fiat: f, maxExposure: Number(o.maxExposure) });
+        }
+        catch {
+            servedMinBets.add(NaN);
+        }
+    }
+    const minBetServed = servedMinBets.size === 1 && Number.isFinite([...servedMinBets][0]) && [...servedMinBets][0] > 0 ? [...servedMinBets][0] : null;
+    const minBetFloor = minBetServed !== null ? worstDeficit(BigInt(Math.round(minBetServed * 100)), exports.FIAT_SCALE, false) : { worst: NaN, at: '' };
+    const c2 = (c) => `${(c / 100n).toLocaleString('en-US')}.${String(c % 100n).padStart(2, '0')}`;
+    const FULL_M = 12, FULL_K = config_1.GRID - FULL_M;
+    const fullClearLine = minBetServed === null ? 'the served minBet could not be read' : [...servedLimits.values()]
+        .sort((a, z) => a.fiat.localeCompare(z.fiat) || a.maxExposure - z.maxExposure).map(r => {
+        const stakeC = BigInt(Math.round(minBetServed * 100)), capC = BigInt(Math.round(r.maxExposure * 100));
+        const at = (k) => (0, config_1.minesMultiplierRational)(FULL_M, k);
+        const full = at(FULL_K);
+        if (!full || !Number.isFinite(r.maxExposure))
+            return `${r.fiat}: not computable`;
+        const fullCents = (stakeC * full.num) / full.den;
+        const minStakeAbove = (capC * full.den) / full.num + 1n;
+        if (stakeC * full.num <= capC * full.den) {
+            return `${r.fiat} limit ${r.maxExposure.toLocaleString('en-US')}: a full clear at the ${minBetServed.toFixed(2)} minimum books ${c2(fullCents)} ${r.fiat}, within it; from a stake of ${c2(minStakeAbove)} ${r.fiat} a full clear exceeds it`;
+        }
+        let k = FULL_K;
+        while (k > 1) {
+            const mk = at(k);
+            if (mk && stakeC * mk.num <= capC * mk.den)
+                break;
+            k--;
+        }
+        const mk = at(k);
+        return `${r.fiat} limit ${r.maxExposure.toLocaleString('en-US')}: a full clear at the ${minBetServed.toFixed(2)} minimum would book ${c2(fullCents)} ${r.fiat}, above it; by LIQD's statement of 15 October 2026 a ${FULL_M}-mine round at that stake ends at ${k} tiles, ${(Number(mk.num) / Number(mk.den)).toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}× (booked ${c2((stakeC * mk.num) / mk.den)} ${r.fiat})`;
+    }).join('; ') + ' (arithmetic on the served settings; payout-limit enforcement was not observed)';
     const edgeRationalOk = (0, config_1.edgeRationalIsExact)();
     const referenceCorrupt = allCellsNonFinite > 0 || caseNonFinite > 0 || !edgeRationalOk;
-    const stakeSourceFault = !stakeSourcesAgree;
+    const stakeSourceFault = !stakeSourcesAgree || walletMinUnits === null || !Number.isFinite(wallet.worst);
     const edgePct = ((1 - meanRTP) * 100).toFixed(2);
     const isFlat = (maxRTP - minRTP) <= 1e-9;
     const rtpClause = flat99
@@ -4014,28 +4190,26 @@ function run(ctx) {
     const EXPECTED_MONO_PAIRS = 276 + 276;
     const monotoneOk = monoViolations === 0 && monoPairs === EXPECTED_MONO_PAIRS;
     let quotedChecked = 0, quotedAboveCap = 0, maxQuoted = 0;
-    const settingsCaps = new Set();
-    const auditedSettingsKeys = new Set();
-    let settingsRecords = 0;
+    const settingsValues = new Map();
+    let settingsRecords = 0, settingsWithMaxOdds = 0;
     for (const b of bets) {
         const raw = b.currentGameSettings;
         if (raw != null) {
             settingsRecords++;
+            const text = typeof raw === 'string' ? raw : JSON.stringify(raw);
+            settingsValues.set(text, (settingsValues.get(text) ?? 0) + 1);
             try {
-                const gs = typeof raw === 'string' ? JSON.parse(raw) : raw;
-                settingsCaps.add(Number(gs.maxOdds));
-                for (const k of Object.keys(gs))
-                    auditedSettingsKeys.add(k);
+                if (JSON.parse(text).maxOdds !== undefined)
+                    settingsWithMaxOdds++;
             }
             catch {
-                settingsCaps.add(NaN);
+                settingsWithMaxOdds++;
             }
         }
         if (b.result !== 'won')
             continue;
         const served = Number(b.multiplier);
-        const credited = Number(b.winningAmount) / Number(b.betAmount);
-        for (const q of [served, credited]) {
+        for (const q of [served]) {
             quotedChecked++;
             if (!Number.isFinite(q) || q > config_1.MAX_ODDS_DECLARED)
                 quotedAboveCap++;
@@ -4043,29 +4217,19 @@ function run(ctx) {
                 maxQuoted = q;
         }
     }
-    const capsAgree = settingsRecords > 0 && settingsCaps.size === 1 && settingsCaps.has(config_1.MAX_ODDS_DECLARED);
-    let suppMaxOdds;
-    try {
-        suppMaxOdds = JSON.parse(pins_1.SUPPLEMENT_GAME_SETTINGS.value).maxOdds;
+    const declaredRecords = pins_1.PROD_GAME_SETTINGS.reduce((a, g) => a + g.records, 0);
+    const declaredByValue = new Map();
+    for (const g of pins_1.PROD_GAME_SETTINGS)
+        declaredByValue.set(g.value, (declaredByValue.get(g.value) ?? 0) + g.records);
+    const declAgree = settingsRecords === declaredRecords && settingsValues.size === declaredByValue.size
+        && [...declaredByValue].every(([v, n]) => settingsValues.get(v) === n);
+    const limitsOf = (v) => { try {
+        const o = JSON.parse(v);
+        return `maxBet ${o.maxBet} / maxExposure ${o.maxExposure}`;
     }
     catch {
-        suppMaxOdds = NaN;
-    }
-    const suppCapAgree = pins_1.SUPPLEMENT_GAME_SETTINGS.records > 0 && Number(suppMaxOdds) === config_1.MAX_ODDS_DECLARED;
-    let suppExtra = [];
-    try {
-        suppExtra = Object.entries(JSON.parse(pins_1.SUPPLEMENT_GAME_SETTINGS.value)).filter(([k]) => !auditedSettingsKeys.has(k));
-    }
-    catch {
-        suppExtra = [];
-    }
-    let histMaxOdds;
-    try {
-        histMaxOdds = JSON.parse(pins_1.SUPPLEMENT_HISTORY_GAME_SETTINGS.value).maxOdds;
-    }
-    catch {
-        histMaxOdds = NaN;
-    }
+        return 'unparseable';
+    } };
     let refAboveCap = 0;
     for (const m of config_1.MINE_COUNTS)
         for (let k = 1; k <= config_1.GRID - m; k++)
@@ -4074,21 +4238,36 @@ function run(ctx) {
     const quotedOk = quotedAboveCap === 0 && quotedChecked > 0;
     const monoDetail = ` Monotonicity (FLAG policy, scored): the exact multiplier is strictly increasing in depth and in mine count over ${monoPairs}/${EXPECTED_MONO_PAIRS} adjacent legal cell pairs (exact rational comparison) — ${monoViolations} violations${firstMonoViolation ? ` (first: ${firstMonoViolation})` : ''}. `
         + `Caps (MINES-14 cap half, MANIFEST DL-7) — DISCLOSED, NOT SCORED since 2026-10-15: payout caps are excluded from the audit and multiplier caps stay in scope (profile owner, 2026-10-15); LIQD states that Mines has had no multiplier cap since the end of August 2026 (the 10,000× setting removed from the configuration) and that a per-round payout limit ends the round and pays the full multiplier for the tiles already revealed (operator statement, 2026-10-15, quoted in MANIFEST DL-7). `
-        + `Scored build: the ${pins_1.SUPPLEMENT_CAPTURE_DATE} supplement's ${pins_1.SUPPLEMENT_GAME_SETTINGS.records} settles carry ${pins_1.SUPPLEMENT_GAME_SETTINGS.value} (src/pins.ts SUPPLEMENT_GAME_SETTINGS, bound to the data by Step 22), ${suppMaxOdds === undefined ? 'no maxOdds key — no multiplier cap, as stated' : `maxOdds ${JSON.stringify(suppMaxOdds)}`}; `
-        + `keys those records carry that the audited build's do not: ${suppExtra.map(([k, v]) => `${k} ${JSON.stringify(v)}`).join(', ') || 'none'} — maxExposure is the round payout limit LIQD describes, excluded (payout-limit enforcement is not tested; no captured round reached it). `
-        + `History, printed and not scored: the audited dataset (captured 2026-07-30) — ${[...settingsCaps].join(', ') || 'none'} on ${settingsRecords} settles (the July build's maxOdds, src/config.ts MAX_ODDS_DECLARED ${config_1.MAX_ODDS_DECLARED}×: ${capsAgree ? 'agree' : 'DISAGREE'}); every multiplier the operator quoted in it lies within that July setting: ${quotedChecked - quotedAboveCap}/${quotedChecked} (served field and credited ratio on every win; largest ${maxQuoted}×; ${quotedOk ? 'within' : 'NOT within'}); `
-        + `the ${pins_1.SUPPLEMENT_HISTORY_CAPTURE_DATE} capture's ${pins_1.SUPPLEMENT_HISTORY_GAME_SETTINGS.records} settles carried ${pins_1.SUPPLEMENT_HISTORY_GAME_SETTINGS.value}, ${histMaxOdds === undefined ? 'no maxOdds key either' : `maxOdds ${JSON.stringify(histMaxOdds)}`} (bound to its records by Step 22 (k)); `
-        + `the reference formula exceeds the July 10,000× setting at ${refAboveCap} of the 300 legal cells, none reached by a captured bet; the live page read 2026-10-01 advertises a 5,148,297× top payout (evidence/rtp-page-labels-2026-10-01.json), the uncapped exact multiplier at m=12, k=13. `
-        + `Cap figures as computed (not scored): quoted within the July setting ${quotedOk ? 'yes' : 'no'}, audited settings single-valued at it ${capsAgree ? 'yes' : 'no'}, scored build carries it ${suppCapAgree ? 'yes' : 'no'}.`;
+        + `Production build: ${settingsRecords} of the ${bets.length} settling replies carry currentGameSettings (every loss and the ${pins_1.PROD_AUTO_FINISH_ROUNDS.length} wins LIQD settled by itself; a cash-out reply carries none), ${settingsValues.size} distinct value(s), ${settingsWithMaxOdds} with a maxOdds key — no multiplier cap, as stated; `
+        + `the values ${declAgree ? 'equal' : 'DO NOT equal'} the declaration src/pins.ts PROD_GAME_SETTINGS (${pins_1.PROD_GAME_SETTINGS.map(g => `capture ${g.capture}: ${g.records} × ${limitsOf(g.value)}`).join('; ')}; the limits are stated in the fiat the round was booked in, CAD in capture 1 and USD in captures 2 and 3, with maxExposureUsdc 50000 in all), which Step 22 binds to the raw captures; `
+        + `maxExposure is the round payout limit LIQD describes, excluded (payout-limit enforcement is not tested; no captured round reached it). `
+        + `Largest multiplier displayed on a production win: ${maxQuoted}× (${quotedChecked - quotedAboveCap}/${quotedChecked} wins carry a finite displayed multiplier${quotedOk ? '' : ' — NOT all'}); `
+        + `the reference formula exceeds 10,000× at ${refAboveCap} of the 300 legal cells, none played; the live page read 2026-10-01 quotes 5,148,297× (evidence/rtp-page-labels-2026-10-01.json): the top multiplier on the formula (m=12, k=13), payable only within the round payout limit — ${fullClearLine}.`;
     let rulingOne = '';
     try {
         const alt = (0, rtp_settings_1.computeRtpClaim)(rtp_settings_1.RTP_CLAIM_PAGE_RANGE);
         const rc = alt.rangeChecks.map(c => `${c.id === 'published-min-vs-true-min' ? 'published min' : 'published max'} ${c.publishedPct}% vs true ${c.truePct}% (${c.gapPp} pp, ${c.outcome})`).join('; ');
-        rulingOne = ` RTP claim — OPEN RULING 1 (profile owner: which statement on LIQD's page is LIQD held to?): the held claim is the page's flat ${rtp_settings_1.RTP_CLAIM.kind === 'flat' ? `${(Number(rtp_settings_1.RTP_CLAIM.rtp) * 100).toFixed(2)}%` : rtp_settings_1.RTP_CLAIM.kind} ("99% RTP at every setting"; scored by the RTP-CLAIM gate printed after the steps). `
-            + `The same page states a realised edge "between 0.64% and 1.44%" (RTP ${(Number(rtp_settings_1.RTP_CLAIM_PAGE_RANGE.min) * 100).toFixed(2)}%–${(Number(rtp_settings_1.RTP_CLAIM_PAGE_RANGE.max) * 100).toFixed(2)}%); run through the same rule (${alt.rule} ${alt.ruleVersion.split(' ')[0]}, band ${alt.bandPp} pp) as a range claim it would ${alt.outcome}: ${rc}. Printed for the ruling, not scored.`;
+        let cutMin = Infinity, cutMax = -Infinity, rndMin = Infinity, rndMax = -Infinity;
+        for (const m of config_1.MINE_COUNTS)
+            for (let k = 1; k <= config_1.GRID - m; k++) {
+                const r = (0, config_1.minesMultiplierRational)(m, k);
+                if (!r)
+                    continue;
+                const p = (0, config_1.winProbability)(m, k);
+                const eCut = 1 - p * Number((100n * r.num) / r.den) / 100;
+                const eRnd = 1 - p * Number((200n * r.num + r.den) / (2n * r.den)) / 100;
+                cutMin = Math.min(cutMin, eCut);
+                cutMax = Math.max(cutMax, eCut);
+                rndMin = Math.min(rndMin, eRnd);
+                rndMax = Math.max(rndMax, eRnd);
+            }
+        const pc = (v) => `${(v * 100).toFixed(2)}%`;
+        rulingOne = ` RTP claim — RULING 1 (decided): LIQD is held to the page's flat ${rtp_settings_1.RTP_CLAIM.kind === 'flat' ? `${(Number(rtp_settings_1.RTP_CLAIM.rtp) * 100).toFixed(2)}%` : rtp_settings_1.RTP_CLAIM.kind} ("99% RTP at every setting"; scored by the RTP-CLAIM gate printed after the steps), which the wallet field meets (99.0000% to four decimals, (b) above). `
+            + `DISCREPANCY, as published on 1 Oct 2026: the same page states "Multipliers are rounded to two decimals rather than cut, so the realised edge moves a little with the exact mines-and-picks combination, between 0.64% and 1.44%, around the nominal 1%." (RTP ${(Number(rtp_settings_1.RTP_CLAIM_PAGE_RANGE.min) * 100).toFixed(2)}%–${(Number(rtp_settings_1.RTP_CLAIM_PAGE_RANGE.max) * 100).toFixed(2)}%). On production the displayed multiplier is cut, not rounded (Step 7), and the range matches neither rule: over the 300 cells, paying the 2-decimal multiplier cut would give an edge of ${pc(cutMin)}–${pc(cutMax)}, rounded ${pc(rndMin)}–${pc(rndMax)}. `
+            + `Run through the same rule (${alt.rule} ${alt.ruleVersion.split(' ')[0]}, band ${alt.bandPp} pp) as a range claim the sentence would ${alt.outcome}: ${rc}. Printed as the discrepancy, not scored.`;
     }
     catch (e) {
-        rulingOne = ` RTP claim — OPEN RULING 1: the page's range statement could not be evaluated (${e?.message ?? e}).`;
+        rulingOne = ` RTP claim — RULING 1: the page's range statement could not be evaluated (${e?.message ?? e}).`;
     }
     const flagReasons = [];
     if (!flat99)
@@ -4100,13 +4279,17 @@ function run(ctx) {
     if (!monotoneOk)
         flagReasons.push('NON-MONOTONE');
     const s10Fail = referenceCorrupt || stakeSourceFault;
-    const s10 = (0, context_1.step)(10, 'House Edge / RTP Audit (closed-form identity, per-config, anti-circular)', s10Fail ? 'FAIL' : (flagReasons.length === 0 ? 'PASS' : 'FLAG'), `Closed-form identity theoreticalRTP(m,k) = winProbability(m,k) × minesMultiplierExact(m,k) (winProbability = pure C(25-m,k)/C(25,k) combinatorics), checked for m=1..24 at k=1 and Phase-E depths (m=3, k=1..5) — ${rtpCases.length}/${expectedCases} cases: `
+    const s10 = (0, context_1.step)(10, 'House Edge / RTP Audit (closed-form identity, per-config, anti-circular)', s10Fail ? 'FAIL' : (flagReasons.length === 0 ? 'PASS' : 'FLAG'), `Closed-form identity theoreticalRTP(m,k) = winProbability(m,k) × minesMultiplierExact(m,k) (winProbability = pure C(25-m,k)/C(25,k) combinatorics), checked for m=1..24 at k=1 and the 20 multi-reveal settings (src/pins.ts PROD_DEPTHS) — ${rtpCases.length}/${expectedCases} cases: `
         + `RTP range ${(minRTP * 100).toFixed(4)}%–${(maxRTP * 100).toFixed(4)}%, mean ${(meanRTP * 100).toFixed(4)}% — ${rtpClause}`
-        + `Full-grid reference sweep: all ${allCells}/${EXPECTED_ALL_CELLS} legal (m,k) cells (k=1..25−m) evaluate to 99.0000% within 1e-9 (${allCellsOff} off), range ${(allMin * 100).toFixed(4)}%–${(allMax * 100).toFixed(4)}% — this checks the reference formula at every reachable depth, NOT the operator (25/300 cells are live-witnessed via Step 8; 275 formula-only; additional settlement coverage is planned for production). `
-        + `Settlement floor: the identity above is the THEORETICAL leg; the amount actually credited is floor8(stake × multExact), so settled RTP is at most (1 − edge), with equality when no fractional settlement unit is discarded. Worst case over all ${EXPECTED_ALL_CELLS} cells at the capture's smallest stake ($${minStake.toFixed(2)}, DERIVED from the ${betStakes.length} distinct betAmount values in the pinned bets — ${betStakes.map(s => `$${s.toFixed(2)}`).join(', ')} — not read from meta.phases; the header's own smallest amount is $${headerMinStake.toFixed(2)} and the two ${stakeSourcesAgree ? 'agree' : 'DISAGREE — hard fail: the dataset header describes stakes its bets do not contain'}): ${floorWorst || 'n/a'} loses ${floorDeficit.toExponential(3)} of turnover → settled RTP ${((1 - config_1.HOUSE_EDGE - floorDeficit) * 100).toFixed(7)}%, i.e. ${((1 - config_1.HOUSE_EDGE) * 100).toFixed(4)}% to four decimals. `
-        + `Edge-rational integrity: EDGE_NUM/EDGE_DEN = ${Number(config_1.EDGE_NUM)}/${Number(config_1.EDGE_DEN)} ${edgeRationalOk ? 'exactly represents' : 'DOES NOT represent'} (1 − HOUSE_EDGE) = ${1 - config_1.HOUSE_EDGE} — the BigInt factor the floor8 credit identity in Step 8 divides by. A factor that only approximates the audited edge makes that identity measure a different edge, silently. `
+        + `Full-grid reference sweep: all ${allCells}/${EXPECTED_ALL_CELLS} legal (m,k) cells (k=1..25−m) evaluate to 99.0000% within 1e-9 (${allCellsOff} off), range ${(allMin * 100).toFixed(4)}%–${(allMax * 100).toFixed(4)}% — this checks the reference formula at every reachable depth, NOT the operator (${pins_1.PLAYED_CELLS.length}/300 cells were played on production, Steps 8 and 22; ${300 - pins_1.PLAYED_CELLS.length} formula-only). `
+        + `Settlement floor — the identity above is the THEORETICAL leg; the amounts LIQD writes are floored, so the return they carry is at most (1 − edge). `
+        + `(a) the BOOKED fiat amount, floor2(stake × exact), at the smallest stake played (${minStake.toFixed(2)}, DERIVED from the ${betStakes.length} distinct betAmount value(s) in the pinned bets — ${betStakes.map(v => v.toFixed(2)).join(', ')} — not read from meta.phases; the header's own smallest amount is ${headerMinStake.toFixed(2)} and the two ${stakeSourcesAgree ? 'agree' : 'DISAGREE — hard fail: the dataset header describes stakes its bets do not contain'}): worst cell over all ${EXPECTED_ALL_CELLS} ${floorWorst || 'n/a'}, ${(floorDeficit * 100).toFixed(4)} pp of turnover → a booked return of ${((1 - config_1.HOUSE_EDGE - floorDeficit) * 100).toFixed(4)}% there — a property of a cent-floored figure at a 0.10 stake, not of the wallet field (Step 8 states the amounts dropped per capture); `
+        + `(b) the ${pins_1.PROD_WALLET_CURRENCY} wallet field in the reply, LIQD's measured rule floor8(walletStake × floor8(exact)) (Step 22), at the smallest betAmountWallet in the raw captures (${walletMinUnits === null ? 'NOT READ' : (Number(walletMinUnits) / 1e8).toFixed(8)} ${pins_1.PROD_WALLET_CURRENCY}, a 0.10 CAD stake of capture 1): worst cell ${wallet.at || 'n/a'}, ${Number.isFinite(wallet.worst) ? wallet.worst.toExponential(3) : 'n/a'} of turnover → RTP on the wallet field ${Number.isFinite(wallet.worst) ? ((1 - config_1.HOUSE_EDGE - wallet.worst) * 100).toFixed(6) : 'n/a'}%, i.e. ${((1 - config_1.HOUSE_EDGE) * 100).toFixed(4)}% to four decimals; `
+        + `(c) the BOOKED amount at the smallest stake LIQD serves (minBet ${minBetServed === null ? 'NOT READ' : minBetServed.toFixed(2)} in every settings record, src/pins.ts PROD_GAME_SETTINGS; not played): worst cell ${minBetFloor.at || 'n/a'}, ${(minBetFloor.worst * 100).toFixed(4)} pp of turnover → a booked return of ${((1 - config_1.HOUSE_EDGE - minBetFloor.worst) * 100).toFixed(4)}% there. `
+        + `Which of the booked amount and the wallet field reaches the balance is not verified (no balance was read, MANIFEST DL-5). `
+        + `Edge-rational integrity: EDGE_NUM/EDGE_DEN = ${Number(config_1.EDGE_NUM)}/${Number(config_1.EDGE_DEN)} ${edgeRationalOk ? 'exactly represents' : 'DOES NOT represent'} (1 − HOUSE_EDGE) = ${1 - config_1.HOUSE_EDGE} — the BigInt factor the floor8 wallet field identity in Step 8 divides by. A factor that only approximates the audited edge makes that identity measure a different edge, silently. `
         + `Reference-formula integrity: ${allCellsNonFinite + caseNonFinite} cells returned a non-finite value${firstNonFinite ? ` (first: ${firstNonFinite})` : ''} — a NaN/Infinity here is NOT an "off 99%" deviation (which FLAGs); it means the auditor's own reference is corrupt and every comparison built on it is vacuous, so it hard-FAILS. `
-        + `This is the uncapped reference calculation; Step 8 independently checks the recorded winningAmount at captured winning configurations. The displayed multiplier field is still floored — cosmetic (Step 7).`
+        + `This is the uncapped reference calculation; Step 8 checks the booked winningAmount and Step 22 the wallet field in the reply at the ${pins_1.PLAYED_CELLS.length} played cells. The displayed multiplier field is floored — cosmetic (Step 7).`
         + monoDetail
         + rulingOne
         + ` FLAG REASONS: ${s10Fail ? 'n/a (hard fail)' : (flagReasons.join(', ') || 'none')}.`);
@@ -4120,39 +4303,102 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.run = run;
 const context_1 = require("./context");
 const rng_1 = require("../../src/rng");
+const pins_1 = require("../../src/pins");
+const PHASE_D_SEED_FLOOR = 2;
 function run(ctx) {
-    const { phaseD, seedMap } = ctx;
-    if (phaseD.length === 0) {
-        return [(0, context_1.step)(14, 'Phase D — Client Seed Variation', 'FLAG', 'No Phase D bets in dataset (PROVISIONAL)')];
+    const { bets, seeds, seedMap } = ctx;
+    const cap = ctx.prodCapture;
+    const d = bets.filter(b => b.phaseId === 'D');
+    const dEpochs = pins_1.EPOCH_PLAN.filter(e => e.phaseId === 'D');
+    const dSeeds = seeds.filter(s => s.phaseId === 'D');
+    const dClientSeeds = new Set(d.map(b => b.clientSeed));
+    let dTested = 0, dMatched = 0, dSeedOfEpoch = 0;
+    const seedOfEpoch = new Map(seeds.map(s => [s.epoch, s]));
+    for (const b of d) {
+        if (seedOfEpoch.get(b.epoch)?.clientSeed === b.clientSeed && pins_1.PLAYER_SEED_FORMAT.test(b.clientSeed))
+            dSeedOfEpoch++;
+        const ss = seedMap.get(b.hashedServerSeed);
+        if (!ss)
+            continue;
+        dTested++;
+        if ((0, rng_1.sameMines)((0, rng_1.revealMines)(ss, b.clientSeed, b.nonce, b.mineCount), b.mineTiles))
+            dMatched++;
     }
-    const clientSeeds = new Set(phaseD.map(b => b.clientSeed));
-    const pfauditSeeds = [...clientSeeds].filter(cs => cs.startsWith('pfaudit-'));
+    let dFormOk = 0, dMetaOk = 0, dPlayerOk = 0, dTakenOk = 0;
+    const dFaults = [];
+    dSeeds.forEach((sd, i) => {
+        const m = pins_1.PLAYER_SEED_FORMAT.exec(sd.clientSeed);
+        if (m && Number(m[1]) === i + 1)
+            dFormOk++;
+        else if (dFaults.length < 3)
+            dFaults.push(`epoch ${sd.epoch}: client seed ${sd.clientSeed} is not the declared player-set form for seed ${i + 1}`);
+        const file = cap.files.find(f => f.capture === sd.capture);
+        const planned = file?.meta?.plan?.[sd.captureEpoch]?.seed;
+        if (planned && planned.value === sd.clientSeed)
+            dMetaOk++;
+        const rot = cap.rotates.find(r => r.capture === sd.capture && r.drawnAfter === sd.hashedServerSeed && r.submitted === sd.clientSeed);
+        if (rot?.seedMeta?.player === true && rot?.seedMeta?.phase === 'D' && rot?.seedMeta?.predictable === false)
+            dPlayerOk++;
+        if (rot?.raw?.clientSeed === sd.clientSeed && rot?.state?.clientSeed === sd.clientSeed)
+            dTakenOk++;
+    });
+    const playerSeedsOutsideD = seeds.filter(s => s.phaseId !== 'D' && !pins_1.AUDIT_SEED_FORMAT.test(s.clientSeed)).length
+        + bets.filter(b => b.phaseId !== 'D' && pins_1.PLAYER_SEED_FORMAT.test(b.clientSeed)).length;
+    const dOk = d.length === pins_1.EXPECTED_PHASE_ID_BETS.D && dEpochs.length === pins_1.PHASE_D_DISTINCT_SEEDS && dSeeds.length === dEpochs.length
+        && dClientSeeds.size === pins_1.PHASE_D_DISTINCT_SEEDS && dClientSeeds.size >= PHASE_D_SEED_FLOOR
+        && dSeedOfEpoch === d.length && dTested === d.length && dMatched === dTested
+        && dFormOk === dSeeds.length && dMetaOk === dSeeds.length && dPlayerOk === dSeeds.length && dTakenOk === dSeeds.length && playerSeedsOutsideD === 0;
+    const clientSeeds = new Set(bets.map(b => b.clientSeed));
     let tested = 0, matched = 0;
-    for (const b of phaseD) {
+    for (const b of bets) {
         const ss = seedMap.get(b.hashedServerSeed);
         if (!ss)
             continue;
         tested++;
-        const mines = (0, rng_1.revealMines)(ss, b.clientSeed, b.nonce, b.mineCount);
-        if ((0, rng_1.sameMines)(mines, b.mineTiles))
+        if ((0, rng_1.sameMines)((0, rng_1.revealMines)(ss, b.clientSeed, b.nonce, b.mineCount), b.mineTiles))
             matched++;
     }
-    const s14CoverageOk = tested === phaseD.length;
-    const PREDICTABLE = /^pfaudit-(\d{13})-(\d+)$/;
-    const exposed = new Map();
-    for (const b of phaseD) {
-        const mt = PREDICTABLE.exec(b.clientSeed);
-        if (mt && Number(mt[2]) === b.epoch)
-            exposed.set(b.epoch, mt[1]);
+    const coverageOk = tested === bets.length && tested > 0;
+    const PREDICTABLE = /\d{13}/;
+    const predictableEpochs = [...new Set(bets.filter(b => PREDICTABLE.test(b.clientSeed)).map(b => b.epoch))].sort((a, z) => a - z);
+    const firstBetAt = new Map();
+    for (const b of bets) {
+        const t = Date.parse(b.at);
+        if (!firstBetAt.has(b.epoch) || t < firstBetAt.get(b.epoch))
+            firstBetAt.set(b.epoch, t);
     }
-    const exposedEpochs = [...exposed.keys()].sort((a, z) => a - z);
-    const stamps = [...new Set(exposed.values())];
-    const exposedBets = phaseD.filter(b => exposed.has(b.epoch)).length;
-    const stampText = stamps.map(st => `${st} (${new Date(Number(st)).toISOString()})`).join(', ');
-    const s14 = (0, context_1.step)(14, 'Phase D — Client Seed Variation', clientSeeds.size >= 2 && matched === tested && s14CoverageOk ? 'PASS' : 'FLAG', `${phaseD.length} bets, ${clientSeeds.size} distinct client seeds `
-        + `(${pfauditSeeds.length} pfaudit-*); mine-layout recomputation: ${matched}/${tested} match (${tested}/${phaseD.length} recomputed). `
-        + `Predictable-seed disclosure (MANIFEST DL-13): ${exposedEpochs.length} epoch(s) use the timestamp construction pfaudit-<stamp>-<epoch> — epochs ${exposedEpochs.join(', ') || 'none'}, ${exposedBets} bets, stamp ${stampText || 'n/a'} — `
-        + `so for those epochs the client seed does not deny foreknowledge; their rounds rest on the recomputation above and on Steps 16–17, not on the client-seed mitigation.`);
+    let ordered = 0, generatorDeclared = 0;
+    const orderFaults = [];
+    for (const s of seeds) {
+        const rot = cap.rotates.find(r => r.capture === s.capture && r.drawnAfter === s.hashedServerSeed && r.submitted === s.clientSeed);
+        const first = firstBetAt.get(s.epoch);
+        if (!rot) {
+            if (orderFaults.length < 3)
+                orderFaults.push(`epoch ${s.epoch}: no rotation submitted ${s.clientSeed} after ${s.hashedServerSeed.slice(0, 12)}…`);
+            continue;
+        }
+        const activated = rot.state?.hashedServerSeed === s.hashedServerSeed && rot.raw?.activeServerSeedHash === s.hashedServerSeed;
+        const before = first !== undefined && Date.parse(String(rot.at)) < first;
+        if (activated && before)
+            ordered++;
+        else if (orderFaults.length < 3)
+            orderFaults.push(`epoch ${s.epoch}: rotation ${activated ? '' : 'did not activate the commitment '}${before ? '' : 'not recorded before the first bet'}`.trim());
+        if (rot.seedMeta?.predictable === false && typeof rot.seedMeta?.generator === 'string')
+            generatorDeclared++;
+    }
+    const orderOk = cap.problem === null && ordered === pins_1.EXPECTED_SEEDS && seeds.length === pins_1.EXPECTED_SEEDS;
+    const ok = dOk && clientSeeds.size === pins_1.EXPECTED_SEEDS && matched === tested && coverageOk && predictableEpochs.length === 0 && orderOk;
+    const s14 = (0, context_1.step)(14, 'Client Seed Variation (Phase D player-set seeds; seed order on every epoch)', ok ? 'PASS' : 'FLAG', `PHASE D: ${d.length}/${pins_1.EXPECTED_PHASE_ID_BETS.D} rounds in ${dEpochs.length} epochs under ${dClientSeeds.size} distinct player-set client seeds (floor ${PHASE_D_SEED_FLOOR}; declared ${pins_1.PHASE_D_DISTINCT_SEEDS}, src/pins.ts): ${[...dClientSeeds].join(', ')}; `
+        + `${dSeedOfEpoch}/${d.length} rounds carry their epoch's player-set seed; mine-layout recomputation under it: ${dMatched}/${dTested} match (${dTested}/${d.length} recomputed); `
+        + `${dFormOk}/${dSeeds.length} seeds of the declared form "pfaudit-prod-mines-d<k>-" + 12 hex digits with k the epoch's position; ${dMetaOk}/${dSeeds.length} named for their epoch in the capture's meta, written before its anchor rotation; `
+        + `${dPlayerOk}/${dSeeds.length} submitted in a rotation recorded as player-set and not predictable; ${dTakenOk}/${dSeeds.length} returned by LIQD's rotation reply as the active client seed (taken by the site); ${playerSeedsOutsideD} uses of a player-set seed outside Phase D`
+        + (dFaults.length ? ` — ${dFaults.join('; ')}` : '') + '. '
+        + `WHOLE DATASET: ${bets.length} rounds, ${clientSeeds.size} distinct client seeds across ${seeds.length} epochs; recomputation under each round's own client seed: ${matched}/${tested} match. `
+        + `Predictable-seed census (a client seed carrying a 13-digit millisecond timestamp): ${predictableEpochs.length} epochs${predictableEpochs.length ? ` (${predictableEpochs.join(', ')})` : ''}. `
+        + `Order, from the raw captures' rotation records (the capture's clock, not an operator-side order): ${ordered}/${pins_1.EXPECTED_SEEDS} epochs' client seeds were submitted in the rotation whose reply made that epoch's commitment active, recorded before the epoch's first bet; ${generatorDeclared}/${pins_1.EXPECTED_SEEDS} of those rotations record the generator and mark it not predictable`
+        + (orderFaults.length ? `; faults: ${orderFaults.join('; ')}` : '')
+        + (cap.problem ? `; RAW CAPTURE NOT LOADED: ${cap.problem}` : '')
+        + `. The server seed was therefore committed before the client seed it was used with was submitted. The Phase D seeds were chosen by the auditor's runner, not typed by hand: they show that a seed the player sets is the seed the round is drawn with; client-seed participation alone does not prove the seed was unpredictable to the operator.`);
     return [s14];
 }
 
@@ -4164,32 +4410,61 @@ exports.run = run;
 const context_1 = require("./context");
 const rng_1 = require("../../src/rng");
 const config_1 = require("../../src/config");
+const pins_1 = require("../../src/pins");
 function run(ctx) {
-    const { phaseE, seedMap } = ctx;
-    if (phaseE.length === 0) {
-        return [(0, context_1.step)(15, 'Phase E — Multi-Reveal Verification', 'FAIL', 'No Phase E (multi-reveal) bets found in dataset')];
+    const { bets, seedMap } = ctx;
+    if (bets.length === 0) {
+        return [(0, context_1.step)(15, 'Multi-Reveal Verification', 'FAIL', 'No multi-reveal rounds found in the dataset')];
     }
+    const plan = new Set(Object.entries(pins_1.PROD_DEPTHS).flatMap(([m, ks]) => ks.map(k => `${m}:${k}`)));
+    const MULTI_PHASES = ['A', 'D'];
+    const expectedMulti = MULTI_PHASES.reduce((a, p) => a + pins_1.EXPECTED_PHASE_ID_BETS[p], 0);
+    let multi = 0, single = 0, multiReveals = 0;
     const failures = [];
-    let layoutChecked = 0, layoutFails = 0;
+    let layoutChecked = 0, layoutFails = 0, offPlan = 0, depthFails = 0, multiPhaseFails = 0;
     let multChecked = 0, multFails = 0, nonFiniteRef = 0;
-    const revealDepths = new Set();
-    for (const b of phaseE) {
-        if (b.mineCount !== 3)
-            failures.push(`bet ${b.id}: mineCount ${b.mineCount} (expected 3)`);
-        if (b.reveals !== 5)
-            failures.push(`bet ${b.id}: reveals ${b.reveals} (expected 5)`);
+    const winDepths = new Set();
+    const split = new Map();
+    for (const b of bets) {
+        const cell = `${b.mineCount}:${b.reveals}`;
+        if (!pins_1.SETTINGS_PLAN.has(`${b.phaseId}|${cell}`)) {
+            offPlan++;
+            if (failures.length < 5)
+                failures.push(`bet ${b.id}: setting (${b.mineCount}, ${b.reveals}) is not in the plan of phase ${b.phaseId}`);
+        }
+        const isMulti = b.reveals > 1;
+        if (isMulti) {
+            multi++;
+            multiReveals += b.openTiles.length;
+        }
+        else
+            single++;
+        if (isMulti !== MULTI_PHASES.includes(b.phaseId) || (isMulti && !plan.has(cell))) {
+            multiPhaseFails++;
+            if (failures.length < 5)
+                failures.push(`bet ${b.id}: planned depth ${b.reveals} in phase ${b.phaseId}`);
+        }
+        const sp = split.get(cell) ?? { n: 0, won: 0, lostAtLast: 0, lostEarlier: 0 };
+        if (isMulti)
+            sp.n++;
         const ss = seedMap.get(b.hashedServerSeed);
         if (ss) {
-            const mines = (0, rng_1.revealMines)(ss, b.clientSeed, b.nonce, b.mineCount);
             layoutChecked++;
-            if (!(0, rng_1.sameMines)(mines, b.mineTiles)) {
+            if (!(0, rng_1.sameMines)((0, rng_1.revealMines)(ss, b.clientSeed, b.nonce, b.mineCount), b.mineTiles)) {
                 layoutFails++;
                 if (failures.length < 5)
                     failures.push(`bet ${b.id}: mineTiles recompute mismatch`);
             }
         }
         if (b.result === 'won') {
-            revealDepths.add(b.openTiles.length);
+            if (isMulti)
+                sp.won++;
+            winDepths.add(b.openTiles.length);
+            if (b.openTiles.length !== b.reveals) {
+                depthFails++;
+                if (failures.length < 5)
+                    failures.push(`bet ${b.id}: won after ${b.openTiles.length} tiles, planned ${b.reveals}`);
+            }
             const expected = (0, config_1.minesMultiplier)(b.mineCount, b.openTiles.length);
             multChecked++;
             if (!Number.isFinite(expected)) {
@@ -4199,25 +4474,505 @@ function run(ctx) {
             }
             else if (b.multiplier === undefined || !Number.isFinite(b.multiplier) || Math.abs(expected - b.multiplier) > 1e-9) {
                 multFails++;
-                if (failures.length < 5) {
-                    failures.push(`bet ${b.id}: multiplier ${b.multiplier} != minesMultiplier(3,${b.openTiles.length})=${expected}`);
-                }
+                if (failures.length < 5)
+                    failures.push(`bet ${b.id}: multiplier ${b.multiplier} != minesMultiplier(${b.mineCount},${b.openTiles.length})=${expected}`);
+            }
+        }
+        else {
+            if (b.openTiles.length > b.reveals || b.openTiles.length < 1) {
+                depthFails++;
+                if (failures.length < 5)
+                    failures.push(`bet ${b.id}: lost after ${b.openTiles.length} tiles, planned ${b.reveals}`);
+            }
+            if (isMulti) {
+                if (b.openTiles.length === b.reveals)
+                    sp.lostAtLast++;
+                else
+                    sp.lostEarlier++;
+            }
+        }
+        if (isMulti)
+            split.set(cell, sp);
+    }
+    const coverageOk = layoutChecked === bets.length && bets.length === pins_1.EXPECTED_BETS && split.size === plan.size
+        && multi === expectedMulti && multi + single === pins_1.EXPECTED_BETS;
+    const pass = failures.length === 0 && layoutFails === 0 && multFails === 0 && depthFails === 0
+        && offPlan === 0 && multiPhaseFails === 0 && nonFiniteRef === 0 && coverageOk;
+    const depths = [...winDepths].sort((a, b) => a - b).join(',');
+    const won = [...split.values()].reduce((a, x) => a + x.won, 0);
+    const lostAtLast = [...split.values()].reduce((a, x) => a + x.lostAtLast, 0);
+    const lostEarlier = [...split.values()].reduce((a, x) => a + x.lostEarlier, 0);
+    const perCell = [...split].sort(([a], [z]) => {
+        const [am, ak] = a.split(':').map(Number), [zm, zk] = z.split(':').map(Number);
+        return am - zm || ak - zk;
+    }).map(([c, x]) => `(${c.replace(':', ', ')}) ${x.won}/${x.n}`).join(', ');
+    const s15 = (0, context_1.step)(15, 'Multi-Reveal Verification (phases A and D, every round)', pass ? 'PASS' : 'FAIL', pass
+        ? `${multi}/${expectedMulti} multi-reveal rounds — every round of phase A (${pins_1.EXPECTED_PHASE_ID_BETS.A}) and phase D (${pins_1.EXPECTED_PHASE_ID_BETS.D}); production has no separate multi-reveal phase — at the ${plan.size} settings of the plan (${split.size}/${plan.size} present, ${offPlan} rounds off plan), ${multiReveals} tiles opened in them; the other ${single} rounds (phase A+ and phase C) open one tile and are held to the same checks; `
+            + `${layoutChecked}/${bets.length} mine layouts recomputed; `
+            + `${multChecked}/${multChecked} winning multipliers == minesMultiplier(m, openTiles.length) at 1e-9, every win opened exactly its planned depth (win depths ${depths}; ${nonFiniteRef} non-finite reference values — a NaN in the auditor's own formula hard-fails rather than scoring as agreement); `
+            + `multi-reveal outcome split: ${won} cashed out at the planned depth, ${lostAtLast} hit a mine on the last planned reveal, ${lostEarlier} busted earlier; wins per setting (phases A and D together, 275 rounds each) ${perCell}`
+        : `${failures.length || (coverageOk ? 0 : 1)} issue(s): ${(coverageOk ? failures.slice(0, 3) : [...failures.slice(0, 2), `coverage: ${layoutChecked}/${bets.length} layouts recomputed, ${split.size}/${plan.size} settings present, ${multi}/${expectedMulti} multi-reveal rounds`]).join('; ')}`);
+    return [s15];
+}
+
+},
+"tests/steps/raw-capture.js": function(module, exports, require, __filename, __dirname) {
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.STEP_NAME = exports.STEP_NUMBER = void 0;
+exports.walletFieldRule = walletFieldRule;
+exports.walletFieldExact = walletFieldExact;
+exports.run = run;
+const path = __importStar(require("path"));
+const context_1 = require("./context");
+const rng_1 = require("../../src/rng");
+const config_1 = require("../../src/config");
+const prod_capture_1 = require("../../src/prod-capture");
+const pins_1 = require("../../src/pins");
+exports.STEP_NUMBER = 22;
+exports.STEP_NAME = 'Production Raw-Capture Binding (wallet field, reveals, LIQD verifier)';
+const STEP_MULT_KEYS = ['multiplier', 'currentMultiplier', 'payoutMultiplier', 'odds'];
+const UNIT_RATE = '1.00000000';
+function walletFieldRule(stakeUnits, m, k) {
+    const r = (0, config_1.minesMultiplierRational)(m, k);
+    if (!r)
+        return null;
+    const mult8 = (100000000n * r.num) / r.den;
+    return (stakeUnits * mult8) / 100000000n;
+}
+function walletFieldExact(stakeUnits, m, k) {
+    const r = (0, config_1.minesMultiplierRational)(m, k);
+    return r ? (stakeUnits * r.num) / r.den : null;
+}
+const sameCells = (got, want) => got.size === Object.keys(want).length && [...got].every(([k, n]) => want[k] === n);
+const cellOrder = ([a], [z]) => {
+    const [am, ak] = a.split(':').map(Number), [zm, zk] = z.split(':').map(Number);
+    return am - zm || ak - zk;
+};
+const fmtCells = (m) => [...m].sort(cellOrder).map(([k, n]) => `(${k.replace(':', ', ')}) ×${n}`).join(', ') || 'none';
+const eqArr = (a, b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((x, i) => x === b[i]);
+const sameCounts = (got, want) => Object.keys(got).length === Object.keys(want).length && Object.entries(want).every(([t, n]) => got[t] === n);
+function run(ctx) {
+    const cap = ctx.prodCapture;
+    const repoRoot = path.resolve(ctx.outputsDir, '..');
+    const faults = [];
+    const fault = (s) => { if (faults.length < 6)
+        faults.push(s); };
+    if (cap.problem) {
+        return [(0, context_1.step)(exports.STEP_NUMBER, exports.STEP_NAME, 'FAIL', `raw production captures not loaded: ${cap.problem}`)];
+    }
+    let shapeOk = 0, metaOk = 0;
+    const totalRequests = {};
+    for (const pin of pins_1.PROD_CAPTURES) {
+        const f = cap.files.find(x => x.capture === pin.capture);
+        if (!f) {
+            fault(`capture ${pin.capture} not loaded`);
+            continue;
+        }
+        const evCounts = {};
+        for (const ev of f.events)
+            evCounts[ev.t] = (evCounts[ev.t] ?? 0) + 1;
+        const reqCounts = {};
+        for (const ev of f.events)
+            if (ev.t === 'step') {
+                reqCounts[ev.name] = (reqCounts[ev.name] ?? 0) + 1;
+                totalRequests[ev.name] = (totalRequests[ev.name] ?? 0) + 1;
+            }
+        const ok = f.lines === pin.lines && sameCounts(evCounts, pin.events) && sameCounts(reqCounts, pin.requests);
+        if (ok)
+            shapeOk++;
+        else
+            fault(`capture ${pin.capture}: ${f.lines} lines, events ${JSON.stringify(evCounts)}, requests ${JSON.stringify(reqCounts)} != the declaration`);
+        const note = f.events.find(ev => ev.t === 'export-note');
+        const started = String(f.meta?.script ?? ''), exported = String(note?.script ?? '');
+        const mOk = started.endsWith(`build ${pin.runnerBuild}`) && exported.endsWith(`build ${pin.exportBuild}`)
+            && f.meta?.origin === `https://${pins_1.PROD_HOST}` && f.meta?.platform === pins_1.PROD_HOST
+            && (f.meta?.stakeFiat === undefined || f.meta.stakeFiat === pin.fiat);
+        if (mOk)
+            metaOk++;
+        else
+            fault(`capture ${pin.capture}: meta (runner "${started}", export "${exported}", origin ${f.meta?.origin}) is not the declaration`);
+    }
+    const integrityOk = shapeOk === pins_1.PROD_CAPTURES.length && metaOk === pins_1.PROD_CAPTURES.length
+        && sameCounts(totalRequests, pins_1.PROD_REQUESTS) && cap.files.length === pins_1.PROD_CAPTURES.length;
+    const bets = ctx.bets;
+    const fileOf = new Map(cap.files.map(f => [f.capture, f]));
+    let rowsBound = 0, intentsBefore = 0, planBound = 0;
+    const n = Math.min(bets.length, cap.bets.length);
+    for (let i = 0; i < n; i++) {
+        const b = bets[i], entry = cap.bets[i], rec = entry.rec ?? {}, s = rec.settleRaw ?? {};
+        const same = b.id === s.id && b.epoch === entry.epoch && b.capture === entry.capture && b.captureEpoch === rec.epoch
+            && b.phase === rec.phase && b.phaseId === (rec.phaseId ?? rec.phase)
+            && b.nonce === s.nonce && b.mineCount === s.mineCount
+            && eqArr(b.openTiles, s.openTiles) && eqArr(b.mineTiles, s.mineTiles) && b.result === s.result
+            && b.clientSeed === s.clientSeed && b.serverSeedId === s.serverSeedId
+            && Number(b.betAmount) === Number(s.betAmount) && b.fiatCurrency === s.fiatCurrency
+            && Number(b.winningAmount) === Number(s.winningAmount)
+            && (b.result === 'won' ? Number(b.multiplier) === Number(s.multiplier) : b.multiplier === undefined)
+            && (b.autoFinish === true) === (s.autoFinish === true)
+            && (b.currentGameSettings ?? null) === (s.currentGameSettings ?? null)
+            && b.reveals === rec.spec?.depth;
+        if (same)
+            rowsBound++;
+        else
+            fault(`row ${i} (${b.id}) differs from the raw settling reply`);
+        const it = cap.intents.get(String(rec.key));
+        const firstStepLine = cap.firstStepLine.get(String(rec.key)) ?? -1;
+        if (it && it.capture === entry.capture && firstStepLine > it.line && eqArr(it.ev.spec?.tiles, rec.spec?.tiles) && it.ev.spec?.mineCount === rec.spec?.mineCount)
+            intentsBefore++;
+        else
+            fault(`round ${b.id}: intent not journalled before its first request, or different from the spec`);
+        const metaPlan = Array.isArray(fileOf.get(entry.capture)?.meta?.plan) ? fileOf.get(entry.capture).meta.plan : [];
+        const pb = metaPlan[rec.epoch]?.bets?.[rec.seq];
+        if (pb && pb.mineCount === rec.spec?.mineCount && pb.depth === rec.spec?.depth && eqArr(pb.tiles, rec.spec?.tiles)
+            && eqArr(rec.plannedTiles, pb.tiles))
+            planBound++;
+        else
+            fault(`round ${b.id}: not the plan written into meta before any bet (capture ${entry.capture}, epoch ${rec.epoch}, seq ${rec.seq})`);
+    }
+    const rowsOk = bets.length === pins_1.EXPECTED_BETS && cap.bets.length === pins_1.EXPECTED_BETS && rowsBound === pins_1.EXPECTED_BETS
+        && intentsBefore === pins_1.EXPECTED_BETS && planBound === pins_1.EXPECTED_BETS;
+    let seedsBound = 0;
+    for (const sd of ctx.seeds) {
+        const ev = cap.epochs.find(e => e.datasetEpoch === sd.epoch);
+        const closing = cap.rotates.find(r => r.capture === sd.capture && r.closes === sd.captureEpoch && r.raw?.revealedServerSeed === sd.serverSeed);
+        if (ev && ev.capture === sd.capture && ev.epoch === sd.captureEpoch && ev.hashedServerSeed === sd.hashedServerSeed
+            && ev.nextHashedServerSeed === sd.nextHashedServerSeed && ev.clientSeed === sd.clientSeed && ev.nonceStart === sd.nonceStart
+            && ev.phase === sd.phase && (ev.phaseId ?? ev.phase) === sd.phaseId && ev.plannedBets === pins_1.EPOCH_PLAN[sd.epoch]?.size && closing)
+            seedsBound++;
+        else
+            fault(`seed record epoch ${sd.epoch}: not the capture's epoch event / closing rotation`);
+    }
+    const seedsOk = seedsBound === pins_1.EXPECTED_SEEDS && ctx.seeds.length === pins_1.EXPECTED_SEEDS;
+    let reveals = 0, revealStatusOk = 0, revealOrderOk = 0, roundsShapeOk = 0, stepMults = 0;
+    let wins = 0, walletRuleOk = 0, walletBelowRule = 0, walletAboveRule = 0, walletStakeBad = 0, lossPaid = 0;
+    let exactEqual = 0, exactBelow = 0, exactAbove = 0, exactBelowUnits = 0n, offGrid = 0;
+    const autoIds = [];
+    let autoOk = 0;
+    const perCapture = new Map();
+    const belowCells = new Map();
+    const cellDisplay = new Map();
+    const cellFiat = new Map();
+    const wonSettings = new Set();
+    for (let i = 0; i < n; i++) {
+        const b = bets[i], entry = cap.bets[i], rec = entry.rec ?? {}, s = rec.settleRaw ?? {};
+        const ss = ctx.seedMap.get(b.hashedServerSeed);
+        const mines = ss ? new Set((0, rng_1.revealMines)(ss, b.clientSeed, b.nonce, b.mineCount)) : null;
+        const evs = cap.steps.get(String(rec.key)) ?? [];
+        const opens = evs.filter(e => e.name === 'open-tile');
+        const plan = Array.isArray(rec.plannedTiles) ? rec.plannedTiles : [];
+        const auto = s.autoFinish === true;
+        let orderOk = opens.length === b.openTiles.length;
+        opens.forEach((e, j) => {
+            reveals++;
+            const t = Number(e.request?.tile);
+            if (t !== plan[j] || t !== b.openTiles[j])
+                orderOk = false;
+            const last = j === opens.length - 1;
+            if (auto && last) {
+                if (mines && !mines.has(t) && e.reply?.autoFinish === true && e.reply?.mineTile === undefined)
+                    revealStatusOk++;
+                else
+                    fault(`round ${b.id}: self-settled reply on tile ${t} is not a safe tile of the recomputed layout`);
+            }
+            else {
+                const flag = e.reply?.mineTile;
+                if (mines && typeof flag === 'boolean' && flag === mines.has(t))
+                    revealStatusOk++;
+                else
+                    fault(`round ${b.id} reveal ${j + 1}: served mineTile ${JSON.stringify(flag)} vs recomputed ${mines ? mines.has(t) : 'n/a'}`);
+            }
+            if (e.reply && STEP_MULT_KEYS.some(k => k in e.reply))
+                stepMults++;
+        });
+        if (orderOk)
+            revealOrderOk++;
+        else
+            fault(`round ${b.id}: open-tile sequence is not the plan / the opened tiles`);
+        const cash = evs.filter(e => e.name === 'cash-out');
+        const placed = evs.filter(e => e.name === 'place-bet');
+        const safeLeft = config_1.GRID - b.mineCount - b.openTiles.length;
+        let shape;
+        if (auto) {
+            shape = placed.length === 1 && b.result === 'won' && cash.length === 0 && b.openTiles.length === b.reveals
+                && opens.slice(0, -1).every(e => e.reply?.mineTile === false) && safeLeft === 0;
+            autoIds.push(b.id);
+            if (shape)
+                autoOk++;
+        }
+        else {
+            shape = placed.length === 1 && (b.result === 'won'
+                ? cash.length === 1 && b.openTiles.length === b.reveals && opens.every(e => e.reply?.mineTile === false) && safeLeft > 0
+                : cash.length === 0 && opens.length >= 1 && opens[opens.length - 1].reply?.mineTile === true && opens.slice(0, -1).every(e => e.reply?.mineTile === false));
+        }
+        if (shape)
+            roundsShapeOk++;
+        else
+            fault(`round ${b.id}: request sequence does not match its result`);
+        const pc = perCapture.get(entry.capture) ?? { staked: 0n, paid: 0n, wins: 0, bookedPaidCents: 0n, unitRate: 0, rates: new Set(), below: 0 };
+        perCapture.set(entry.capture, pc);
+        pc.rates.add(String(rec.placeRaw?.exchangeRate));
+        if (rec.placeRaw?.exchangeRate === UNIT_RATE && s.exchangeRate === UNIT_RATE)
+            pc.unitRate++;
+        const stake = (0, prod_capture_1.decimalUnits)(rec.placeRaw?.betAmountWallet, 8);
+        if (stake === null || stake <= 0n) {
+            walletStakeBad++;
+            fault(`round ${b.id}: betAmountWallet ${JSON.stringify(rec.placeRaw?.betAmountWallet)} not on the 1e-8 grid`);
+            continue;
+        }
+        pc.staked += stake;
+        const cell = `${b.mineCount}:${b.openTiles.length}`;
+        if (b.result === 'won') {
+            wins++;
+            pc.wins++;
+            wonSettings.add(`${b.phaseId}|${b.mineCount}:${b.reveals}`);
+            if (s.betAmountWallet !== undefined && (0, prod_capture_1.decimalUnits)(s.betAmountWallet, 8) !== stake) {
+                walletStakeBad++;
+                fault(`round ${b.id}: wallet stake differs between place-bet and the settling reply`);
+            }
+            const walletAmt = (0, prod_capture_1.decimalUnits)(s.winningAmountWallet, 8);
+            if (walletAmt === null) {
+                offGrid++;
+                fault(`round ${b.id}: winningAmountWallet ${JSON.stringify(s.winningAmountWallet)} not on the 1e-8 grid`);
+                continue;
+            }
+            pc.paid += walletAmt;
+            pc.bookedPaidCents += BigInt(Math.round(Number(s.winningAmount) * 100));
+            const rule = walletFieldRule(stake, b.mineCount, b.openTiles.length);
+            const exact = walletFieldExact(stake, b.mineCount, b.openTiles.length);
+            if (rule === null || exact === null) {
+                walletBelowRule++;
+                continue;
+            }
+            if (walletAmt === rule)
+                walletRuleOk++;
+            else if (walletAmt < rule) {
+                walletBelowRule++;
+                fault(`round ${b.id}: wallet field ${walletAmt} units, LIQD's own rule gives ${rule}`);
+            }
+            else {
+                walletAboveRule++;
+                fault(`round ${b.id}: wallet field ${walletAmt} units, above LIQD's rule ${rule}`);
+            }
+            if (walletAmt === exact)
+                exactEqual++;
+            else if (walletAmt < exact) {
+                exactBelow++;
+                pc.below++;
+                exactBelowUnits += exact - walletAmt;
+                belowCells.set(cell, (belowCells.get(cell) ?? 0) + 1);
+            }
+            else
+                exactAbove++;
+            const key = `${cell}@${Number(s.betAmount)} ${s.fiatCurrency}`;
+            const ds = cellDisplay.get(key) ?? new Set();
+            ds.add(String(s.multiplier));
+            cellDisplay.set(key, ds);
+            const fs2 = cellFiat.get(key) ?? new Set();
+            fs2.add(String(s.winningAmount));
+            cellFiat.set(key, fs2);
+        }
+        else {
+            const w = s.winningAmountWallet;
+            if (w !== undefined && w !== null && (0, prod_capture_1.decimalUnits)(w, 8) !== 0n) {
+                lossPaid++;
+                fault(`round ${b.id}: a loss carries the wallet field ${w}`);
             }
         }
     }
-    const s15CoverageOk = layoutChecked === phaseE.length;
-    const pass = failures.length === 0 && layoutFails === 0 && multFails === 0
-        && nonFiniteRef === 0 && s15CoverageOk;
-    const depths = [...revealDepths].sort((a, b) => a - b).join(',');
-    const won = phaseE.filter(b => b.result === 'won').length;
-    const lostAtFifth = phaseE.filter(b => b.result !== 'won' && b.openTiles.length === 5).length;
-    const lostEarlier = phaseE.filter(b => b.result !== 'won' && b.openTiles.length < 5).length;
-    const s15 = (0, context_1.step)(15, 'Phase E — Multi-Reveal Verification', pass ? 'PASS' : 'FAIL', pass
-        ? `${phaseE.length} multi-reveal bets: all mineCount 3 / reveals 5; ${layoutChecked}/${phaseE.length} mine layouts recomputed; `
-            + `${multChecked}/${multChecked} winning multipliers == minesMultiplier(3, openTiles.length) at 1e-9 (reveal depths tested: ${depths}; ${nonFiniteRef} non-finite reference values — a NaN in the auditor's own formula hard-fails rather than scoring as agreement); `
-            + `outcome split: ${won} cashed out at depth 5, ${lostAtFifth} hit a mine on the 5th reveal (${won + lostAtFifth} opened all five), ${lostEarlier} busted at depths 1–4`
-        : `${failures.length || (s15CoverageOk ? 0 : 1)} issue(s): ${(s15CoverageOk ? failures.slice(0, 3) : [...failures.slice(0, 2), `coverage: ${layoutChecked}/${phaseE.length} layouts recomputed`]).join('; ')}`);
-    return [s15];
+    const revealsOk = reveals === pins_1.PROD_REQUESTS['open-tile'] && revealStatusOk === reveals && revealOrderOk === pins_1.EXPECTED_BETS
+        && roundsShapeOk === pins_1.EXPECTED_BETS;
+    const autoDeclOk = autoIds.length === pins_1.PROD_AUTO_FINISH_ROUNDS.length && autoIds.every((id, i) => id === pins_1.PROD_AUTO_FINISH_ROUNDS[i]) && autoOk === autoIds.length;
+    if (!autoDeclOk)
+        fault(`rounds LIQD settled by itself: ${autoIds.join(', ') || 'none'} (${autoOk} of the expected shape), declared ${pins_1.PROD_AUTO_FINISH_ROUNDS.join(', ')}`);
+    const stepMultOk = stepMults === pins_1.PROD_DECLARED_PER_STEP_MULTIPLIERS && stepMults === autoIds.length;
+    if (!stepMultOk)
+        fault(`${stepMults} open-tile replies carried a multiplier, ${pins_1.PROD_DECLARED_PER_STEP_MULTIPLIERS} declared (the self-settled rounds)`);
+    const cashOuts = pins_1.PROD_REQUESTS['cash-out'];
+    const cashOk = cashOuts === wins - autoIds.length;
+    if (!cashOk)
+        fault(`${cashOuts} cash-out requests declared, ${wins} wins − ${autoIds.length} self-settled`);
+    const disclosureOk = exactBelow === pins_1.PROD_WALLET_BELOW_EXACT && exactBelowUnits === BigInt(pins_1.PROD_WALLET_BELOW_EXACT_TOTAL_UNITS)
+        && sameCells(belowCells, pins_1.PROD_WALLET_BELOW_EXACT_CELLS);
+    if (!disclosureOk)
+        fault(`wallet fields below exact math: ${exactBelow} (${exactBelowUnits} units, ${fmtCells(belowCells)}), declared ${pins_1.PROD_WALLET_BELOW_EXACT} (${pins_1.PROD_WALLET_BELOW_EXACT_TOTAL_UNITS} units)`);
+    let totalsOk = true, bookedGapOk = true;
+    const captureLines = [];
+    for (const pin of pins_1.PROD_CAPTURES) {
+        const g = perCapture.get(pin.capture);
+        const decl = pins_1.BOOKED_BELOW_UNROUNDED.find(x => x.capture === pin.capture);
+        if (!g || !decl) {
+            totalsOk = false;
+            continue;
+        }
+        if (g.staked !== pin.walletStakedUnits || g.paid !== pin.walletPaidUnits || g.wins !== pin.wins || g.bookedPaidCents !== pin.bookedPaidCents) {
+            totalsOk = false;
+            fault(`capture ${pin.capture}: wallet totals ${g.staked}/${g.paid} units over ${g.wins} wins != declared ${pin.walletStakedUnits}/${pin.walletPaidUnits} over ${pin.wins}`);
+        }
+        const net = g.paid - g.staked;
+        let line = `capture ${pin.capture} (booked in ${pin.fiat}; served rate ${[...g.rates].sort().join(' / ')}): ${(0, prod_capture_1.unitsToDecimal)(g.staked, 8)} ${pins_1.PROD_WALLET_CURRENCY} staked, ${(0, prod_capture_1.unitsToDecimal)(g.paid, 8)} in the wallet field of the replies, net ${(0, prod_capture_1.unitsToDecimal)(net, 8)}`;
+        if (g.unitRate === pin.rounds) {
+            const gap = g.paid - g.bookedPaidCents * 1000000n;
+            if (gap !== decl.droppedUnits) {
+                bookedGapOk = false;
+                fault(`capture ${pin.capture}: wallet fields exceed booked wins by ${gap} units, declared ${decl.droppedUnits}`);
+            }
+            line += `; booked wins ${(0, prod_capture_1.unitsToDecimal)(g.bookedPaidCents, 2)} ${pin.fiat}, so the wallet fields total ${(0, prod_capture_1.unitsToDecimal)(gap, 8)} more than the booked figure (net by the booked figures ${(0, prod_capture_1.unitsToDecimal)(g.bookedPaidCents * 1000000n - g.staked, 8)})`;
+        }
+        else {
+            line += `; booked wins ${(0, prod_capture_1.unitsToDecimal)(g.bookedPaidCents, 2)} ${pin.fiat} — a different currency from the wallet's, reported side by side, not converted`;
+        }
+        captureLines.push(line);
+    }
+    const walletOk = wins === pins_1.PROD_WINS && walletRuleOk === wins && walletBelowRule === 0 && walletAboveRule === 0
+        && walletStakeBad === 0 && offGrid === 0 && lossPaid === 0 && exactAbove === 0 && disclosureOk && totalsOk && bookedGapOk;
+    const orderIndOk = [...cellDisplay.values()].every(v => v.size === 1) && [...cellFiat.values()].every(v => v.size === 1);
+    if (!orderIndOk)
+        fault('a cash-out cell carries more than one displayed multiplier or booked amount across reveal orders');
+    const planKeys = [...pins_1.SETTINGS_PLAN.keys()];
+    const unwitnessed = planKeys.filter(k => !wonSettings.has(k));
+    const witnessed = planKeys.length - unwitnessed.length;
+    const coverageOk = planKeys.filter(k => !k.startsWith('D|')).every(k => wonSettings.has(k)) && witnessed > 0;
+    if (!coverageOk)
+        fault(`settings with no win outside phase D: ${unwitnessed.filter(k => !k.startsWith('D|')).join(', ')}`);
+    const settings = new Map();
+    for (const { rec, capture } of cap.bets) {
+        const g = rec?.settleRaw?.currentGameSettings;
+        if (g !== undefined && g !== null) {
+            const t = `${capture}|${typeof g === 'string' ? g : JSON.stringify(g)}`;
+            settings.set(t, (settings.get(t) ?? 0) + 1);
+        }
+    }
+    const settingsOk = settings.size === pins_1.PROD_GAME_SETTINGS.length && pins_1.PROD_GAME_SETTINGS.every(g => settings.get(`${g.capture}|${g.value}`) === g.records);
+    if (!settingsOk)
+        fault(`settings records ${[...settings].map(([v, c]) => `${c} × ${v}`).join('; ')} != the declaration`);
+    const settingsRecords = [...settings.values()].reduce((a, c) => a + c, 0);
+    const settingsCountOk = settingsRecords === (pins_1.EXPECTED_BETS - wins) + autoIds.length;
+    if (!settingsCountOk)
+        fault(`${settingsRecords} settings records, expected one per loss and per self-settled round (${pins_1.EXPECTED_BETS - wins} + ${autoIds.length})`);
+    let verOk = 0, verReq = 0, verOpenTiles = 0;
+    const verifyUrl = `https://${pins_1.PROD_HOST}/api/v1/fast-games/provably-fair/verify/mine`;
+    const VERIFY_INPUT_KEYS = 'clientSeed,mineCount,nonce,serverSeed';
+    for (let i = 0; i < n; i++) {
+        const b = bets[i];
+        const v = cap.verify.get(b.id);
+        const ss = ctx.seedMap.get(b.hashedServerSeed);
+        if (!v || v.status !== 200 || !ss) {
+            fault(`round ${b.id}: no HTTP 200 verifier reply`);
+            continue;
+        }
+        let body = null, reqBody = null;
+        try {
+            body = JSON.parse(v.body);
+            reqBody = JSON.parse(v.request?.body);
+        }
+        catch { }
+        if (reqBody && v.request?.url === verifyUrl && Object.keys(reqBody).sort().join(',') === VERIFY_INPUT_KEYS
+            && reqBody.serverSeed === ss && reqBody.clientSeed === b.clientSeed && reqBody.nonce === b.nonce && reqBody.mineCount === b.mineCount)
+            verReq++;
+        const recomputed = (0, rng_1.revealMines)(ss, b.clientSeed, b.nonce, b.mineCount);
+        const sortN = (a) => [...a].sort((x, z) => x - z);
+        if (body && eqArr(body.openTiles, b.openTiles) && b.openTiles.length > 0)
+            verOpenTiles++;
+        if (body && Array.isArray(body.mines) && (0, rng_1.sameMines)(sortN(body.mines), sortN(recomputed)) && eqArr(body.openTiles, b.openTiles))
+            verOk++;
+        else
+            fault(`round ${b.id}: LIQD's verifier reply differs from the recomputed round`);
+    }
+    const verifierOk = verOk === pins_1.EXPECTED_BETS && verReq === pins_1.EXPECTED_BETS && verOpenTiles === pins_1.EXPECTED_BETS && cap.verify.size === pins_1.EXPECTED_BETS;
+    let ledgerAll = 0, ledgerOnSettle = 0, ledgerFactsOk = 0, ledgerMissing = 0;
+    const ledgerByCapture = new Map();
+    for (const evs of cap.steps.values())
+        for (const e of evs)
+            if (e.reply && typeof e.reply === 'object' && 'betTransaction' in e.reply)
+                ledgerAll++;
+    for (let i = 0; i < n; i++) {
+        const b = bets[i], entry = cap.bets[i], rec = entry.rec ?? {}, s = rec.settleRaw ?? {};
+        const evs = cap.steps.get(String(rec.key)) ?? [];
+        const withDebit = evs.filter(e => e.reply && typeof e.reply === 'object' && 'betTransaction' in e.reply);
+        const settlesOnOpenTile = b.result === 'lost' || s.autoFinish === true;
+        const last = evs[evs.length - 1];
+        if (!settlesOnOpenTile) {
+            if (withDebit.length !== 0)
+                fault(`round ${b.id}: a ledger debit on a round settled by cash-out`);
+            continue;
+        }
+        if (withDebit.length !== 1 || withDebit[0] !== last || last?.name !== 'open-tile') {
+            ledgerMissing++;
+            fault(`round ${b.id}: ${withDebit.length} ledger debit(s), expected one on its settling open-tile reply`);
+            continue;
+        }
+        ledgerOnSettle++;
+        const bt = last.reply.betTransaction ?? {};
+        const lc = ledgerByCapture.get(entry.capture) ?? { records: 0, notWallet: 0 };
+        ledgerByCapture.set(entry.capture, lc);
+        lc.records++;
+        const fileMeta = fileOf.get(entry.capture)?.meta;
+        const facts = Number(bt.amount) === Number(s.betAmount) && Number(bt.amount) === Number(rec.placeRaw?.betAmount)
+            && bt.currencyId === pins_1.PROD_WALLET_CURRENCY_ID && s.currencyId === pins_1.PROD_WALLET_CURRENCY_ID && rec.placeRaw?.currencyId === pins_1.PROD_WALLET_CURRENCY_ID
+            && String(fileMeta?.currencyId) === pins_1.PROD_WALLET_CURRENCY_ID && fileMeta?.stakeCurrency === pins_1.PROD_WALLET_CURRENCY
+            && bt.transactionType === 'bet' && bt.status === 'success' && bt.betId === b.id && bt.gameId === s.gameId;
+        if (facts)
+            ledgerFactsOk++;
+        else
+            fault(`round ${b.id}: ledger debit ${JSON.stringify({ amount: bt.amount, currencyId: bt.currencyId, transactionType: bt.transactionType, status: bt.status, betId: bt.betId })} is not the declared record`);
+        if ((0, prod_capture_1.decimalUnits)(bt.amount, 8) !== (0, prod_capture_1.decimalUnits)(rec.placeRaw?.betAmountWallet, 8))
+            lc.notWallet++;
+    }
+    const ledgerDeclared = pins_1.PROD_LEDGER_DEBITS.reduce((a, c) => a + c.records, 0);
+    const ledgerPerCaptureOk = pins_1.PROD_LEDGER_DEBITS.length === pins_1.PROD_CAPTURES.length
+        && pins_1.PROD_LEDGER_DEBITS.every(d => ledgerByCapture.get(d.capture)?.records === d.records && ledgerByCapture.get(d.capture)?.notWallet === d.amountNotWalletStake);
+    const ledgerOk = ledgerAll === ledgerDeclared && ledgerOnSettle === ledgerDeclared && ledgerFactsOk === ledgerDeclared
+        && ledgerMissing === 0 && ledgerPerCaptureOk && ledgerDeclared === (pins_1.EXPECTED_BETS - wins) + autoIds.length;
+    if (!ledgerOk)
+        fault(`ledger debits: ${ledgerAll} in the replies, ${ledgerOnSettle} on settling open-tile replies, ${ledgerFactsOk} with the declared facts, per capture ${[...ledgerByCapture].map(([c, x]) => `${c}: ${x.records} (${x.notWallet} not the USDT stake)`).join(', ')}; declared ${ledgerDeclared}`);
+    const ok = integrityOk && rowsOk && seedsOk && revealsOk && autoDeclOk && stepMultOk && cashOk
+        && walletOk && orderIndOk && coverageOk && settingsOk && settingsCountOk && verifierOk && ledgerOk;
+    return [(0, context_1.step)(exports.STEP_NUMBER, exports.STEP_NAME, ok ? 'PASS' : 'FAIL', `RAW CAPTURES (${pins_1.PROD_HOST}): ${pins_1.PROD_CAPTURES.map(c => `capture ${c.capture} ${c.file.replace('data/', '')} (${c.dates}, ${c.rounds} rounds, ${c.lines} lines)`).join('; ')} — SHA-256 pins match; ${shapeOk}/${pins_1.PROD_CAPTURES.length} files carry the declared lines, events by type and requests by name; ${metaOk}/${pins_1.PROD_CAPTURES.length} name the declared runner builds (${pins_1.PROD_CAPTURES.map(c => c.runnerBuild === c.exportBuild ? c.runnerBuild : `${c.runnerBuild} then ${c.exportBuild}`).join('; ')}), origin https://${pins_1.PROD_HOST} and planned fiat; requests in total ${Object.entries(totalRequests).map(([k, v]) => `${k} ${v}`).join(', ')} (${sameCounts(totalRequests, pins_1.PROD_REQUESTS) ? 'as declared' : 'NOT as declared'}). Capture 2 stopped once (the first round LIQD settled by itself, a reply shape its starting build did not know) and was resumed on the next build, which rebuilt that round's record from its stored replies: its stop, resume-check and recovered events are in the declared event counts. `
+            + `(b) row binding: ${rowsBound}/${pins_1.EXPECTED_BETS} scored rows equal their settling reply field for field, with the runner's phase tags; ${intentsBefore}/${pins_1.EXPECTED_BETS} rounds' planned tiles journalled before their first request; ${planBound}/${pins_1.EXPECTED_BETS} equal the plan the runner wrote into the capture's meta before any bet. `
+            + `(c) ${seedsBound}/${pins_1.EXPECTED_SEEDS} seed records equal their capture's epoch event and the rotation that revealed them. `
+            + `(d) reveals: ${revealStatusOk}/${reveals} open-tile replies agree with the recomputed layout (mine/safe flag; on a self-settled round's last reply, a safe tile and no flag); ${revealOrderOk}/${pins_1.EXPECTED_BETS} rounds opened their planned tiles in order; ${roundsShapeOk}/${pins_1.EXPECTED_BETS} request sequences match the result (one place-bet; a win cashes out after its planned depth, a loss stops on its first mine). `
+            + `(e) ROUNDS LIQD SETTLED BY ITSELF: ${autoIds.length} (${autoIds.join(', ')}; declared ${pins_1.PROD_AUTO_FINISH_ROUNDS.length}) — each opened the last safe tile of a 24-mine board, the open-tile reply is the settled round (autoFinish true, won) and no cash-out was sent: ${autoOk}/${autoIds.length} of that shape, booked and carried in the wallet field by the same rules as every other win; cash-out requests ${cashOuts} = ${wins} wins − ${autoIds.length}. On these rounds the reply settled the win without a cash-out from the player; no other captured round reached its last safe tile. Open-tile replies carrying a multiplier: ${stepMults} of ${reveals} (declared ${pins_1.PROD_DECLARED_PER_STEP_MULTIPLIERS}, those ${autoIds.length} settled replies) — no per-step rung is served on the wire. `
+            + `(f) WALLET FIELD (${pins_1.PROD_WALLET_CURRENCY}): ${walletRuleOk}/${wins} wins carry exactly LIQD's measured rule floor8(betAmountWallet × floor8(exact)), ${walletBelowRule} below it, ${walletAboveRule} above it; against the exact product floor8(betAmountWallet × exact): ${exactEqual} equal, ${exactBelow} one 1e-8 unit lower (${(0, prod_capture_1.unitsToDecimal)(exactBelowUnits, 8)} ${pins_1.PROD_WALLET_CURRENCY} in total; ${fmtCells(belowCells)}; by capture ${pins_1.PROD_CAPTURES.map(c => `${c.capture}: ${perCapture.get(c.capture)?.below ?? 0}`).join(', ')}), ${exactAbove} higher — the disclosed rounding (src/pins.ts PROD_WALLET_BELOW_EXACT ${pins_1.PROD_WALLET_BELOW_EXACT}, ${disclosureOk ? 'bound' : 'DOES NOT MATCH'}; a rounding disclosure, not a fail); ${lossPaid} losses carry a non-zero wallet field; ${walletStakeBad} wallet stakes off the grid or differing between replies. Per capture — ${captureLines.join('; ')} (${totalsOk && bookedGapOk ? 'as declared' : 'NOT as declared'}). `
+            + `(g) order independence: ${[...cellDisplay.values()].filter(v => v.size === 1).length}/${cellDisplay.size} winning (cell, stake, fiat) groups carry one displayed multiplier and one booked amount across every reveal order that reached them. `
+            + `(h) ${witnessed}/${planKeys.length} planned (phase, setting) pairs witnessed by a win${unwitnessed.length ? `; none in ${unwitnessed.map(k => k.replace('|', ' (').replace(':', ', ') + ')').join(', ')} (25 rounds at that setting, all lost; the same cell is won in phase A)` : ''}. `
+            + `(i) operator settings: ${settingsRecords} records (one per loss and per self-settled round), ${settings.size} (capture, value) pairs — ${settingsOk ? 'equal to' : 'NOT'} src/pins.ts PROD_GAME_SETTINGS (no maxOdds key; Step 10 discloses them). `
+            + `(j) LIQD's verifier (POST ${verifyUrl.replace(`https://${pins_1.PROD_HOST}`, '')}, requested after each epoch's seed was revealed): ${verReq}/${pins_1.EXPECTED_BETS} requests carry the round's revealed inputs and nothing else (body keys exactly serverSeed, clientSeed, nonce, mineCount); ${verOk}/${pins_1.EXPECTED_BETS} replies give the recomputed mine tiles (as a set) and the served open tiles. Those inputs do not determine which tiles a round opened, yet ${verOpenTiles}/${pins_1.EXPECTED_BETS} replies name exactly the tiles the captured round opened: LIQD's verifier can only know them from its own stored round, so each captured round matches a round LIQD holds. It is still the operator's own tool, not an independent check of the operator's outcomes; whether it answers for a round played by another account was not tested. `
+            + `(k) LIQD's ledger debits: ${ledgerAll} betTransaction records in the replies, ${ledgerOnSettle} of them one per round on the settling open-tile reply (every loss and the ${autoIds.length} self-settled rounds; no place-bet, safe open-tile or cash-out reply carries one), per capture ${pins_1.PROD_CAPTURES.map(c => `${c.capture}: ${ledgerByCapture.get(c.capture)?.records ?? 0}`).join(', ')}; ${ledgerFactsOk}/${ledgerOnSettle} with amount equal to the round's stake in the booking fiat, currencyId "${pins_1.PROD_WALLET_CURRENCY_ID}" (the round's own currency id, the wallet's: ${pins_1.PROD_WALLET_CURRENCY}), type "bet", status "success" and the round's betId; the amount is not the round's ${pins_1.PROD_WALLET_CURRENCY} stake on ${pins_1.PROD_CAPTURES.map(c => `${ledgerByCapture.get(c.capture)?.notWallet ?? 0} of ${ledgerByCapture.get(c.capture)?.records ?? 0} in capture ${c.capture} (booked in ${c.fiat})`).join(', ')} — ${ledgerOk ? 'as declared in' : 'NOT as declared in'} src/pins.ts PROD_LEDGER_DEBITS. Read and reported; the audit does not use them to infer a balance.`
+            + (faults.length ? ` FAULTS: ${faults.join('; ')}` : ''))];
 }
 
 },
@@ -4267,9 +5022,8 @@ const stats_1 = require("../../src/stats");
 const config_1 = require("../../src/config");
 const rng_1 = require("../../src/rng");
 const seed_derivation_1 = require("../../src/seed-derivation");
-const pins_1 = require("../../src/pins");
 const false_alarm_1 = require("../../src/false-alarm");
-const pins_2 = require("../../src/pins");
+const pins_1 = require("../../src/pins");
 const diff_1 = require("../../src/diff");
 const replay_pool_1 = require("../../src/replay-pool");
 function binomialSurvival(k, n, p) {
@@ -4391,7 +5145,9 @@ function nullCentreSupport(r, roundsPerConfig) {
     return { faults, supportedExactMean };
 }
 const MIN_ROUNDS_PER_CONFIG = 1000000;
-const SERVED_NONCES = 10000;
+const SERVED_WINDOWS = 200;
+const servedNonces = (size) => SERVED_WINDOWS * size;
+const SERVED_NONCE_FLOOR = 10000;
 const SERVED_ALPHA = 0.01;
 const SERVED_FAMILY_ALPHA = 0.001;
 const SERVED_POOLED_Z = 3.090;
@@ -4409,20 +5165,20 @@ function normalCdf(x) {
     const two = (0, stats_1.normalTwoSidedP)(x);
     return x >= 0 ? 1 - two / 2 : two / 2;
 }
-function servedConfigOf(b) {
+function servedConfigOf(b, planned) {
     const ot = Array.isArray(b.openTiles) ? b.openTiles : [];
     if (!Number.isInteger(b.mineCount) || b.mineCount < 1 || b.mineCount > config_1.GRID - 1)
         return null;
     if (!Number.isInteger(b.reveals) || b.reveals < 1 || b.reveals > config_1.GRID - b.mineCount)
         return null;
-    if (ot.length < 1 || !Number.isInteger(ot[0]) || ot[0] < 1 || ot[0] > config_1.GRID)
+    const plan = planned.get(b.id);
+    if (!Array.isArray(plan) || plan.length !== b.reveals || plan.some(t => !Number.isInteger(t) || t < 1 || t > config_1.GRID))
         return null;
-    const plan = Array.from({ length: b.reveals }, (_, r) => ((ot[0] + r - 1) % config_1.GRID) + 1);
-    if (ot.length > plan.length || ot.some((t, i) => t !== plan[i]))
+    if (ot.length < 1 || ot.length > plan.length || ot.some((t, i) => t !== plan[i]))
         return null;
     if (b.result === 'won' ? ot.length !== plan.length : b.result !== 'lost')
         return null;
-    return { m: b.mineCount, plan };
+    return { m: b.mineCount, plan: [...plan] };
 }
 const BIND_CHECKPOINT_N = 1000;
 const CHERRY_EARLY_ALPHA = 0.05;
@@ -4497,22 +5253,23 @@ function run(ctx) {
     const servedEpochs = [];
     for (const sd of revealedForServed) {
         const ep = (ctx.byHash.get(sd.hashedServerSeed) ?? []).slice().sort((a, b) => a.nonce - b.nonce);
-        const windowOk = ep.length === pins_2.EXPECTED_EPOCH_SIZE && ep.every((b, i) => b.nonce === pins_2.NONCE_BASE + i && b.clientSeed === sd.clientSeed);
+        const size = pins_1.EPOCH_PLAN[sd.epoch]?.size ?? -1;
+        const windowOk = ep.length === size && servedNonces(size) >= SERVED_NONCE_FLOOR && ep.every((b, i) => b.nonce === pins_1.NONCE_BASE + i && b.clientSeed === sd.clientSeed && b.epoch === sd.epoch);
         if (!windowOk) {
-            servedBind.push(`epoch ${sd.epoch}: served sequence is not exactly nonces ${pins_2.NONCE_BASE}…${pins_2.NONCE_BASE + pins_2.EXPECTED_EPOCH_SIZE - 1} under the seed record's client seed`);
+            servedBind.push(`epoch ${sd.epoch}: served sequence is not exactly nonces ${pins_1.NONCE_BASE}…${pins_1.NONCE_BASE + size - 1} (the epoch's planned length, src/pins.ts EPOCH_PLAN) under the seed record's client seed`);
             continue;
         }
-        const configs = ep.map(b => servedConfigOf(b));
+        const configs = ep.map(b => servedConfigOf(b, ctx.prodCapture.plannedTilesById));
         const badAt = configs.findIndex(c => c === null);
         if (badAt >= 0) {
-            servedBind.push(`epoch ${sd.epoch} nonce ${ep[badAt].nonce}: opened tiles ${JSON.stringify(ep[badAt].openTiles)} are not a prefix of the plan rebuilt from the capture rule (reveals ${ep[badAt].reveals}, ${ep[badAt].result})`);
+            servedBind.push(`epoch ${sd.epoch} nonce ${ep[badAt].nonce}: opened tiles ${JSON.stringify(ep[badAt].openTiles)} are not a prefix of the round's planned tiles in the raw capture (reveals ${ep[badAt].reveals}, ${ep[badAt].result})${ctx.prodCapture.problem ? ` — raw capture not loaded: ${ctx.prodCapture.problem}` : ''}`);
             continue;
         }
         servedEpochs.push({ epoch: sd.epoch, hash: sd.hashedServerSeed, bets: ep, configs: configs });
     }
     const servedJobs = servedEpochs.map(e => ({
         kind: 'served', epoch: e.epoch, serverSeed: ctx.seedMap.get(e.hash),
-        clientSeed: e.bets[0].clientSeed, configs: e.configs, nonces: SERVED_NONCES,
+        clientSeed: e.bets[0].clientSeed, configs: e.configs, nonces: servedNonces(e.configs.length),
     }));
     let replayError = '';
     let replayed = [];
@@ -4523,7 +5280,7 @@ function run(ctx) {
     catch (e) {
         replayError = e.message;
     }
-    console.log(`  [REPLAY] ${p1Jobs.length} Pass-1 rows × ${roundsPerConfig.toLocaleString()} rounds and ${servedJobs.length} served-config epochs × ${SERVED_NONCES.toLocaleString()} nonces replayed in parallel worker processes (${((Date.now() - replayStart) / 1000).toFixed(1)} s)${replayError ? ` — FAILED: ${replayError}` : ''}`);
+    console.log(`  [REPLAY] ${p1Jobs.length} Pass-1 rows × ${roundsPerConfig.toLocaleString()} rounds and ${servedJobs.length} served-config epochs × ${SERVED_WINDOWS} of their own lengths (${servedEpochs.reduce((a, e) => a + servedNonces(e.configs.length), 0).toLocaleString()} nonces) replayed in parallel worker processes (${((Date.now() - replayStart) / 1000).toFixed(1)} s)${replayError ? ` — FAILED: ${replayError}` : ''}`);
     const p1Replays = replayed.filter((x) => x.kind === 'p1');
     const servedReplays = replayed.filter((x) => x.kind === 'served');
     const replayByM = new Map(p1Replays.map(x => [x.mineCount, x]));
@@ -4862,7 +5619,8 @@ function run(ctx) {
     const earlyOk = early.length === 2 && early[0] === 0 && Number.isFinite(early[1]) && early[1] > 0;
     const earlyN = earlyOk ? early[1] + 1 : 0;
     const windowsOk = earlyOk && Number.isFinite(noncesPerSeed) && noncesPerSeed > earlyN
-        && late.length === 2 && late[0] === earlyN && late[1] === noncesPerSeed - 1;
+        && late.length === 2 && late[0] === earlyN && late[1] === noncesPerSeed - 1
+        && earlyN === pins_1.PASS2_EARLY_WINDOW && pins_1.PASS2_EARLY_WINDOW === pins_1.EPOCH_SIZES[0];
     const lateN = windowsOk ? noncesPerSeed - earlyN : 0;
     const reps = Number(pass2.bootstrapReps);
     const repsOk = Number.isFinite(reps) && reps >= 1000;
@@ -4907,7 +5665,7 @@ function run(ctx) {
                     firstStatFault = `epoch ${r.epoch}: stored (earlyChi2 ${r.earlyChi2}, lateChi2 ${r.lateChi2}, lateP ${r.latePValue}) vs re-derived (${ec.chi2}, ${lr.chi2}, ${lr.pValue})`;
             }
             const kUnits = r.earlyBootstrapP * (reps + 1);
-            if (Math.abs(kUnits - Math.round(kUnits)) > 1e-6)
+            if (Math.abs(kUnits - Math.round(kUnits)) > pins_1.PROD_ON_GRID_TOLERANCE)
                 bootPQuantBad++;
             if (!(r.earlyBootstrapP >= 1 / (reps + 1) - 1e-12 && r.earlyBootstrapP <= 1 + 1e-12))
                 bootPRangeBad++;
@@ -4990,12 +5748,7 @@ function run(ctx) {
             }
         }
     }
-    const legacyDigest = (0, pins_1.earlyBootstrapPDigest)(results2);
-    const legacyPinOk = legacyDigest === pins_1.LEGACY_EARLY_BOOTSTRAP_P_DIGEST;
-    const legacyExceptionOk = !claimsReplay && legacyPinOk;
-    const bootReplayOk = claimsReplay
-        ? (replayMetaOk && bootReplayAvailable && bootPMismatches === 0 && bootReplayed === results2.length)
-        : legacyExceptionOk;
+    const bootReplayOk = claimsReplay && replayMetaOk && bootReplayAvailable && bootPMismatches === 0 && bootReplayed === results2.length;
     let monoViolations = 0;
     if (rows2Finite) {
         const byM = new Map();
@@ -5023,7 +5776,7 @@ function run(ctx) {
         && pass2.cherryPickFlags === derivedFlags
         && Number.isFinite(pass2.expectedFlagsByChance) && Math.abs(pass2.expectedFlagsByChance - expectedByChance) < 1e-9
         && Number.isFinite(pass2.cherryPickSurvivalP) && Math.abs(pass2.cherryPickSurvivalP - survival) < 1e-9;
-    const WINDOWS = Math.floor(SERVED_NONCES / pins_2.EXPECTED_EPOCH_SIZE);
+    const WINDOWS = SERVED_WINDOWS;
     const servedByEpoch = new Map(servedReplays.map(x => [x.epoch, x]));
     let servedFlags = 0, earlyBindFail = 0, servedShapeBad = 0, firstServedFault = '';
     let muAll = 0, vAll = 0, earlyAll = 0;
@@ -5031,7 +5784,7 @@ function run(ctx) {
     if (!replayError) {
         for (const e of servedEpochs) {
             const x = servedByEpoch.get(e.epoch);
-            if (!x || x.windowReturns.length !== WINDOWS || x.earlyWins.length !== pins_2.EXPECTED_EPOCH_SIZE) {
+            if (!x || x.windowReturns.length !== WINDOWS || x.earlyWins.length !== e.configs.length || e.configs.length !== pins_1.EPOCH_PLAN[e.epoch]?.size) {
                 servedShapeBad++;
                 if (!firstServedFault)
                     firstServedFault = `epoch ${e.epoch}: replay result missing or mis-shaped`;
@@ -5071,14 +5824,14 @@ function run(ctx) {
     const servedOver = servedFlags > servedGate || !(pooledZ >= -SERVED_POOLED_Z);
     const servedOk = servedBindOk && !servedOver;
     const servedNote = `SERVED-CONFIG TEST (the configurations each epoch actually served, mine count and requested tiles by nonce, replayed over its revealed seed): `
-        + `${nServed}/${revealedSeedCount} epochs × ${SERVED_NONCES.toLocaleString()} nonces; early window = the captured nonces ${pins_2.NONCE_BASE}–${pins_2.NONCE_BASE + pins_2.EXPECTED_EPOCH_SIZE - 1}, `
-        + `its replayed outcomes bound to the ${(servedEpochs.length * pins_2.EXPECTED_EPOCH_SIZE).toLocaleString('en-US')} recorded outcomes (${earlyBindFail} mismatches); `
+        + `${nServed}/${revealedSeedCount} epochs, each over ${SERVED_WINDOWS} of its own lengths (${[...new Set(servedEpochs.map(e => e.configs.length))].sort((a, z) => a - z).map(w => `${w} → ${servedNonces(w).toLocaleString('en-US')} nonces`).join(', ')}; floor ${SERVED_NONCE_FLOOR.toLocaleString('en-US')}); early window = the epoch's captured nonces ${pins_1.NONCE_BASE} … size − 1, `
+        + `its replayed outcomes bound to the ${servedEpochs.reduce((a, e) => a + e.configs.length, 0).toLocaleString('en-US')} recorded outcomes of ${pins_1.EXPECTED_BETS.toLocaleString('en-US')} (${earlyBindFail} mismatches); `
         + `statistic = window return against the exact per-config mean and variance; bootstrap p against the seed's own ${WINDOWS - 1} later windows: `
         + `${servedFlags}/${nServed} epochs flagged at p ≤ ${SERVED_ALPHA} (family gate ≤ ${servedGate} at family α ${SERVED_FAMILY_ALPHA})${servedFlaggedEpochs.length ? ` [epochs ${servedFlaggedEpochs.join(', ')}]` : ''}; `
         + `pooled early-window return ${earlyAll.toFixed(4)} vs exact expectation ${muAll.toFixed(4)}, z = ${Number.isFinite(pooledZ) ? pooledZ.toFixed(3) : 'n/a'} (gate −${SERVED_POOLED_Z}); `
         + `detection power of the pooled test ${servedPower.map(x => `${(x.power * 100).toFixed(1)}% at a ${x.shortfall * 100}% early-window return shortfall`).join(', ')}. `
-        + `Rule fixed in code (SERVED_* constants) before the statistic was first computed, 2026-09-24. `
-        + `The tiles a losing round did not reach are rebuilt from the capture's consecutive-tile rule, which every recorded opened sequence satisfies. `;
+        + `Rule fixed in code (SERVED_* constants) before the statistic was computed on production data. `
+        + `Each round's tiles are its planned order from the raw captures (drawn by the runner's CSPRNG, written into the plan before any bet), of which every recorded opened sequence is a prefix, so the tiles a losing round did not reach are the ones it was going to open. `;
     const pass2HasData = inventoryOk && seedSetOk && rows2Finite && windowsOk && repsOk && servedBindOk
         && recomputeOk && monoViolations === 0 && bootMCOk && scalarsOk && bootReplayOk
         && revealedSeedCount === ctx.seeds.length
@@ -5092,15 +5845,15 @@ function run(ctx) {
     if (!rows2Finite)
         s17Faults.push('non-finite / wrong-typed field in at least one seed row');
     if (replayMetaFaults.length > 0)
-        s17Faults.push(`QA-05 replay metadata rejected — ${replayMetaFaults.join('; ')}`);
+        s17Faults.push(`replay metadata rejected — ${replayMetaFaults.join('; ')}`);
     if (!bootReplayOk && replayMetaFaults.length === 0) {
         if (claimsReplay) {
             s17Faults.push(bootReplayAvailable
                 ? `deterministic bootstrap replay: ${bootPMismatches} of ${results2.length} rows whose earlyBootstrapP does not re-derive from the recorded masterSeed${firstBootFault ? ` (${firstBootFault})` : ''}`
-                : `the artifact records valid QA-05 replay metadata but the replay could not be run against it (bootstrapReps / row finiteness / early-window declaration above), so earlyBootstrapP is unattested`);
+                : `the artifact records valid replay metadata but the replay could not be run against it (bootstrapReps / row finiteness / early-window declaration above), so earlyBootstrapP is unattested`);
         }
         else {
-            s17Faults.push(`the artifact records NO QA-05 replay metadata, so its earlyBootstrapP cannot be re-derived, and it is not the one artifact the legacy exception covers: earlyBootstrapP digest ${legacyDigest} != pinned ${pins_1.LEGACY_EARLY_BOOTSTRAP_P_DIGEST} (src/pins.ts). Omitting masterSeed is not a way to have earlyBootstrapP taken on trust`);
+            s17Faults.push('the artifact records NO replay metadata (masterSeed, seedDerivation), so its earlyBootstrapP cannot be re-derived. Omitting masterSeed is not a way to have earlyBootstrapP taken on trust');
         }
     }
     if (!windowsOk)
@@ -5134,7 +5887,7 @@ function run(ctx) {
             servedEpochs.length !== revealedSeedCount ? `${servedEpochs.length}/${revealedSeedCount} epochs replayable` : ''].filter(Boolean).join('; ')}${firstServedFault ? ` (${firstServedFault})` : ''}`);
     if (servedBindOk && servedOver)
         s17Faults.push(`served-config test over its gate: ${servedFlags} flagged (gate ${servedGate}), pooled z ${Number.isFinite(pooledZ) ? pooledZ.toFixed(3) : 'n/a'} (gate −${SERVED_POOLED_Z})`);
-    const s17 = (0, context_1.step)(17, 'Simulation — Pass 2 Cherry-Pick Test', pass2Ok ? 'PASS' : 'FAIL', `${revealedSeedCount} revealed dataset seeds × ${(noncesPerSeed || 0).toLocaleString()} nonces; early window ${early[0] ?? '?'}..${early[1] ?? '?'}. `
+    const s17 = (0, context_1.step)(17, 'Simulation — Pass 2 Cherry-Pick Test', pass2Ok ? 'PASS' : 'FAIL', `${revealedSeedCount} revealed dataset seeds × ${(noncesPerSeed || 0).toLocaleString()} nonces; early window ${early[0] ?? '?'}..${early[1] ?? '?'} (src/pins.ts PASS2_EARLY_WINDOW ${pins_1.PASS2_EARLY_WINDOW}: the first ${pins_1.PASS2_EARLY_WINDOW} nonces, the longest prefix every epoch played in full — epoch lengths ${pins_1.EPOCH_SIZES.join(', ')}; the later nonces of the longer epochs fall in the late window, and the served-configuration test below covers each epoch's whole captured range). `
         + `Recalculated early/late statistics and late p-values: ${statMismatches} mismatching rows; epoch and mine-count mismatches: ${epochMismatches}, ${mcMismatches}. `
         + `Flags derived from earlyBootstrapP < ${CHERRY_EARLY_ALPHA} and latePValue >= ${CHERRY_LATE_ALPHA}: ${derivedFlags}; `
         + `nominal expectation ${expectedByChance.toFixed(3)}, binomial survival ${survival.toFixed(8)}; ${flagMismatches} stored-flag mismatches. `
@@ -5142,9 +5895,7 @@ function run(ctx) {
             ? `Bootstrap replay: ${(reps || 0).toLocaleString()} replicates per mine count rebuilt from the recorded master seed under '${bootVersion}'; ${bootReplayed}/${results2.length} p-values checked, ${bootPMismatches} mismatches. `
             : claimsReplay
                 ? `Bootstrap replay did not run because the supplied replay metadata or statistical inputs are invalid; the faults below identify the rejected fields. `
-                : legacyExceptionOk
-                    ? `Compatibility-fixture mode: early bootstrap values match the fixed reference digest ${pins_1.LEGACY_EARLY_BOOTSTRAP_P_DIGEST}. This fixture lacks generating inputs, so its p-values are pinned rather than replayed. Range, lattice, ordering and downstream arithmetic are checked (${monoViolations} ordering violations). `
-                    : `Bootstrap replay unavailable: replay metadata is absent and the values do not match the supported compatibility fixture. `)
+                : `Bootstrap replay unavailable: the artifact records no replay metadata, so its early bootstrap values cannot be re-derived. `)
         + `Unsupported, partial or malformed replay metadata fails verification. This first-draw diagnostic does not prove unbiased seed selection. `
         + servedNote
         + `Mitigation against selecting a server seed for a known client input requires a binding server commitment before learning an unpredictable client seed, with both inputs bound to the round. Player control alone does not establish those conditions.`
@@ -5197,6 +5948,8 @@ const rng_1 = require("../../src/rng");
 const figures_1 = require("../../src/figures");
 const config_1 = require("../../src/config");
 const pins_1 = require("../../src/pins");
+const config_2 = require("../../src/config");
+const prod_capture_1 = require("../../src/prod-capture");
 const domains_1 = require("../../src/domains");
 const crypto_1 = require("crypto");
 const diff_1 = require("../../src/diff");
@@ -5204,21 +5957,67 @@ function run(ctx) {
     const { bets, seedMap } = ctx;
     const out = [];
     {
-        const c = ctx.phaseC;
-        let chk = 0, bad = 0;
-        for (const b of c) {
+        let chk = 0, bad = 0, stakeOff = 0, requestOff = 0, currencyOff = 0, requests = 0;
+        let cRounds = 0, cRecomputed = 0, cBad = 0, cWins = 0, cBookedOk = 0, cWalletOk = 0, cCellOff = 0, baseWins = 0;
+        const n = Math.min(bets.length, ctx.prodCapture.bets.length);
+        bets.forEach((b, i) => {
+            const pl = pins_1.EPOCH_PLAN[b.epoch];
+            if (!pl || Number(b.betAmount) !== pl.stake || b.fiatCurrency !== pl.fiat)
+                stakeOff++;
             const ss = seedMap.get(b.hashedServerSeed);
-            if (!ss)
-                continue;
-            chk++;
-            if (!(0, rng_1.sameMines)((0, rng_1.revealMines)(ss, b.clientSeed, b.nonce, b.mineCount), b.mineTiles))
-                bad++;
-        }
-        const stakes = [...new Set(bets.map((b) => Number(b.betAmount)))].sort((a, z) => a - z);
-        const ok = chk === c.length && chk > 0 && bad === 0;
-        out.push((0, context_1.step)(18, 'Bet-Size Invariance', ok ? 'PASS' : 'FAIL', `${chk}/${c.length} Phase C hands at $10.00 (mineCount 3) recompute their mine layout in draw order — ${bad} mismatch. ` +
-            `the reference engine revealMines(serverSeed, clientSeed, nonce, mineCount) is wager-free by construction, and the served layouts at $10.00 match it exactly as the $0.10 hands do (stakes present: ${stakes.map((s) => `$${s}`).join(', ')}) — all sampled layouts agree with the same wager-free reference at both recorded stakes. This is sample layout parity; it does not establish universal backend independence from wager amount` +
-            (chk === 0 ? '; COVERAGE FAIL: 0 Phase C hands recomputed' : '')));
+            const layoutOk = !!ss && (0, rng_1.sameMines)((0, rng_1.revealMines)(ss, b.clientSeed, b.nonce, b.mineCount), b.mineTiles);
+            if (ss) {
+                chk++;
+                if (!layoutOk)
+                    bad++;
+            }
+            const rec = i < n ? ctx.prodCapture.bets[i].rec : null;
+            if (rec) {
+                requests++;
+                if (!pl || Number(rec.requestBody?.betAmount) !== pl.stake)
+                    requestOff++;
+                if (!pl || rec.placeRaw?.fiatCurrency !== pl.fiat || rec.settleRaw?.fiatCurrency !== pl.fiat)
+                    currencyOff++;
+            }
+            if (b.result === 'won' && pl && pl.stake === pins_1.PROD_BASE_STAKE)
+                baseWins++;
+            if (b.phaseId !== 'C')
+                return;
+            cRounds++;
+            if (ss) {
+                cRecomputed++;
+                if (!layoutOk)
+                    cBad++;
+            }
+            if (b.mineCount !== pins_1.PHASE_C_SETTING.mineCount || b.reveals !== pins_1.PHASE_C_SETTING.depth || Number(b.betAmount) !== pins_1.PROD_ELEVATED_STAKE)
+                cCellOff++;
+            if (b.result !== 'won')
+                return;
+            cWins++;
+            const r = (0, config_2.minesMultiplierRational)(b.mineCount, b.openTiles.length);
+            if (!r)
+                return;
+            const stakeCents = BigInt(Math.round(Number(b.betAmount) * 100));
+            if (BigInt(Math.round(Number(b.winningAmount) * 100)) === (stakeCents * r.num) / r.den)
+                cBookedOk++;
+            const ws = (0, prod_capture_1.decimalUnits)(rec?.placeRaw?.betAmountWallet, 8), wc = (0, prod_capture_1.decimalUnits)(rec?.settleRaw?.winningAmountWallet, 8);
+            const mult8 = (100000000n * r.num) / r.den;
+            if (ws !== null && wc !== null && wc === (ws * mult8) / 100000000n)
+                cWalletOk++;
+        });
+        const stakes = [...new Set(bets.map((b) => `${Number(b.betAmount).toFixed(2)} ${b.fiatCurrency}`))].sort();
+        const ok = chk === bets.length && chk === pins_1.EXPECTED_BETS && bad === 0 && stakeOff === 0
+            && requests === pins_1.EXPECTED_BETS && requestOff === 0 && currencyOff === 0 && ctx.prodCapture.problem === null
+            && cRounds === pins_1.EXPECTED_PHASE_ID_BETS.C && cRecomputed === cRounds && cBad === 0 && cCellOff === 0
+            && cWins >= pins_1.PHASE_C_MIN_WINS && cBookedOk === cWins && cWalletOk === cWins;
+        out.push((0, context_1.step)(18, 'Bet-Size Invariance (phase C at the elevated stake)', ok ? 'PASS' : 'FAIL', `PHASE C: ${cRounds}/${pins_1.EXPECTED_PHASE_ID_BETS.C} rounds at ${pins_1.PROD_ELEVATED_STAKE.toFixed(2)} (${pins_1.PROD_ELEVATED_STAKE / pins_1.PROD_BASE_STAKE} times the ${pins_1.PROD_BASE_STAKE.toFixed(2)} of every other phase), ${pins_1.PHASE_C_SETTING.mineCount} mines, one tile (${cCellOff} off that setting); `
+            + `${cRecomputed}/${cRounds} recompute their mine layout in draw order from the wager-free engine revealMines(serverSeed, clientSeed, nonce, mineCount) — ${cBad} mismatch; `
+            + `${cWins} elevated-stake wins (floor ${pins_1.PHASE_C_MIN_WINS}): ${cBookedOk}/${cWins} booked at floor2(stake × exact) and ${cWalletOk}/${cWins} carry the wallet field floor8(betAmountWallet × floor8(exact)) in ${pins_1.PROD_WALLET_CURRENCY} — the rules the ${baseWins} wins at ${pins_1.PROD_BASE_STAKE.toFixed(2)} are held to in Steps 8 and 22. `
+            + `WHOLE DATASET: ${chk}/${pins_1.EXPECTED_BETS} rounds recompute from the same wager-free engine (${bad} mismatch); `
+            + `stake binding: ${bets.length - stakeOff}/${bets.length} rows at their phase's stake and booked fiat (src/pins.ts EPOCH_PLAN; present: ${stakes.join(', ')}); `
+            + `raw captures: ${requests - requestOff}/${requests} place-bet requests sent the phase's betAmount, ${requests - currencyOff}/${requests} place and settle replies recorded the phase's fiat`
+            + (ctx.prodCapture.problem ? ` (RAW CAPTURE NOT LOADED: ${ctx.prodCapture.problem})` : '')
+            + `. Scope: the ${pins_1.PHASE_C_SETTING.mineCount}-mine, one-tile cell was played only at the elevated stake (3 mines at ${pins_1.PROD_BASE_STAKE.toFixed(2)} were played at depths 2, 4, 6 and 8), so this shows the same engine and the same payout rules at both stakes, not the same cell at two stakes`));
     }
     {
         const pinOk = ctx.datasetSha256 === ctx.expectedDatasetHash;
@@ -5276,8 +6075,8 @@ function run(ctx) {
             try {
                 const onDisk = JSON.parse(fs.readFileSync(figPath, 'utf-8'));
                 const derived = (0, figures_1.computeAuditFigures)({
-                    bets: ctx.bets, seeds: ctx.seeds, seedMap: ctx.seedMap, phaseD: ctx.phaseD,
-                    outputsDir: ctx.outputsDir, datasetSha256: ctx.datasetSha256,
+                    bets: ctx.bets, seeds: ctx.seeds, seedMap: ctx.seedMap,
+                    outputsDir: ctx.outputsDir, datasetSha256: ctx.datasetSha256, prodCapture: ctx.prodCapture,
                 });
                 if (!fs.existsSync(path.join(ctx.outputsDir, 'simulation-results.json'))) {
                     delete onDisk.simulation;
@@ -5305,7 +6104,7 @@ function run(ctx) {
         const status = !pinOk || !artifactsOk || !recordOk || figState === 'mismatch' || figState === 'unparseable' || figState === 'absent'
             ? 'FAIL'
             : figState === 'stale' ? 'FLAG' : 'PASS';
-        out.push((0, context_1.step)(19, 'Artifact Integrity (dataset pin + derived figures)', status, `SHA-256 of data/mines-master-6900bets.json = ${ctx.datasetSha256.slice(0, 16)}… ${pinOk ? 'matches' : '≠'} the pin ${ctx.expectedDatasetHash.slice(0, 16)}… (loader aborts on mismatch before any step runs); `
+        out.push((0, context_1.step)(19, 'Artifact Integrity (dataset pin + derived figures)', status, `SHA-256 of ${pins_1.DATASET_RELATIVE_PATH} = ${ctx.datasetSha256.slice(0, 16)}… ${pinOk ? 'matches' : '≠'} the pin ${ctx.expectedDatasetHash.slice(0, 16)}… (loader aborts on mismatch before any step runs); `
             + `outputs/${figures_1.AUDIT_FIGURES_FILE} re-derived from src/config.ts + the pinned dataset + the simulation artifact and compared field-for-field against the copy on disk: ${figState}${figDetail}`
             + (figState === 'absent'
                 ? ` — HARD FAIL: the derived-figure artifact is shipped with this repo and every quantitative claim in the report is quoted from it. Its absence is not a fresh clone, it is a missing artifact of record, and until 2026-09-09 deleting it scored [PASS] Step 19 with a 21/21 Full Pass — a guard whose evidence can be deleted is not a guard. Regenerate deliberately with \`npm run figures\`, then re-run.`
@@ -5379,22 +6178,38 @@ function run(ctx) {
             (winChk === 0 || lossChk === 0 ? '; COVERAGE FAIL: wins or losses absent' : '')));
     }
     {
-        const e = ctx.phaseE;
+        const e = bets;
+        const planned = ctx.prodCapture.plannedTilesById;
         const sets = new Set(e.map((b) => [...(b.openTiles || [])].sort((a, z) => a - z).join(',')));
         const firsts = new Set(e.map((b) => (b.openTiles || [])[0]).filter((t) => t !== undefined));
-        let chk = 0, bad = 0;
+        let chk = 0, bad = 0, notPrefix = 0, firstMine = 0, firstMineExp = 0, firstMineVar = 0;
         for (const b of e) {
+            const plan = planned.get(b.id);
+            const ot = b.openTiles || [];
+            if (!plan || plan.length !== b.reveals || ot.length > plan.length || ot.some((t, i) => t !== plan[i]))
+                notPrefix++;
             const ss = seedMap.get(b.hashedServerSeed);
             if (!ss)
                 continue;
             chk++;
-            if (!(0, rng_1.sameMines)((0, rng_1.revealMines)(ss, b.clientSeed, b.nonce, b.mineCount), b.mineTiles))
+            const mines = (0, rng_1.revealMines)(ss, b.clientSeed, b.nonce, b.mineCount);
+            if (!(0, rng_1.sameMines)(mines, b.mineTiles))
                 bad++;
+            if (ot.length > 0 && mines.includes(ot[0]))
+                firstMine++;
+            const p = b.mineCount / config_1.GRID;
+            firstMineExp += p;
+            firstMineVar += p * (1 - p);
         }
-        const ok = chk === e.length && chk > 0 && bad === 0 && sets.size > 1 && firsts.size === config_1.GRID;
-        out.push((0, context_1.step)(21, 'Reveal-Position Independence', ok ? 'PASS' : 'FLAG', `${e.length} multi-reveal (Phase E) rounds span ${sets.size} distinct opened-tile sets and ${firsts.size}/${config_1.GRID} board positions as a first pick (all ${config_1.GRID} required); ` +
-            `all ${chk}/${e.length} layouts still recompute (${bad} mismatch) regardless of which positions were opened — a layout-parity check over a swept first-pick window (first = ((nonce+1) mod 25)+1), not a statistical independence test` +
-            (chk === 0 ? '; COVERAGE FAIL: 0 Phase E layouts recomputed' : '')));
+        const z = firstMineVar > 0 ? (firstMine - firstMineExp) / Math.sqrt(firstMineVar) : NaN;
+        const ok = chk === e.length && chk === pins_1.EXPECTED_BETS && bad === 0 && notPrefix === 0 && sets.size > 1 && firsts.size === config_1.GRID
+            && ctx.prodCapture.problem === null;
+        out.push((0, context_1.step)(21, 'Reveal-Position Independence', ok ? 'PASS' : 'FLAG', `${e.length} production rounds span ${sets.size} distinct opened-tile sets and ${firsts.size}/${config_1.GRID} board positions as a first pick (all ${config_1.GRID} required); ` +
+            `${e.length - notPrefix}/${e.length} opened sequences are a prefix of the round's planned order in the raw captures (drawn per round by the runner's CSPRNG and written into the plan before any bet); ` +
+            `all ${chk}/${e.length} layouts still recompute (${bad} mismatch) regardless of which positions were opened; ` +
+            `first pick on a mine: ${firstMine} rounds against ${firstMineExp.toFixed(1)} expected (Σ m/25), z = ${Number.isFinite(z) ? z.toFixed(3) : 'n/a'} (printed, not gated). A layout-parity check over pre-registered random positions, not a proof of independence for positions never opened` +
+            (chk === 0 ? '; COVERAGE FAIL: 0 layouts recomputed' : '') +
+            (ctx.prodCapture.problem ? `; RAW CAPTURE NOT LOADED: ${ctx.prodCapture.problem}` : '')));
     }
     return out;
 }
@@ -5407,6 +6222,7 @@ exports.run = run;
 const stats_1 = require("../../src/stats");
 const config_1 = require("../../src/config");
 const pins_1 = require("../../src/pins");
+const prod_capture_1 = require("../../src/prod-capture");
 function run(ctx) {
     const { bets } = ctx;
     const items = [];
@@ -5415,19 +6231,46 @@ function run(ctx) {
         return items;
     }
     const finiteStakes = bets.filter(b => Number.isFinite(Number(b.betAmount)));
-    const finiteCredits = bets.filter(b => Number.isFinite(Number(b.winningAmount)));
+    const finiteWins = bets.filter(b => Number.isFinite(Number(b.winningAmount)));
     const badStakes = bets.length - finiteStakes.length;
-    const badCredits = bets.length - finiteCredits.length;
-    const totalPayout = finiteCredits.reduce((s, b) => s + Number(b.winningAmount), 0);
-    const totalWagered = finiteStakes.reduce((s, b) => s + Number(b.betAmount), 0);
-    const liveRTP = totalWagered > 0 ? totalPayout / totalWagered : 0;
+    const badWins = bets.length - finiteWins.length;
+    const perFiat = new Map();
+    for (const b of bets) {
+        const f = perFiat.get(b.fiatCurrency) ?? { n: 0, wagered: 0, paid: 0 };
+        f.n++;
+        if (Number.isFinite(Number(b.betAmount)))
+            f.wagered += Number(b.betAmount);
+        if (Number.isFinite(Number(b.winningAmount)))
+            f.paid += Number(b.winningAmount);
+        perFiat.set(b.fiatCurrency, f);
+    }
     items.push({
-        label: 'Live RTP',
-        detail: (badStakes + badCredits > 0
-            ? `NOT COMPUTABLE — ${badStakes} bets carry a non-numeric betAmount and ${badCredits} a non-numeric winningAmount; they are excluded from the totals below, which therefore describe ${finiteStakes.length}/${bets.length} bets, not the capture. Step 8 hard-fails on this. `
+        label: 'Live RTP (booked fiat)',
+        detail: (badStakes + badWins > 0
+            ? `NOT COMPUTABLE — ${badStakes} bets carry a non-numeric betAmount and ${badWins} a non-numeric winningAmount; they are excluded from the totals below. Step 8 hard-fails on this. `
             : '')
-            + `${(liveRTP * 100).toFixed(4)}% ($${totalWagered.toFixed(2)} wagered, $${totalPayout.toFixed(2)} returned over ${badStakes + badCredits > 0 ? finiteStakes.length : bets.length} bets, mixed configs — informational, not authoritative)`,
+            + [...perFiat].sort(([a], [z]) => a.localeCompare(z)).map(([f, x]) => `${f}: ${x.wagered > 0 ? (x.paid / x.wagered * 100).toFixed(4) : 'n/a'}% (${x.wagered.toFixed(2)} wagered, ${x.paid.toFixed(2)} booked as won over ${x.n} rounds)`).join('; ')
+            + ` — the BOOKED amounts, mixed settings, per fiat and not summed across currencies; a win's booked amount is floored to the cent, which at a 0.10 stake drops up to a tenth of the stake (Step 8), so these figures are below the wallet fields of the same replies (next line). Informational, a variance illustration only`,
     });
+    {
+        let staked = 0n, paid = 0n, read = 0;
+        for (const { rec } of ctx.prodCapture.bets) {
+            const st = (0, prod_capture_1.decimalUnits)(rec?.placeRaw?.betAmountWallet, 8);
+            const w = rec?.settleRaw?.winningAmountWallet;
+            const pd = w === undefined || w === null ? 0n : (0, prod_capture_1.decimalUnits)(w, 8);
+            if (st === null || pd === null)
+                continue;
+            staked += st;
+            paid += pd;
+            read++;
+        }
+        items.push({
+            label: 'Live RTP (wallet)',
+            detail: ctx.prodCapture.problem
+                ? `NOT COMPUTABLE — raw capture not loaded: ${ctx.prodCapture.problem}`
+                : `${staked > 0n ? (Number(paid) / Number(staked) * 100).toFixed(4) : 'n/a'}% by the ${pins_1.PROD_WALLET_CURRENCY} wallet fields of the replies (${(Number(staked) / 1e8).toFixed(8)} ${pins_1.PROD_WALLET_CURRENCY} staked, ${(Number(paid) / 1e8).toFixed(8)} ${pins_1.PROD_WALLET_CURRENCY} paid, ${read}/${ctx.prodCapture.bets.length} rounds read from the raw captures) — reply fields, no balances captured; variance illustration only`,
+        });
+    }
     const parseGs = (b) => {
         const raw = b.currentGameSettings;
         if (raw == null)
@@ -5473,7 +6316,7 @@ function run(ctx) {
                 + `deepest examples: m=21,k=4 → ${(0, config_1.minesMultiplierExact)(21, 4).toFixed(1)}×, m=20,k=5 → ${(0, config_1.minesMultiplierExact)(20, 5).toFixed(1)}× (capped path RTP ${((0, config_1.winProbability)(20, 5) * cap * 100).toFixed(1)}%); `
                 + `hypothetical lowest-RTP capped cell m=${worst.m},k=${worst.k}: exact ${worst.mult.toExponential(3)}× capped to ${cap}× → path RTP ${(worst.rtp * 100).toFixed(2)}%. `
                 + `These returns assume payment capped at maxOdds; the enforcement mechanism was not observed. No recorded winning multiplier approaches the cap. `
-                + `This is the audited (July 2026) build's setting only: the scored ${pins_1.SUPPLEMENT_CAPTURE_DATE} supplement's ${pins_1.SUPPLEMENT_GAME_SETTINGS.records} settings records carry ${pins_1.SUPPLEMENT_GAME_SETTINGS.value} — no maxOdds key (src/pins.ts SUPPLEMENT_GAME_SETTINGS, bound by Step 22), as the ${pins_1.SUPPLEMENT_HISTORY_CAPTURE_DATE} capture's ${pins_1.SUPPLEMENT_HISTORY_GAME_SETTINGS.records} did not (dated history). LIQD states (2026-10-15) that this multiplier cap was removed at the end of August 2026; Step 10 discloses the cap figures without scoring them (MANIFEST DL-7). See MANIFEST.md#payouts-and-rtp.`
+                + `See MANIFEST.md#payouts-and-rtp.`
                 + (nonFiniteRef > 0 ? ` WARNING: ${nonFiniteRef}/300 cells returned a non-finite reference multiplier — this sweep is incomplete (Steps 10/15 hard-fail on the same condition).` : ''),
         });
     }
@@ -5481,7 +6324,7 @@ function run(ctx) {
     const r1 = (0, stats_1.lag1Autocorrelation)(winSeq);
     items.push({
         label: 'Lag-1 autocorr (win/loss)',
-        detail: `r₁=${r1.toFixed(4)} — unconditional win/loss correlation in a capture grouped by game configuration. Different configuration win probabilities can contribute to this value. This calculation does not separate configuration effects from within-configuration dependence. Pass 1 evaluates serial statistics of the reference generator; it does not establish the cause of this captured correlation.`,
+        detail: `r₁=${r1.toFixed(4)} — unconditional win/loss correlation over rounds in capture order, which cycle through the game configurations. Different configuration win probabilities can contribute to this value. This calculation does not separate configuration effects from within-configuration dependence. Pass 1 evaluates serial statistics of the reference generator; it does not establish the cause of this captured correlation.`,
     });
     const wins = bets.filter(b => b.result === 'won').length;
     items.push({
@@ -5489,568 +6332,6 @@ function run(ctx) {
         detail: `${wins}/${bets.length} = ${((wins / bets.length) * 100).toFixed(2)}% (mixed mineCounts/reveals — informational)`,
     });
     return items;
-}
-
-},
-"tests/steps/supplement.js": function(module, exports, require, __filename, __dirname) {
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.STEP_NAME = exports.STEP_NUMBER = void 0;
-exports.doubleToRational = doubleToRational;
-exports.creditModelBinary64 = creditModelBinary64;
-exports.creditModelExactProductOfDoubles = creditModelExactProductOfDoubles;
-exports.creditModelEdgeFirst = creditModelEdgeFirst;
-exports.creditExactFloor8 = creditExactFloor8;
-exports.displayModelBinary64 = displayModelBinary64;
-exports.displayExactCents = displayExactCents;
-exports.historyArm = historyArm;
-exports.run = run;
-const fs = __importStar(require("fs"));
-const path = __importStar(require("path"));
-const crypto_1 = require("crypto");
-const context_1 = require("./context");
-const rng_1 = require("../../src/rng");
-const config_1 = require("../../src/config");
-const pins_1 = require("../../src/pins");
-exports.STEP_NUMBER = 22;
-exports.STEP_NAME = 'Multi-Reveal Supplement (capture v3, 1,000 rounds)';
-const STEP_MULT_KEYS = ['multiplier', 'currentMultiplier', 'payoutMultiplier', 'odds'];
-function doubleToRational(x) {
-    if (!Number.isFinite(x))
-        return null;
-    if (x === 0)
-        return { num: 0n, den: 1n };
-    const dv = new DataView(new ArrayBuffer(8));
-    dv.setFloat64(0, x);
-    const hi = dv.getUint32(0), lo = dv.getUint32(4);
-    const sign = hi >>> 31 ? -1n : 1n;
-    const exp = (hi >>> 20) & 0x7ff;
-    let mant = (BigInt(hi & 0xfffff) << 32n) | BigInt(lo);
-    let e;
-    if (exp === 0)
-        e = -1074;
-    else {
-        mant |= 1n << 52n;
-        e = exp - 1075;
-    }
-    return e >= 0 ? { num: sign * (mant << BigInt(e)), den: 1n } : { num: sign * mant, den: 1n << BigInt(-e) };
-}
-function creditModelBinary64(stake, m, k) {
-    return Math.floor(stake * (0, config_1.minesMultiplierExact)(m, k) * 1e8);
-}
-function creditModelExactProductOfDoubles(stake, m, k) {
-    const s = doubleToRational(stake), f = doubleToRational((0, config_1.minesMultiplierExact)(m, k));
-    if (!s || !f)
-        return null;
-    return (s.num * f.num * 100000000n) / (s.den * f.den);
-}
-function creditModelEdgeFirst(stake, m, k) {
-    let p = 1 - config_1.HOUSE_EDGE;
-    for (let i = 0; i < k; i++)
-        p *= (config_1.GRID - i) / (config_1.GRID - m - i);
-    return Math.floor(stake * p * 1e8);
-}
-function creditExactFloor8(stake, m, k) {
-    const r = (0, config_1.minesMultiplierRational)(m, k);
-    if (!r)
-        return null;
-    return (BigInt(Math.round(stake * 1e8)) * r.num) / r.den;
-}
-function displayModelBinary64(m, k) {
-    return Math.floor((0, config_1.minesMultiplierExact)(m, k) * 100) / 100;
-}
-function displayExactCents(m, k) {
-    const r = (0, config_1.minesMultiplierRational)(m, k);
-    return r ? (100n * r.num) / r.den : null;
-}
-const sameCells = (got, want) => got.size === Object.keys(want).length && [...got].every(([k, n]) => want[k] === n);
-const fmtCells = (m) => [...m].map(([k, n]) => `(${k.replace(':', ', ')}) ×${n}`).join(', ') || 'none';
-const gsText = (v) => (typeof v === 'string' ? v : JSON.stringify(v));
-function historyArm(repoRoot) {
-    const m = {
-        ok: false, problem: null, bets: 0, wins: 0, nonFinite: 0,
-        credExact: 0, credBelow: 0, credAbove: 0, credOffSize: 0, credGapUnits: 0n, credCells: new Map(),
-        dispExact: 0, dispBelow: 0, dispAbove: 0, dispOut: 0, dispCells: new Map(),
-        settingsRecords: 0, settingsValues: new Map(), settingsCopies: 0, settingsCopyMismatch: 0,
-    };
-    const dsPath = path.join(repoRoot, pins_1.SUPPLEMENT_HISTORY_DATASET_RELATIVE_PATH);
-    const jPath = path.join(repoRoot, pins_1.SUPPLEMENT_HISTORY_JOURNAL_RELATIVE_PATH);
-    if (!fs.existsSync(dsPath) || !fs.existsSync(jPath)) {
-        m.problem = `history exhibit absent: ${[fs.existsSync(dsPath) ? '' : pins_1.SUPPLEMENT_HISTORY_DATASET_RELATIVE_PATH, fs.existsSync(jPath) ? '' : pins_1.SUPPLEMENT_HISTORY_JOURNAL_RELATIVE_PATH].filter(Boolean).join(', ')}`;
-        return m;
-    }
-    const dsRaw = fs.readFileSync(dsPath);
-    const dsSha = (0, crypto_1.createHash)('sha256').update(dsRaw).digest('hex');
-    const jSha = (0, crypto_1.createHash)('sha256').update(fs.readFileSync(jPath)).digest('hex');
-    if (dsSha !== pins_1.SUPPLEMENT_HISTORY_DATASET_HASH || jSha !== pins_1.SUPPLEMENT_HISTORY_JOURNAL_HASH) {
-        m.problem = `history exhibit pin mismatch: dataset ${dsSha === pins_1.SUPPLEMENT_HISTORY_DATASET_HASH ? 'ok' : dsSha}, journal ${jSha === pins_1.SUPPLEMENT_HISTORY_JOURNAL_HASH ? 'ok' : jSha}`;
-        return m;
-    }
-    let ds;
-    try {
-        ds = JSON.parse(dsRaw.toString('utf8'));
-    }
-    catch (e) {
-        m.problem = `history exhibit unparseable: ${e.message}`;
-        return m;
-    }
-    const bets = Array.isArray(ds?.bets) ? ds.bets : [];
-    m.bets = bets.length;
-    for (const b of bets) {
-        const gs = b?.settleRaw?.currentGameSettings;
-        if (gs !== undefined && gs !== null) {
-            m.settingsRecords++;
-            const t = gsText(gs);
-            m.settingsValues.set(t, (m.settingsValues.get(t) ?? 0) + 1);
-            for (const x of (Array.isArray(b.steps) ? b.steps : [])) {
-                const c = x?.raw?.currentGameSettings;
-                if (c === undefined || c === null)
-                    continue;
-                m.settingsCopies++;
-                if (gsText(c) !== t)
-                    m.settingsCopyMismatch++;
-            }
-        }
-        if (b.result !== 'won')
-            continue;
-        m.wins++;
-        const k = Array.isArray(b.openTiles) ? b.openTiles.length : NaN;
-        const key = `${b.mineCount}:${k}`;
-        const stake = Number(b.betAmount), credit = Number(b.winningAmount), mult = Number(b.multiplier);
-        const ex = creditExactFloor8(stake, b.mineCount, k), cents = displayExactCents(b.mineCount, k);
-        if (!Number.isFinite(stake) || !Number.isFinite(credit) || !Number.isFinite(mult) || ex === null || cents === null) {
-            m.nonFinite++;
-            continue;
-        }
-        const got = BigInt(Math.round(credit * 1e8));
-        if (got === ex)
-            m.credExact++;
-        else if (got > ex)
-            m.credAbove++;
-        else {
-            m.credBelow++;
-            const short = ex - got;
-            m.credGapUnits += short;
-            if (short !== BigInt(pins_1.SUPPLEMENT_HISTORY_CREDIT_GAP_UNITS_PER_WIN))
-                m.credOffSize++;
-            m.credCells.set(key, (m.credCells.get(key) ?? 0) + 1);
-        }
-        const d = cents - BigInt(Math.round(mult * 100));
-        if (d === 0n)
-            m.dispExact++;
-        else if (d < 0n)
-            m.dispAbove++;
-        else if (d === 1n) {
-            m.dispBelow++;
-            m.dispCells.set(key, (m.dispCells.get(key) ?? 0) + 1);
-        }
-        else
-            m.dispOut++;
-    }
-    m.ok = m.bets === pins_1.SUPPLEMENT_HISTORY_BETS && m.wins === pins_1.SUPPLEMENT_HISTORY_WINS && m.nonFinite === 0
-        && m.credAbove === 0 && m.credExact + m.credBelow === m.wins
-        && m.credBelow === pins_1.SUPPLEMENT_HISTORY_CREDIT_UNIT_BELOW && sameCells(m.credCells, pins_1.SUPPLEMENT_HISTORY_CREDIT_GAP_CELLS)
-        && m.credOffSize === 0 && m.credGapUnits === BigInt(pins_1.SUPPLEMENT_HISTORY_CREDIT_GAP_TOTAL_UNITS)
-        && m.dispAbove === 0 && m.dispOut === 0 && m.dispExact + m.dispBelow === m.wins
-        && m.dispBelow === pins_1.SUPPLEMENT_HISTORY_DISPLAY_CENT_BELOW && sameCells(m.dispCells, pins_1.SUPPLEMENT_HISTORY_DISPLAY_GAP_CELLS)
-        && m.settingsRecords === pins_1.SUPPLEMENT_HISTORY_GAME_SETTINGS.records && m.settingsValues.size === 1
-        && m.settingsValues.has(pins_1.SUPPLEMENT_HISTORY_GAME_SETTINGS.value)
-        && m.settingsCopies === m.settingsRecords && m.settingsCopyMismatch === 0;
-    return m;
-}
-function run(ctx) {
-    const repoRoot = path.resolve(ctx.outputsDir, '..');
-    const fails = [];
-    const note = (s) => { if (fails.length < 6)
-        fails.push(s); };
-    const dsPath = path.join(repoRoot, pins_1.SUPPLEMENT_DATASET_RELATIVE_PATH);
-    const jPath = path.join(repoRoot, pins_1.SUPPLEMENT_JOURNAL_RELATIVE_PATH);
-    if (!fs.existsSync(dsPath) || !fs.existsSync(jPath)) {
-        return [(0, context_1.step)(exports.STEP_NUMBER, exports.STEP_NAME, 'FAIL', `supplement absent: ${fs.existsSync(dsPath) ? '' : pins_1.SUPPLEMENT_DATASET_RELATIVE_PATH + ' '}${fs.existsSync(jPath) ? '' : pins_1.SUPPLEMENT_JOURNAL_RELATIVE_PATH}`.trim())];
-    }
-    const dsRaw = fs.readFileSync(dsPath), jRaw = fs.readFileSync(jPath);
-    const dsSha = (0, crypto_1.createHash)('sha256').update(dsRaw).digest('hex');
-    const jSha = (0, crypto_1.createHash)('sha256').update(jRaw).digest('hex');
-    const pinOk = dsSha === pins_1.SUPPLEMENT_DATASET_HASH && jSha === pins_1.SUPPLEMENT_JOURNAL_HASH;
-    if (!pinOk) {
-        return [(0, context_1.step)(exports.STEP_NUMBER, exports.STEP_NAME, 'FAIL', `supplement pin mismatch: dataset ${dsSha === pins_1.SUPPLEMENT_DATASET_HASH ? 'ok' : dsSha} , journal ${jSha === pins_1.SUPPLEMENT_JOURNAL_HASH ? 'ok' : jSha}`)];
-    }
-    let ds;
-    let journal;
-    try {
-        ds = JSON.parse(dsRaw.toString('utf8'));
-        journal = jRaw.toString('utf8').split('\n').filter((l) => l.trim() !== '').map((l) => JSON.parse(l));
-    }
-    catch (e) {
-        return [(0, context_1.step)(exports.STEP_NUMBER, exports.STEP_NAME, 'FAIL', `supplement unparseable: ${e.message}`)];
-    }
-    const bets = Array.isArray(ds?.bets) ? ds.bets : [];
-    const seeds = Array.isArray(ds?.seeds) ? [...ds.seeds].sort((a, b) => a.epoch - b.epoch) : [];
-    const jBets = journal.map((r, i) => ({ r, i })).filter((x) => x.r?.t === 'bet');
-    const jIntents = journal.map((r, i) => ({ r, i })).filter((x) => x.r?.t === 'intent');
-    let journalRowBad = 0, intentBad = 0;
-    if (jBets.length !== bets.length)
-        note(`journal holds ${jBets.length} bet records, dataset ${bets.length}`);
-    for (let i = 0; i < bets.length; i++) {
-        if (!jBets[i] || JSON.stringify(jBets[i].r.rec) !== JSON.stringify(bets[i])) {
-            journalRowBad++;
-            note(`row ${i}: journal bet record differs from the dataset row`);
-        }
-        const it = jIntents[i];
-        if (!it || JSON.stringify(it.r.tiles) !== JSON.stringify(bets[i].openOrder) || !jBets[i] || it.i > jBets[i].i
-            || it.r.epoch !== bets[i].epoch || it.r.seq !== bets[i].seq) {
-            intentBad++;
-            note(`row ${i}: reveal order not journalled before the bet (or differs)`);
-        }
-    }
-    const journalOk = jBets.length === pins_1.SUPPLEMENT_EXPECTED_BETS && jIntents.length === pins_1.SUPPLEMENT_EXPECTED_BETS
-        && journalRowBad === 0 && intentBad === 0;
-    const planned = new Map();
-    for (const [m, ds_] of Object.entries(pins_1.SUPPLEMENT_DEPTHS))
-        for (const d of ds_)
-            planned.set(`${m}@${d}`, 0);
-    let offPlan = 0;
-    for (const b of bets) {
-        const key = `${b.mineCount}@${b.reveals}`;
-        if (!planned.has(key)) {
-            offPlan++;
-            note(`round ${b.id}: (mineCount ${b.mineCount}, depth ${b.reveals}) is not in the plan`);
-            continue;
-        }
-        planned.set(key, planned.get(key) + 1);
-    }
-    const shortCfg = [...planned].filter(([, n]) => n !== pins_1.SUPPLEMENT_PER_CONFIG);
-    const metaDepthsAgree = JSON.stringify(ds?.meta?.phaseE?.depthsByMineCount) === JSON.stringify(pins_1.SUPPLEMENT_DEPTHS);
-    const popOk = bets.length === pins_1.SUPPLEMENT_EXPECTED_BETS && seeds.length === pins_1.SUPPLEMENT_EXPECTED_SEEDS
-        && planned.size * pins_1.SUPPLEMENT_PER_CONFIG === pins_1.SUPPLEMENT_EXPECTED_BETS && offPlan === 0 && shortCfg.length === 0;
-    if (shortCfg.length)
-        note(`configurations off the ${pins_1.SUPPLEMENT_PER_CONFIG}-round plan: ${shortCfg.map(([k, n]) => `${k}=${n}`).join(', ')}`);
-    let commitBad = 0, chainBad = 0, nonceBad = 0, bindBad = 0;
-    const seedByEpoch = new Map();
-    seeds.forEach((s, i) => {
-        seedByEpoch.set(s.epoch, s);
-        if (typeof s.serverSeed !== 'string' || (0, rng_1.commitHash)(s.serverSeed) !== s.hashedServerSeed) {
-            commitBad++;
-            note(`epoch ${s.epoch}: commitment does not verify`);
-        }
-        if (i + 1 < seeds.length && s.nextHashedServerSeed !== seeds[i + 1].hashedServerSeed) {
-            chainBad++;
-            note(`epoch ${s.epoch}: next-hash does not link to epoch ${seeds[i + 1].epoch}`);
-        }
-        if (s.nonceStart !== pins_1.NONCE_BASE || s.nonceEnd !== pins_1.NONCE_BASE + pins_1.EXPECTED_EPOCH_SIZE - 1) {
-            nonceBad++;
-            note(`epoch ${s.epoch}: nonce window ${s.nonceStart}…${s.nonceEnd}`);
-        }
-    });
-    const pre = ds?.meta?.preCapture;
-    const anchorOk = !!pre && typeof pre.revealedServerSeed === 'string' && (0, rng_1.commitHash)(pre.revealedServerSeed) === pre.hashedServerSeed
-        && seeds.length > 0 && pre.nextHashedServerSeed === seeds[0].hashedServerSeed;
-    if (!anchorOk)
-        note('pre-capture anchor absent or does not link to epoch 0');
-    const perEpoch = new Map();
-    for (const b of bets) {
-        const a = perEpoch.get(b.epoch) ?? [];
-        a.push(b);
-        perEpoch.set(b.epoch, a);
-    }
-    for (const [ep, rows] of perEpoch) {
-        const s = seedByEpoch.get(ep);
-        if (rows.length !== pins_1.EXPECTED_EPOCH_SIZE) {
-            nonceBad++;
-            note(`epoch ${ep}: ${rows.length} rounds`);
-        }
-        rows.forEach((b, i) => {
-            if (b.nonce !== pins_1.NONCE_BASE + i || b.nonceInferred !== undefined) {
-                nonceBad++;
-                note(`round ${b.id}: nonce ${b.nonce} at position ${i}`);
-            }
-            if (!s || b.hashedServerSeed !== s.hashedServerSeed || b.clientSeed !== s.clientSeed) {
-                bindBad++;
-                note(`round ${b.id}: not bound to epoch ${ep}'s commitment / client seed`);
-            }
-        });
-    }
-    const commitOk = commitBad === 0 && chainBad === 0 && anchorOk && nonceBad === 0 && bindBad === 0
-        && seeds.every((s) => typeof s.serverSeed === 'string');
-    let layoutChk = 0, layoutBad = 0, revealChk = 0, statusBad = 0, seqBad = 0, winBad = 0, lossBad = 0, labelBad = 0;
-    let perStepServed = 0, safeBare = 0, settleOnReveal = 0;
-    let wins = 0, losses = 0, dispModelOk = 0, dispExactOk = 0, dispCentBelow = 0, dispAbove = 0, dispOutOfBound = 0;
-    let credModelA = 0, credModelB = 0, credModelC = 0, credExact = 0, credUnitBelow = 0, credAbove = 0, credOutOfBound = 0, offGrid = 0;
-    let credGapUnits = 0n;
-    const unitBelowCells = new Map(), centBelowCells = new Map();
-    const exactByCell = new Map();
-    const cell = new Map();
-    const firstPicks = new Set();
-    const safeRungCells = new Set();
-    const legal = (t) => Number.isInteger(t) && t >= 1 && t <= config_1.GRID;
-    for (const b of bets) {
-        const s = seedByEpoch.get(b.epoch);
-        const layout = s && typeof s.serverSeed === 'string' ? (0, rng_1.revealMines)(s.serverSeed, b.clientSeed, b.nonce, b.mineCount) : null;
-        if (!layout) {
-            note(`round ${b.id}: layout not recomputable`);
-            continue;
-        }
-        layoutChk++;
-        if (!Array.isArray(b.mineTiles) || !(0, rng_1.sameMines)(layout, b.mineTiles)) {
-            layoutBad++;
-            note(`round ${b.id}: mineTiles ≠ recomputed layout`);
-        }
-        const mines = new Set(layout);
-        const steps = Array.isArray(b.steps) ? b.steps : [];
-        const opened = Array.isArray(b.openTiles) ? b.openTiles : [];
-        const order = Array.isArray(b.openOrder) ? b.openOrder : [];
-        if (order.length)
-            firstPicks.add(order[0]);
-        const stepTiles = steps.map((x) => x.tile);
-        if (JSON.stringify(stepTiles) !== JSON.stringify(opened) || JSON.stringify(order.slice(0, steps.length)) !== JSON.stringify(stepTiles)
-            || order.length !== b.reveals || !opened.every(legal) || new Set(opened).size !== opened.length
-            || steps.some((x, i) => x.depth !== i + 1)) {
-            seqBad++;
-            note(`round ${b.id}: reveal sequence ≠ recorded order / openTiles`);
-        }
-        steps.forEach((x, i) => {
-            revealChk++;
-            if (x.mineTile !== mines.has(x.tile)) {
-                statusBad++;
-                note(`round ${b.id} reveal ${i + 1}: served mineTile ${x.mineTile}, layout says ${mines.has(x.tile)}`);
-            }
-            const raw = x.raw ?? {};
-            if (x.servedMultiplier != null || STEP_MULT_KEYS.some((k) => raw[k] != null))
-                perStepServed++;
-            if (x.mineTile === false && JSON.stringify(Object.keys(raw)) === '["mineTile"]')
-                safeBare++;
-            if (raw.result !== undefined)
-                settleOnReveal++;
-            if (x.mineTile === false)
-                safeRungCells.add(`${b.mineCount}:${x.depth}`);
-        });
-        const stake = Number(b.betAmount), credit = Number(b.winningAmount);
-        if (b.result === 'won') {
-            wins++;
-            const k = opened.length;
-            if (k !== b.reveals || steps.length !== k || steps.some((x) => x.mineTile !== false) || opened.some((t) => mines.has(t))) {
-                winBad++;
-                note(`round ${b.id}: win did not open exactly its ${b.reveals} planned safe tiles`);
-            }
-            const mult = Number(b.multiplier);
-            const dModel = displayModelBinary64(b.mineCount, k), dCents = displayExactCents(b.mineCount, k);
-            if (!Number.isFinite(mult) || dCents === null || !Number.isFinite(dModel)) {
-                dispOutOfBound++;
-                note(`round ${b.id}: multiplier or reference non-finite`);
-            }
-            else {
-                const servedCents = Math.round(mult * 100);
-                if (Math.abs(mult * 100 - servedCents) > pins_1.SUPPLEMENT_ON_GRID_TOLERANCE) {
-                    dispOutOfBound++;
-                    note(`round ${b.id}: multiplier ${mult} is not a whole cent`);
-                }
-                if (Math.abs(mult - dModel) <= 1e-9)
-                    dispModelOk++;
-                const diff = Number(dCents) - servedCents;
-                if (diff === 0)
-                    dispExactOk++;
-                else if (diff < 0) {
-                    dispAbove++;
-                    note(`round ${b.id}: multiplier ${mult} is ABOVE the rule floor2(exact) = ${Number(dCents) / 100}`);
-                }
-                else if (diff === 1) {
-                    dispCentBelow++;
-                    const c = `${b.mineCount}:${k}`;
-                    centBelowCells.set(c, (centBelowCells.get(c) ?? 0) + 1);
-                    note(`round ${b.id}: multiplier ${mult} is one cent BELOW the rule floor2(exact) = ${Number(dCents) / 100}`);
-                }
-                else {
-                    dispOutOfBound++;
-                    note(`round ${b.id}: multiplier ${mult} is ${diff} cents below the rule floor2(exact) = ${Number(dCents) / 100}`);
-                }
-            }
-            const units = credit * 1e8;
-            const ex = creditExactFloor8(stake, b.mineCount, k);
-            if (!Number.isFinite(credit) || !Number.isFinite(stake) || ex === null) {
-                credOutOfBound++;
-                note(`round ${b.id}: credit/stake/reference non-finite`);
-            }
-            else {
-                if (Math.abs(units - Math.round(units)) > pins_1.SUPPLEMENT_ON_GRID_TOLERANCE) {
-                    offGrid++;
-                    note(`round ${b.id}: winningAmount ${b.winningAmount} is off the 1e-8 grid`);
-                }
-                const got = BigInt(Math.round(units));
-                if (Number(got) === creditModelBinary64(stake, b.mineCount, k))
-                    credModelA++;
-                if (got === creditModelExactProductOfDoubles(stake, b.mineCount, k))
-                    credModelB++;
-                if (Number(got) === creditModelEdgeFirst(stake, b.mineCount, k))
-                    credModelC++;
-                if (got === ex) {
-                    credExact++;
-                    const c = `${b.mineCount}:${k}`;
-                    exactByCell.set(c, (exactByCell.get(c) ?? 0) + 1);
-                }
-                else if (got > ex) {
-                    credAbove++;
-                    note(`round ${b.id}: credit ${b.winningAmount} is ABOVE the rule floor8(stake × exact) = ${Number(ex) / 1e8}`);
-                }
-                else {
-                    credUnitBelow++;
-                    const short = ex - got;
-                    credGapUnits += short;
-                    note(`round ${b.id}: credit ${b.winningAmount} is ${short} × 1e-8 BELOW the rule floor8(stake × exact) = ${Number(ex) / 1e8}`);
-                    const c = `${b.mineCount}:${k}`;
-                    unitBelowCells.set(c, (unitBelowCells.get(c) ?? 0) + 1);
-                }
-            }
-            const key = `${b.mineCount}:${k}`;
-            const c = cell.get(key) ?? { wins: 0, mult: new Set(), credit: new Set(), orders: new Set() };
-            c.wins++;
-            c.mult.add(mult);
-            c.credit.add(`${stake}→${b.winningAmount}`);
-            c.orders.add(opened.join(','));
-            cell.set(key, c);
-        }
-        else if (b.result === 'lost') {
-            losses++;
-            const last = steps[steps.length - 1];
-            if (!last || last.mineTile !== true || steps.slice(0, -1).some((x) => x.mineTile !== false) || steps.length > b.reveals) {
-                lossBad++;
-                note(`round ${b.id}: loss did not bust on exactly its last reveal`);
-            }
-            if (!(credit === 0) || (b.multiplier ?? 0) !== 0) {
-                lossBad++;
-                note(`round ${b.id}: loss credited ${b.winningAmount}`);
-            }
-        }
-        else {
-            labelBad++;
-            note(`round ${b.id}: result ${JSON.stringify(b.result)}`);
-        }
-    }
-    const cells = [...cell].sort(([a], [z]) => { const [am, ak] = a.split(':').map(Number), [zm, zk] = z.split(':').map(Number); return am - zm || ak - zk; });
-    const orderVariant = cells.filter(([, c]) => c.mult.size !== 1 || c.credit.size !== 1);
-    const multiOrderCells = cells.filter(([, c]) => c.orders.size > 1).length;
-    const cellsWithTwoWins = cells.filter(([, c]) => c.wins > 1).length;
-    if (orderVariant.length)
-        note(`cells whose served multiplier/credit varies with reveal order: ${orderVariant.map(([k]) => k).join(', ')}`);
-    const settingsValues = new Map();
-    let settingsRecords = 0, settingsRevealCopies = 0, settingsCopyMismatch = 0;
-    for (const b of bets) {
-        const gs = b?.settleRaw?.currentGameSettings;
-        if (gs === undefined || gs === null)
-            continue;
-        settingsRecords++;
-        const t = gsText(gs);
-        settingsValues.set(t, (settingsValues.get(t) ?? 0) + 1);
-        const steps = Array.isArray(b.steps) ? b.steps : [];
-        for (const x of steps) {
-            const c = x?.raw?.currentGameSettings;
-            if (c === undefined || c === null)
-                continue;
-            settingsRevealCopies++;
-            if (gsText(c) !== t)
-                settingsCopyMismatch++;
-        }
-    }
-    const settingsOk = settingsRecords === pins_1.SUPPLEMENT_GAME_SETTINGS.records && settingsValues.size === 1
-        && settingsValues.has(pins_1.SUPPLEMENT_GAME_SETTINGS.value) && settingsRevealCopies === settingsRecords && settingsCopyMismatch === 0;
-    if (!settingsOk)
-        note(`operator settings moved: ${settingsRecords} settle records (declared ${pins_1.SUPPLEMENT_GAME_SETTINGS.records}), values ${JSON.stringify([...settingsValues])} (declared ${pins_1.SUPPLEMENT_GAME_SETTINGS.value}), ${settingsRevealCopies} reveal copies, ${settingsCopyMismatch} differing`);
-    let declaredMaxOdds = undefined;
-    try {
-        declaredMaxOdds = JSON.parse(pins_1.SUPPLEMENT_GAME_SETTINGS.value).maxOdds;
-    }
-    catch {
-        declaredMaxOdds = 'unparseable';
-    }
-    const perStepOk = perStepServed === pins_1.SUPPLEMENT_DECLARED_PER_STEP_MULTIPLIERS;
-    if (!perStepOk)
-        note(`reveals carrying a multiplier: ${perStepServed}, declared ${pins_1.SUPPLEMENT_DECLARED_PER_STEP_MULTIPLIERS}`);
-    const credGapOk = credUnitBelow === pins_1.SUPPLEMENT_DISCLOSED_CREDIT_UNIT_BELOW && sameCells(unitBelowCells, pins_1.SUPPLEMENT_CREDIT_GAP_CELLS)
-        && credGapUnits === BigInt(pins_1.SUPPLEMENT_CREDIT_GAP_TOTAL_UNITS);
-    const dispGapOk = dispCentBelow === pins_1.SUPPLEMENT_DISCLOSED_DISPLAY_CENT_BELOW && sameCells(centBelowCells, pins_1.SUPPLEMENT_DISPLAY_GAP_CELLS);
-    const discloseOk = credGapOk && dispGapOk;
-    if (!credGapOk)
-        note(`credit gap against the rule moved: ${credUnitBelow} wins below it (declared ${pins_1.SUPPLEMENT_DISCLOSED_CREDIT_UNIT_BELOW} for the ${pins_1.SUPPLEMENT_CAPTURE_DATE} capture), cells ${JSON.stringify(Object.fromEntries(unitBelowCells))} (declared ${JSON.stringify(pins_1.SUPPLEMENT_CREDIT_GAP_CELLS)}), total ${credGapUnits} × 1e-8 (declared ${pins_1.SUPPLEMENT_CREDIT_GAP_TOTAL_UNITS})`);
-    if (!dispGapOk)
-        note(`display gap against the rule moved: ${dispCentBelow} wins one cent below it (declared ${pins_1.SUPPLEMENT_DISCLOSED_DISPLAY_CENT_BELOW} for the ${pins_1.SUPPLEMENT_CAPTURE_DATE} capture), cells ${JSON.stringify(Object.fromEntries(centBelowCells))} (declared ${JSON.stringify(pins_1.SUPPLEMENT_DISPLAY_GAP_CELLS)})`);
-    const settleOk = wins > 0 && losses > 0 && winBad === 0 && lossBad === 0 && labelBad === 0
-        && dispExactOk + dispCentBelow === wins && dispAbove === 0 && dispOutOfBound === 0
-        && credExact + credUnitBelow === wins && credAbove === 0 && credOutOfBound === 0 && offGrid === 0;
-    const layoutOk = layoutChk === pins_1.SUPPLEMENT_EXPECTED_BETS && layoutBad === 0 && statusBad === 0 && seqBad === 0 && revealChk > 0;
-    const coverageOk = cells.length >= pins_1.SUPPLEMENT_MIN_CASHOUT_RUNGS && orderVariant.length === 0;
-    const hist = historyArm(repoRoot);
-    if (!hist.ok) {
-        note(hist.problem ?? `dated history (${pins_1.SUPPLEMENT_HISTORY_CAPTURE_DATE}) moved off its declaration in src/pins.ts SUPPLEMENT_HISTORY_*: `
-            + `${hist.bets} rounds (declared ${pins_1.SUPPLEMENT_HISTORY_BETS}), ${hist.wins} wins (declared ${pins_1.SUPPLEMENT_HISTORY_WINS}), ${hist.nonFinite} non-finite; `
-            + `${hist.credBelow} credits below the rule (declared ${pins_1.SUPPLEMENT_HISTORY_CREDIT_UNIT_BELOW}) at ${JSON.stringify(Object.fromEntries(hist.credCells))} (declared ${JSON.stringify(pins_1.SUPPLEMENT_HISTORY_CREDIT_GAP_CELLS)}), `
-            + `total ${hist.credGapUnits} × 1e-8 (declared ${pins_1.SUPPLEMENT_HISTORY_CREDIT_GAP_TOTAL_UNITS}), ${hist.credOffSize} short by other than ${pins_1.SUPPLEMENT_HISTORY_CREDIT_GAP_UNITS_PER_WIN} × 1e-8, ${hist.credAbove} above; `
-            + `${hist.dispBelow} displays one cent below (declared ${pins_1.SUPPLEMENT_HISTORY_DISPLAY_CENT_BELOW}) at ${JSON.stringify(Object.fromEntries(hist.dispCells))} (declared ${JSON.stringify(pins_1.SUPPLEMENT_HISTORY_DISPLAY_GAP_CELLS)}), ${hist.dispAbove} above, ${hist.dispOut} further below; `
-            + `${hist.settingsRecords} settings records (declared ${pins_1.SUPPLEMENT_HISTORY_GAME_SETTINGS.records}), ${hist.settingsValues.size} distinct value(s), ${hist.settingsCopies - hist.settingsCopyMismatch}/${hist.settingsCopies} reveal copies agree`);
-    }
-    const ok = pinOk && journalOk && popOk && commitOk && layoutOk && perStepOk && settleOk && discloseOk && coverageOk && settingsOk && hist.ok;
-    const status = ok ? 'PASS' : 'FAIL';
-    const historyCellsToday = Object.keys(pins_1.SUPPLEMENT_HISTORY_CREDIT_GAP_CELLS)
-        .map((k) => `(${k.replace(':', ', ')}) ${cell.get(k)?.wins ?? 0} wins, ${exactByCell.get(k) ?? 0} credited at the rule`).join('; ');
-    const histText = hist.problem
-        ? `(k) DATED HISTORY (${pins_1.SUPPLEMENT_HISTORY_CAPTURE_DATE} capture, exhibits E17/E18): ${hist.problem}. `
-        : `(k) DATED HISTORY, NOT SCORED AS TODAY'S BEHAVIOUR — the ${pins_1.SUPPLEMENT_HISTORY_CAPTURE_DATE} capture of the same plan (${pins_1.SUPPLEMENT_HISTORY_DATASET_RELATIVE_PATH} and its journal, both SHA-256 pinned in src/pins.ts SUPPLEMENT_HISTORY_*; exhibits E17/E18), the scored supplement until 2026-10-03, re-derived from the pinned bytes with the rule functions of (g): `
-            + `on the ${pins_1.SUPPLEMENT_HISTORY_CAPTURE_DATE} build ${hist.credBelow} of ${hist.wins} wins were credited below floor8(stake × exact) — ${fmtCells(hist.credCells)}, ${hist.credOffSize === 0 ? `each ${pins_1.SUPPLEMENT_HISTORY_CREDIT_GAP_UNITS_PER_WIN} × 1e-8 short` : `${hist.credOffSize} short by other than ${pins_1.SUPPLEMENT_HISTORY_CREDIT_GAP_UNITS_PER_WIN} × 1e-8`}, total ${hist.credGapUnits} × 1e-8 = $${(Number(hist.credGapUnits) / 1e8).toFixed(8)}, ${hist.credAbove} above, ${hist.credExact} at the rule (DL-14, history); `
-            + `${hist.dispBelow} displayed one cent below floor2(exact) — ${fmtCells(hist.dispCells)}, ${hist.dispAbove} above (DL-15, history); its ${hist.settingsRecords} settings records carry ${[...hist.settingsValues.keys()].join(' | ') || 'none'}. `
-            + `LIQD stated a fix on 2026-09-30; the ${pins_1.SUPPLEMENT_CAPTURE_DATE} capture of the same plan, scored in (g), credits ${credExact} of its ${wins} wins exactly at the rule. `
-            + `OPEN RULING 2 (profile owner: is a win credited 1e-8 below floor8(stake × exact) a FAIL or a FLAG?) now bears only on how this history is classed: from 2026-10-01 to 2026-10-03 the package held these wins at a Step 22 FLAG pending the ruling (profile MINES-11's policy is HARD_FAIL; the same shortfall on the audited dataset hard-fails Step 8, forgery D26). It does not move today's status, and nothing here decides it. `
-            + `History figures ${hist.ok ? 'equal' : 'DO NOT equal'} their declarations (a figure that moves FAILs this step: the published history would no longer describe the pinned bytes). `;
-    const detail = `SUPPLEMENT ${pins_1.SUPPLEMENT_DATASET_RELATIVE_PATH} (captured ${pins_1.SUPPLEMENT_CAPTURE_DATE}) — scored here; Steps 1–21 score the audited 6,900-round dataset (Step 10 also reads this supplement's settings declaration, bound here in (j)); the ${pins_1.SUPPLEMENT_HISTORY_CAPTURE_DATE} capture of the same plan is dated history, arm (k), not scored. `
-        + `(a) integrity: dataset and journal SHA-256 match their pins; ${jBets.length - journalRowBad}/${bets.length} journal bet records equal the dataset rows; ${bets.length - intentBad}/${bets.length} reveal orders journalled before their bet. `
-        + `(b) population: ${bets.length}/${pins_1.SUPPLEMENT_EXPECTED_BETS} rounds, ${seeds.length}/${pins_1.SUPPLEMENT_EXPECTED_SEEDS} epochs, ${planned.size} (mineCount, depth) configurations × ${pins_1.SUPPLEMENT_PER_CONFIG} (${shortCfg.length} off plan, ${offPlan} rounds outside it; capture meta plan ${metaDepthsAgree ? 'agrees' : 'DISAGREES'} with src/pins.ts). `
-        + `(c) commitment: ${seeds.length - commitBad}/${seeds.length} commitments verify, ${Math.max(seeds.length - 1, 0) - chainBad}/${Math.max(seeds.length - 1, 0)} chain links, pre-capture anchor ${anchorOk ? 'links to epoch 0' : 'FAILS'}; nonce violations ${nonceBad}, rows unbound to their epoch ${bindBad}. `
-        + `(d) layouts: ${layoutChk - layoutBad}/${pins_1.SUPPLEMENT_EXPECTED_BETS} recompute (draw order). `
-        + `(e) reveals: ${revealChk - statusBad}/${revealChk} served mine/safe statuses equal the recomputed layout; ${seqBad} rounds whose reveals differ from the recorded order; ${wins} wins (${winBad} not opening exactly the planned safe tiles), ${losses} losses (${lossBad} not busting on exactly the last reveal or credited ≠ 0). `
-        + `(f) per-step multiplier: ${perStepServed} of ${revealChk} reveals carried one (declared ${pins_1.SUPPLEMENT_DECLARED_PER_STEP_MULTIPLIERS}) — NOT SERVED ON THE WIRE: ${safeBare} safe reveals returned only {mineTile}, ${settleOnReveal} mine reveals returned the settled record; the intermediate-rung arm of MINES-17 is not checkable from the operator's responses. `
-        + `(g) cash-out rung, ${wins} wins, scored against ONE rule — the rule every win in this package is held to (Steps 7–8 on the audited dataset's 3,104 wins): credit = floor8(stake × exact rational multiplier), display = floor2(exact). `
-        + `CREDIT: == the rule ${credExact}/${wins}; ABOVE the rule ${credAbove}; BELOW the rule ${credUnitBelow}${credUnitBelow ? ` (${fmtCells(unitBelowCells)}, total ${credGapUnits} × 1e-8)` : ''} — declared gap ${pins_1.SUPPLEMENT_DISCLOSED_CREDIT_UNIT_BELOW} (src/pins.ts SUPPLEMENT_DISCLOSED_CREDIT_UNIT_BELOW); non-finite ${credOutOfBound}, off-grid ${offGrid}. `
-        + `The cells that missed the rule on ${pins_1.SUPPLEMENT_HISTORY_CAPTURE_DATE} (arm k), on this capture: ${historyCellsToday}. `
-        + `DISPLAY: == the rule ${dispExactOk}/${wins}; above ${dispAbove}; one cent below ${dispCentBelow}${dispCentBelow ? ` (${fmtCells(centBelowCells)})` : ''} — declared gap ${pins_1.SUPPLEMENT_DISCLOSED_DISPLAY_CENT_BELOW}; out of bound ${dispOutOfBound}. `
-        + `VERDICT TREATMENT: a credit or a display below the rule on this capture FAILs this step — the declared gap is ${pins_1.SUPPLEMENT_DISCLOSED_CREDIT_UNIT_BELOW}, so any short win moves it — which is the severity profile MINES-11 (HARD_FAIL, an exact comparison under a declared settlement rule) gives it, and the one Step 8 gives a short credit on the audited dataset; nothing on this capture is held at FLAG. `
-        + `EXPLANATORY ONLY — hypotheses about the operator, gated on nothing, never the audit's rule: the binary64 models that matched every credit of the ${pins_1.SUPPLEMENT_HISTORY_CAPTURE_DATE} capture match this one as follows — credit == Math.floor(stake×multF×1e8) ${credModelA}/${wins}, == exact product of the two doubles floored to 8 dp ${credModelB}/${wins}, == that model with the multiplier formed edge-first ${credModelC}/${wins}; display == Math.floor(multF×100)/100 ${dispModelOk}/${wins}; against the exact rule: credit ${credExact}/${wins}, display ${dispExactOk}/${wins}. `
-        + `(h) order independence at the cash-out rung: ${cells.length - orderVariant.length}/${cells.length} witnessed cells carry one served multiplier and one credit across every reveal order (${multiOrderCells} cells reached by more than one opened-tile order; ${cellsWithTwoWins} with ≥ 2 wins); first picks span ${firstPicks.size}/${config_1.GRID} positions. `
-        + `(i) coverage: ${cells.length} cash-out rungs witnessed (floor ${pins_1.SUPPLEMENT_MIN_CASHOUT_RUNGS}): ${cells.map(([k, c]) => `(${k.replace(':', ',')})×${c.wins}`).join(' ')}; safe reveals reached ${safeRungCells.size} (mineCount, depth) rungs. `
-        + `(j) operator settings: ${settingsRecords} settle responses carry currentGameSettings (declared ${pins_1.SUPPLEMENT_GAME_SETTINGS.records}), ${settingsValues.size} distinct value${settingsValues.size === 1 ? '' : 's'}, ${settingsValues.size === 1 && settingsValues.has(pins_1.SUPPLEMENT_GAME_SETTINGS.value) ? 'equal to' : 'NOT equal to'} the declaration ${pins_1.SUPPLEMENT_GAME_SETTINGS.value} (src/pins.ts SUPPLEMENT_GAME_SETTINGS); ${settingsRevealCopies - settingsCopyMismatch}/${settingsRevealCopies} reveal copies agree. `
-        + `The declared value carries ${declaredMaxOdds === undefined ? 'NO maxOdds key' : `maxOdds ${JSON.stringify(declaredMaxOdds)}`}; the declared cap is ${config_1.MAX_ODDS_DECLARED}× (src/config.ts MAX_ODDS_DECLARED, from the audited dataset's settings records), so this build's settings ${Number(declaredMaxOdds) === config_1.MAX_ODDS_DECLARED ? 'carry' : 'do not carry'} the July build's cap; LIQD states the multiplier cap was removed at the end of August 2026, and Step 10 discloses this without scoring it (MINES-14 cap half, not scored since 2026-10-15; MANIFEST DL-7). `
-        + histText.trimEnd()
-        + (fails.length ? ` E.g. ${fails.join('; ')}` : '');
-    return [(0, context_1.step)(exports.STEP_NUMBER, exports.STEP_NAME, status, detail)];
 }
 
 },
@@ -6094,6 +6375,7 @@ const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const loader_1 = require("../src/loader");
 const pins_1 = require("../src/pins");
+const prod_capture_1 = require("../src/prod-capture");
 const figures_1 = require("../src/figures");
 const diff_1 = require("../src/diff");
 const profile_map_1 = require("../src/profile-map");
@@ -6109,10 +6391,10 @@ const phaseE = __importStar(require("./steps/phase-e"));
 const simulation = __importStar(require("./steps/simulation"));
 const statistical = __importStar(require("./steps/statistical"));
 const standardization = __importStar(require("./steps/standardization"));
-const supplement = __importStar(require("./steps/supplement"));
+const rawCapture = __importStar(require("./steps/raw-capture"));
 const replay_pool_1 = require("../src/replay-pool");
 (0, replay_pool_1.runWorkerIfRequested)();
-const DATASET_PATH = path.join(__dirname, '../data/mines-master-6900bets.json');
+const DATASET_PATH = path.join(__dirname, '..', pins_1.DATASET_RELATIVE_PATH);
 const OUTPUTS_DIR = path.join(__dirname, '../outputs');
 const RUN_DIR = path.join(OUTPUTS_DIR, 'run');
 const EMIT = process.env.PF_EMIT === '1';
@@ -6123,8 +6405,8 @@ console.log(EMIT
     ? '  MODE: REPORT GENERATION (PF_EMIT=1) — the committed artifacts WILL be rewritten'
     : '  MODE: verification — committed artifacts are read-only; results go to outputs/run/');
 if (!fs.existsSync(DATASET_PATH)) {
-    console.log('\n  [ERROR] Dataset not found at data/mines-master-6900bets.json');
-    console.log('  Cannot run verification without the captured master dataset.');
+    console.log(`\n  [ERROR] Dataset not found at ${pins_1.DATASET_RELATIVE_PATH}`);
+    console.log('  Cannot run verification without the scored production dataset.');
     console.log('\n══════════════════════════════════════════════════════════\n');
     process.exit(1);
 }
@@ -6143,22 +6425,22 @@ for (const b of bets) {
     byHash.set(b.hashedServerSeed, arr);
 }
 const phaseABets = bets.filter(b => b.phase === 'A');
-const phaseBBets = bets.filter(b => b.phase === 'B');
 const phaseCBets = bets.filter(b => b.phase === 'C');
 const phaseDBets = bets.filter(b => b.phase === 'D');
-const phaseEBets = bets.filter(b => b.phase === 'E');
 if (!fs.existsSync(OUTPUTS_DIR))
     fs.mkdirSync(OUTPUTS_DIR, { recursive: true });
-console.log(`  Dataset: ${bets.length} bets | Seeds: ${seeds.length} | SHA-256 verified`);
-console.log(`  Phase A:${phaseABets.length} B:${phaseBBets.length} C:${phaseCBets.length} D:${phaseDBets.length} E:${phaseEBets.length}\n`);
+const prodCapture = (0, prod_capture_1.loadProdCapture)(path.join(__dirname, '..'));
+console.log(`  Dataset: ${bets.length} bets | Seeds: ${seeds.length} | SHA-256 verified | raw captures ${prodCapture.problem ? `NOT LOADED (${prodCapture.problem})` : `${prodCapture.files.length} files, ${prodCapture.lines} lines, SHA-256 verified`}`);
+console.log(`  Phase A:${phaseABets.length} (of which top-up A+:${bets.filter(b => b.phaseId === 'A+').length}) C:${phaseCBets.length} D:${phaseDBets.length}\n`);
 const ctx = {
     bets, seeds, seedMap, byHash,
-    phaseA: phaseABets, phaseB: phaseBBets, phaseC: phaseCBets, phaseD: phaseDBets, phaseE: phaseEBets,
+    phaseA: phaseABets, phaseC: phaseCBets, phaseD: phaseDBets,
     outputsDir: OUTPUTS_DIR,
     datasetSha256: ds.sha256,
     expectedDatasetHash: pins_1.EXPECTED_DATASET_HASH,
     meta: ds.meta,
     simArtifact: null,
+    prodCapture,
 };
 const results = [
     ...commitment.run(ctx),
@@ -6170,8 +6452,13 @@ const results = [
     ...phaseE.run(ctx),
     ...simulation.run(ctx),
     ...standardization.run(ctx),
-    ...supplement.run(ctx),
+    ...rawCapture.run(ctx),
 ];
+if (results.length !== pins_1.EXPECTED_STEPS || new Set(results.map(r => r.step)).size !== pins_1.EXPECTED_STEPS) {
+    console.log(`\n  [ERROR] ${results.length} step results (${new Set(results.map(r => r.step)).size} distinct step numbers), ${pins_1.EXPECTED_STEPS} declared in src/pins.ts EXPECTED_STEPS.`);
+    console.log('  The run is incomplete: no summary is printed and no result is written.');
+    process.exit(1);
+}
 const labelled = results.map(r => ({ ...r, ...(0, profile_map_1.labelFor)(r.step) }));
 const infoItems = statistical.run(ctx);
 const rtpClaim = (0, rtp_settings_1.runRtpClaimGate)();
@@ -6229,12 +6516,16 @@ const verificationBody = {
     datasetSha256: ds.sha256,
     artifactHashes: {
         dataset: {
-            file: 'data/mines-master-6900bets.json',
+            file: pins_1.DATASET_RELATIVE_PATH,
             expected: pins_1.EXPECTED_DATASET_HASH,
             actual: ds.sha256,
             match: ds.sha256 === pins_1.EXPECTED_DATASET_HASH,
             sha256: ds.sha256,
         },
+        ...Object.fromEntries(pins_1.PROD_CAPTURES.map(c => {
+            const actual = prodCapture.files.find(f => f.capture === c.capture)?.sha256 ?? null;
+            return [`rawCapture${c.capture}`, { file: c.file, expected: c.sha256, actual, match: actual === c.sha256 }];
+        })),
         simulation: ctx.simArtifact,
     },
     steps: labelled,
@@ -6244,7 +6535,7 @@ const verificationBody = {
 };
 const step19 = results.find(r => r.step === 19);
 const figuresBody = {
-    ...(0, figures_1.computeAuditFigures)({ bets, seeds, seedMap, phaseD: phaseDBets, outputsDir: OUTPUTS_DIR, datasetSha256: ds.sha256 }),
+    ...(0, figures_1.computeAuditFigures)({ bets, seeds, seedMap, outputsDir: OUTPUTS_DIR, datasetSha256: ds.sha256, prodCapture }),
 };
 const VERIFICATION_FILE = 'verification-results.json';
 const write = (dir, name, body) => fs.writeFileSync(path.join(dir, name), JSON.stringify(body, null, 2));
@@ -6265,7 +6556,7 @@ if (EMIT) {
         console.log(`  REPORT GENERATION: rewrote outputs/${figures_1.AUDIT_FIGURES_FILE}`);
     }
     else {
-        console.log(`  NOT written: outputs/${figures_1.AUDIT_FIGURES_FILE} — Step 19 returned ${step19?.status ?? '(absent)'} (H-B).`);
+        console.log(`  NOT written: outputs/${figures_1.AUDIT_FIGURES_FILE} — Step 19 returned ${step19?.status ?? '(absent)'}.`);
         console.log('  The copy on disk is left untouched so the discrepancy stays visible.');
         console.log('  Regenerate deliberately with `npm run figures`, then re-run `npm run verify`.');
     }

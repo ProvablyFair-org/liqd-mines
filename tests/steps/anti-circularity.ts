@@ -13,14 +13,16 @@
  *       integers, the total (must equal C(25,k)) and the subsets avoiding a fixed
  *       m-tile mine set (must equal C(25-m,k)). Nothing is multiplied or divided —
  *       a binomial-coefficient error is inexpressible in a tally. Integer equality,
- *       no tolerance. Covers every m at the depths the game data exercises
- *       (k ≤ min(5, 25−m); Phase E's maximum reveal depth is 5).
+ *       no tolerance. Covers every m at k ≤ min(5, 25−m), and every production setting
+ *       deeper than that — (1,10), (1,15), (3,6), (3,8), (5,6) (src/pins.ts PROD_DEPTHS) — so every
+ *       depth played on production is tallied, not only computed.
  */
 
 import type { StepResult } from './context';
 import { step } from './context';
 import type { VerifyContext } from './context';
 import { winProbability, combination, GRID, MINE_COUNTS } from '../../src/config';
+import { PROD_DEPTHS } from '../../src/pins';
 
 export function run(_ctx: VerifyContext): StepResult[] {
   let maxSumDev = 0, worstM = 1;
@@ -63,9 +65,13 @@ export function run(_ctx: VerifyContext): StepResult[] {
   // the closed form. Enumeration is a plain depth-first walk over index tuples.
   let countCases = 0, countMismatches = 0;
   let worstCount = '';
-  for (const m of MINE_COUNTS) {
-    const kMax = Math.min(5, GRID - m);
-    for (let k = 1; k <= kMax; k++) {
+  const anchorCases: Array<[number, number]> = [];
+  for (const m of MINE_COUNTS) for (let k = 1; k <= Math.min(5, GRID - m); k++) anchorCases.push([m, k]);
+  for (const [ms, ks] of Object.entries(PROD_DEPTHS)) for (const k of ks) if (k > 5) anchorCases.push([Number(ms), k]);
+  let playedDeepCases = 0;
+  for (const [m, k] of anchorCases) {
+    if (k > 5) playedDeepCases++;
+    {
       let total = 0, avoiding = 0;
       const idx: number[] = [];
       const walk = (start: number): void => {
@@ -95,7 +101,7 @@ export function run(_ctx: VerifyContext): StepResult[] {
     `winProbability(m,k) = C(25-m,k)/C(25,k), pure combinatorics — no operator data (${mCovered}/${MINE_COUNTS.length} mineCounts, ${mkCovered} (m,k) pairs). `
       + `k=1 outcome space Σ (safe+mine) = 1.0 exactly (max dev ${maxSumDev.toExponential(3)}, m=${worstM}); `
       + `combinatorial form == product Π(25-m-i)/(25-i) over all reachable m,k (max dev ${maxProdDev.toExponential(3)}, ${worstMk}); `
-      + `counting anchor: ${countCases} (m,k) cases enumerated subset-by-subset, integer equality with C(25,k) and C(25-m,k) — ${countMismatches} mismatches; `
+      + `counting anchor: ${countCases} (m,k) cases enumerated subset-by-subset (every m at k ≤ 5, plus the ${playedDeepCases} production settings deeper than 5), integer equality with C(25,k) and C(25-m,k) — ${countMismatches} mismatches; `
       + `reference-formula integrity: ${nonFiniteRef} non-finite results${firstNonFinite ? ` (first: ${firstNonFinite})` : ''} — a NaN deviation satisfies every \`>\` comparison it appears in, so it is counted, not silently skipped`
       + (countMismatches > 0 ? ` (first: ${worstCount})` : '') + '.',
   );

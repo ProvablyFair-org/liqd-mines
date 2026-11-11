@@ -1,11 +1,11 @@
 /**
  * REGRESSION SPECS — one per closed defect, each carrying the counterexample that closed it, so
  * the class stays closed. A registry that only records a defect in prose gets the defect back.
- * The labels below are the suite names printed by this file.
+ * Each suite is named for what it checks; every suite name starts with "Regression:".
  *
- * QA-01  an exact-zero / exact-equality screen rejects a GENUINE million-round result
- * QA-03  float multiply-then-floor understates 31 of the 300 reference display multipliers
- * QA-12  the modulo-bias rejection branch, exercised by a real deterministic vector
+ *  an exact-zero / exact-equality screen rejects a GENUINE million-round result
+ *  float multiply-then-floor understates 31 of the 300 reference display multipliers
+ *  the modulo-bias rejection branch, exercised by a real deterministic vector
  */
 
 import { strict as assert } from 'node:assert';
@@ -24,76 +24,72 @@ import {
 } from '../../src/rng';
 import { deriveSeedHex, isMasterSeed, SEED_DERIVATION_VERSION } from '../../src/seed-derivation';
 import { nullCentreSupport } from '../steps/simulation';
-import {
-  earlyBootstrapPDigest, LEGACY_EARLY_BOOTSTRAP_P_DIGEST,
-  LEGACY_BOOTSTRAP_ARTIFACT_GENERATED_AT,
-  LEGACY_BOOTSTRAP_ARTIFACT_SHA256, LEGACY_BOOTSTRAP_FIXTURE_RELATIVE_PATH,
-} from '../../src/pins';
+import { earlyBootstrapPDigest } from '../../src/pins';
 import {
   falseAlarmAccounting, exactSeScreenRejection, bernsteinSeScreenBound,
 } from '../../src/false-alarm';
 
 // ══════════════════════════════════════════════════════════════════════════════════════
-//  QA-01 — A VALID EXACT-MEAN RESULT IS NOT FABRICATION
+//  A VALID EXACT-MEAN RESULT IS NOT FABRICATION
 // ══════════════════════════════════════════════════════════════════════════════════════
 // The counterexample, replayed here rather than quoted. At m=1 the only mine IS the
 // first drawn tile, so the k=1 win condition (tile 1 safe) is exactly `firstMineTile !== 1`, and
 // `firstMineTile === revealMines(...)[0]` is asserted in rngTests.ts — so 1,000,000 one-HMAC
 // draws reproduce the full-shuffle result at 1/25 of the cost.
-const QA01_SERVER = 'f4661fd009f7f0da9193607ffcb4a18d';
-const QA01_CLIENT = 'e944296a042a94bc2ab8dce48a3def1f';
-const QA01_N = 1_000_000;
-const QA01_M = 1;
+const R01_SERVER = 'f4661fd009f7f0da9193607ffcb4a18d';
+const R01_CLIENT = 'e944296a042a94bc2ab8dce48a3def1f';
+const R01_N = 1_000_000;
+const R01_M = 1;
 
-describe('QA-01: the support screen accepts a genuine exact-mean million-round result', () => {
+describe('Regression: the support screen accepts a genuine exact-mean million-round result', () => {
   let wins = 0;
   let winsAt1000 = 0;
 
   before(function () {
     this.timeout(600_000);
-    for (let nonce = 0; nonce < QA01_N; nonce++) {
-      if (firstMineTile(QA01_SERVER, QA01_CLIENT, nonce) !== 1) wins++;
+    for (let nonce = 0; nonce < R01_N; nonce++) {
+      if (firstMineTile(R01_SERVER, R01_CLIENT, nonce) !== 1) wins++;
       if (nonce === 999) winsAt1000 = wins;
     }
   });
 
   it('replays to exactly 960,000 wins — the fair expectation, to the win', () => {
     assert.equal(wins, 960_000);
-    assert.equal(wins, (QA01_N * (GRID - QA01_M)) / GRID);
+    assert.equal(wins, (R01_N * (GRID - R01_M)) / GRID);
     assert.equal(winsAt1000, 968);
   });
 
   it('and therefore produces simRTP === theoreticalRTP exactly', () => {
-    const mult1 = theoreticalRTP(QA01_M, 1) / ((GRID - QA01_M) / GRID);
-    const simRTP = (wins / QA01_N) * mult1;
-    assert.equal(simRTP, theoreticalRTP(QA01_M, 1));
+    const mult1 = theoreticalRTP(R01_M, 1) / ((GRID - R01_M) / GRID);
+    const simRTP = (wins / R01_N) * mult1;
+    assert.equal(simRTP, theoreticalRTP(R01_M, 1));
     assert.equal(simRTP, 0.99);
   });
 
   it('POSITIVE CONTROL — the support screen returns NO fault and marks it a supported exact mean', () => {
-    const mult1 = theoreticalRTP(QA01_M, 1) / ((GRID - QA01_M) / GRID);
+    const mult1 = theoreticalRTP(R01_M, 1) / ((GRID - R01_M) / GRID);
     const row = {
-      mineCount: QA01_M,
-      simRTP: (wins / QA01_N) * mult1,
-      theoreticalRTP: theoreticalRTP(QA01_M, 1),
+      mineCount: R01_M,
+      simRTP: (wins / R01_N) * mult1,
+      theoreticalRTP: theoreticalRTP(R01_M, 1),
       jointMaxAbsZ: null,
-      convergence: [{ n: 1_000, wins: winsAt1000 }, { n: QA01_N, wins }],
+      convergence: [{ n: 1_000, wins: winsAt1000 }, { n: R01_N, wins }],
     };
-    const v = nullCentreSupport(row, QA01_N);
+    const v = nullCentreSupport(row, R01_N);
     assert.deepEqual(v.faults, [], `a genuine seed-reproducible result must not be called fabrication: ${v.faults.join('; ')}`);
     assert.equal(v.supportedExactMean, true);
   });
 
   it('NEGATIVE CONTROL — the same equality with a FABRICATED count still fails, on the count', () => {
     const row = {
-      mineCount: QA01_M,
-      simRTP: theoreticalRTP(QA01_M, 1),
-      theoreticalRTP: theoreticalRTP(QA01_M, 1),
+      mineCount: R01_M,
+      simRTP: theoreticalRTP(R01_M, 1),
+      theoreticalRTP: theoreticalRTP(R01_M, 1),
       jointMaxAbsZ: null,
       // the row CLAIMS a zero deviation while its own final checkpoint records something else
-      convergence: [{ n: 1_000, wins: winsAt1000 }, { n: QA01_N, wins: wins - 7 }],
+      convergence: [{ n: 1_000, wins: winsAt1000 }, { n: R01_N, wins: wins - 7 }],
     };
-    const v = nullCentreSupport(row, QA01_N);
+    const v = nullCentreSupport(row, R01_N);
     assert.equal(v.supportedExactMean, false);
     assert.equal(v.faults.length, 1);
     assert.match(v.faults[0], /claims exactly 960000 wins, but the row's own final checkpoint records 959993/);
@@ -101,19 +97,19 @@ describe('QA-01: the support screen accepts a genuine exact-mean million-round r
 
   it('NEGATIVE CONTROL — the equality with NO corroborating checkpoint fails', () => {
     const v = nullCentreSupport({
-      mineCount: QA01_M, simRTP: 0.99, theoreticalRTP: 0.99, jointMaxAbsZ: null, convergence: [],
-    }, QA01_N);
+      mineCount: R01_M, simRTP: 0.99, theoreticalRTP: 0.99, jointMaxAbsZ: null, convergence: [],
+    }, R01_N);
     assert.equal(v.supportedExactMean, false);
     assert.match(v.faults[0] ?? '', /no n=1000000 convergence checkpoint/);
   });
 
   it('jointMaxAbsZ === 0 is screened only where N·q is not an integer', () => {
     // m=2: N·q = 1e6 · C(23,0)/C(25,2) = 1e6/300 = 3,333.33… — max|z| = 0 is UNREACHABLE.
-    const bad = nullCentreSupport({ mineCount: 2, simRTP: 1, theoreticalRTP: 2, jointMaxAbsZ: 0 }, QA01_N);
+    const bad = nullCentreSupport({ mineCount: 2, simRTP: 1, theoreticalRTP: 2, jointMaxAbsZ: 0 }, R01_N);
     assert.equal(bad.faults.length, 1);
     assert.match(bad.faults[0], /not an integer — outside the support/);
     // m=3: N·q = 1e6 · C(23,1)/C(25,3) = 1e6 · 23/2300 = 10,000 — attainable, so NOT a fault.
-    const ok = nullCentreSupport({ mineCount: 3, simRTP: 1, theoreticalRTP: 2, jointMaxAbsZ: 0 }, QA01_N);
+    const ok = nullCentreSupport({ mineCount: 3, simRTP: 1, theoreticalRTP: 2, jointMaxAbsZ: 0 }, R01_N);
     assert.deepEqual(ok.faults, []);
   });
 
@@ -121,15 +117,15 @@ describe('QA-01: the support screen accepts a genuine exact-mean million-round r
     const v = nullCentreSupport({
       mineCount: 7, simRTP: 1, theoreticalRTP: 2, jointMaxAbsZ: 1.4,
       layoutR1: 0, layoutR1Z: 0, layoutRunsZ: 0,
-    }, QA01_N);
+    }, R01_N);
     assert.deepEqual(v.faults, []);
   });
 });
 
 // ══════════════════════════════════════════════════════════════════════════════════════
-//  QA-03 — THE REFERENCE DISPLAY GRID IS AN INTEGER FLOOR, NOT A FLOAT FLOOR
+//  THE REFERENCE DISPLAY GRID IS AN INTEGER FLOOR, NOT A FLOAT FLOOR
 // ══════════════════════════════════════════════════════════════════════════════════════
-describe('QA-03: display multiplier floors in exact integer arithmetic', () => {
+describe('Regression: display multiplier floors in exact integer arithmetic', () => {
   /** Independently written rational floor — 99/100 spelled out, not imported from src/config. */
   const independentCents = (m: number, k: number): bigint => {
     let n = 99n, d = 100n;
@@ -200,7 +196,7 @@ describe('QA-03: display multiplier floors in exact integer arithmetic', () => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════════════
-//  QA-12 — THE MODULO-BIAS REJECTION BRANCH, EXERCISED
+//  THE MODULO-BIAS REJECTION BRANCH, EXERCISED
 // ══════════════════════════════════════════════════════════════════════════════════════
 // The report says the branch is ASSUMED and unexercised by the CAPTURE (0 rejections in 172,500
 // draws, expectation 2.024e-4). That remains true of the capture. It is NOT true of the Pass-1
@@ -208,7 +204,7 @@ describe('QA-03: display multiplier floors in exact integer arithmetic', () => {
 // row, and at nonce 760455 / cursor 12 the first 4-byte chunk lands in [maxFair, 2³²) and IS
 // rejected. Zero observed rejections in a capture is not impossibility, and this is the test that
 // makes the branch a measured code path rather than a claim.
-describe('QA-12: modulo-bias rejection — the saved deterministic vector', () => {
+describe('Regression: modulo-bias rejection — the saved deterministic vector', () => {
   const SS = '1f1da0da5907129a0043f5ac8a12b5ee';
   const CS = '097bf01483879668f626781b35b297c2';
   const NONCE = 760455, CURSOR = 12, RANGE = 13, M = 5;
@@ -261,10 +257,10 @@ describe('QA-12: modulo-bias rejection — the saved deterministic vector', () =
 });
 
 // ══════════════════════════════════════════════════════════════════════════════════════
-//  QA-05 — THE DETERMINISTIC SEED DERIVATION IS VERSIONED AND DOMAIN-SEPARATED
+//  THE DETERMINISTIC SEED DERIVATION IS VERSIONED AND DOMAIN-SEPARATED
 // ══════════════════════════════════════════════════════════════════════════════════════
-describe('QA-05: deterministic, versioned, domain-separated seed derivation', () => {
-  const MASTER = '00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff';
+describe('Regression: deterministic, versioned, domain-separated seed derivation', () => {
+  const MASTER = 'ffeeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100';
 
   it('is a pure function of (master, domain, index)', () => {
     assert.equal(deriveSeedHex(MASTER, 'pass1-server:m=3', 0), deriveSeedHex(MASTER, 'pass1-server:m=3', 0));
@@ -276,7 +272,7 @@ describe('QA-05: deterministic, versioned, domain-separated seed derivation', ()
     assert.notEqual(a, deriveSeedHex(MASTER, 'pass1-client:m=3', 0));
     assert.notEqual(a, deriveSeedHex(MASTER, 'pass1-server:m=4', 0));
     assert.notEqual(a, deriveSeedHex(MASTER, 'pass1-server:m=3', 1));
-    assert.notEqual(a, deriveSeedHex(MASTER.replace(/^00/, '01'), 'pass1-server:m=3', 0));
+    assert.notEqual(a, deriveSeedHex(MASTER.replace(/^ff/, 'fe'), 'pass1-server:m=3', 0));
   });
 
   it('binds the version string, so a future expansion cannot masquerade as this one', () => {
@@ -297,96 +293,16 @@ describe('QA-05: deterministic, versioned, domain-separated seed derivation', ()
 });
 
 // ══════════════════════════════════════════════════════════════════════════════════════
-//  QA-05b — THE LEGACY BOOTSTRAP EXCEPTION IS ONE PINNED ARTIFACT, NOT "ANY FILE WITHOUT
-//           METADATA"
+//  THE LIVE ARTIFACT MUST CARRY ITS REPLAY METADATA (G-VALID)
 // ══════════════════════════════════════════════════════════════════════════════════════
-// Executed: a forged earlyBootstrapP correctly
-// failed Step 17, but setting `seedDerivation` to an unknown string, or `masterSeed` to
-// `not-hex`, restored 21/21 PROVABLY FAIR — Full Pass, exit 0. Invalid metadata DISABLES the
-// check instead of failing it unless this is pinned, and deleting the metadata altogether buys
-// the same leniency.
-//
-// The step-level rule is exercised end-to-end by forgeries A27–A30. What is pinned HERE is the
-// other half: that the digest identifying the one legacy artifact actually tracks the values it
-// claims to.
-//
-// ──────────────────────────────────────────────────────────────────────────────────────
-// WHY THE ASSERTION IS MADE AGAINST A FIXTURE, NOT THE LIVE ARTIFACT.
-// ──────────────────────────────────────────────────────────────────────────────────────
-// Reading the MUTABLE `outputs/simulation-results.json` here and demanding the historical
-// digest, the absence of replay metadata and the historical timestamp does not work. The
-// producer deliberately writes a master seed, a derivation version, a fresh timestamp and newly
-// drawn bootstrap values, so re-running the documented pipeline makes the unit suite reject the
-// package's own output. Executed at reduced counts (ROUNDS_PER_CONFIG=1000,
-// PASS2_NONCES=1000, BOOTSTRAP_REPS=1000): simulate exit 0, then `npm test` → 32 passing,
-// 3 failing, exit 3, the fresh vector digesting to 4991688f6d269182da3a7b9318e955d450cc39c…
-//
-// The answer is NOT to drop the pin. It is to give it a subject that no pipeline step writes: the
-// reviewed artifact is copied byte-for-byte to tests/fixtures/legacy-simulation-results.json
-// and the historical assertions are made there, under its own SHA-256. What is asserted about
-// the LIVE artifact is the rule Step 17 actually implements — it must be schema-2 (all three
-// replay fields, usable) or schema-1 (none of them, and then it must BE the pinned artifact).
-describe('QA-05b: the legacy earlyBootstrapP pin (fixture — immutable by construction)', () => {
-  const fixturePath = path.join(__dirname, '..', 'fixtures', 'legacy-simulation-results.json');
-  const fixtureBytes = fs.readFileSync(fixturePath);
-  const legacy = JSON.parse(fixtureBytes.toString('utf-8'));
-  const rows = legacy.pass2_casino_seeds.results as any[];
-
-  it('the fixture is the exact file that was reviewed — SHA-256 pinned in src/pins.ts', () => {
-    assert.equal(createHash('sha256').update(fixtureBytes).digest('hex'), LEGACY_BOOTSTRAP_ARTIFACT_SHA256);
-    assert.equal(
-      path.relative(path.join(__dirname, '..', '..'), fixturePath).split(path.sep).join('/'),
-      LEGACY_BOOTSTRAP_FIXTURE_RELATIVE_PATH,
-    );
-  });
-
-  it('the fixture is the one the legacy exception covers', () => {
-    assert.equal(earlyBootstrapPDigest(rows), LEGACY_EARLY_BOOTSTRAP_P_DIGEST);
-  });
-
-  it('the fixture is the legacy one — it records no replay metadata at all', () => {
-    assert.equal(legacy.masterSeed, undefined);
-    assert.equal(legacy.seedDerivation, undefined);
-    assert.equal(legacy.pass2_casino_seeds.bootstrapSeedDerivation, undefined);
-    assert.equal(legacy.generatedAt, LEGACY_BOOTSTRAP_ARTIFACT_GENERATED_AT);
-  });
-
-  it('moves off the pin when ONE p moves to a neighbouring legal lattice point (forgery A27)', () => {
-    const reps = legacy.pass2_casino_seeds.bootstrapReps;
-    const forged = rows.map((r, i) => i !== 0 ? r : {
-      ...r, earlyBootstrapP: (Math.round(r.earlyBootstrapP * (reps + 1)) + 1) / (reps + 1),
-    });
-    assert.notEqual(earlyBootstrapPDigest(forged), LEGACY_EARLY_BOOTSTRAP_P_DIGEST);
-  });
-
-  it('is order-insensitive, so a benign row reordering is not a fault (G-VALID)', () => {
-    assert.equal(earlyBootstrapPDigest([...rows].reverse()), earlyBootstrapPDigest(rows));
-    assert.equal(earlyBootstrapPDigest([...rows].reverse()), LEGACY_EARLY_BOOTSTRAP_P_DIGEST);
-  });
-
-  it('cannot be satisfied by a truncated or blanked row set', () => {
-    assert.notEqual(earlyBootstrapPDigest(rows.slice(0, rows.length - 1)), LEGACY_EARLY_BOOTSTRAP_P_DIGEST);
-    assert.notEqual(earlyBootstrapPDigest(rows.map(() => ({}))), LEGACY_EARLY_BOOTSTRAP_P_DIGEST);
-  });
-});
-
-// ══════════════════════════════════════════════════════════════════════════════════════
-//  QA-05c — THE LIVE ARTIFACT MUST BE ONE OF THE TWO SUPPORTED SHAPES (G-VALID)
-// ══════════════════════════════════════════════════════════════════════════════════════
-// What is asserted about `outputs/simulation-results.json` is the rule, not the history. The
-// rule is the one tests/steps/simulation.ts Step 17 implements, restated here so a rebuild is
-// checked by `npx mocha` as well as by `npm run verify`:
-//
-//   schema-2 — `masterSeed`, `seedDerivation` and `pass2_casino_seeds.bootstrapSeedDerivation`
-//              all present, the master seed usable, both versions the one this build derives
-//              under. Every artifact the current src/simulate.ts writes is this shape, and it
-//              takes the replay path.
-//   schema-1 — none of the three present, and the earlyBootstrapP vector digests to the pin.
-//              Exactly one artifact in the world satisfies this: the 2026-08-05 capture-era run.
-//
-// Anything else — partial metadata, an unusable master seed, an unknown derivation version, or
-// a metadata-stripped file that is not the pinned one — is neither, and fails.
-describe('QA-05c: the live simulation artifact declares a supported replay format', () => {
+// What is asserted about `outputs/simulation-results.json` is the rule tests/steps/simulation.ts
+// Step 17 implements, restated here so a rebuild is checked by `npx mocha` as well as by
+// `npm run verify`: `masterSeed`, `seedDerivation` and
+// `pass2_casino_seeds.bootstrapSeedDerivation` all present, the master seed usable, both versions
+// the one this build derives under. Anything else — partial metadata, an unusable master seed, an
+// unknown derivation version, or a metadata-stripped file — fails: there is no path on which
+// earlyBootstrapP is taken on trust.
+describe('Regression: the live simulation artifact declares a supported replay format', () => {
   const sim = JSON.parse(
     fs.readFileSync(path.join(__dirname, '..', '..', 'outputs', 'simulation-results.json'), 'utf-8'),
   );
@@ -398,21 +314,13 @@ describe('QA-05c: the live simulation artifact declares a supported replay forma
   ];
   const present = replayFields.filter(([, v]) => v !== undefined);
 
-  it('is schema-2 (master-seeded, replayable) or schema-1 (the one pinned legacy artifact)', () => {
-    if (present.length === 0) {
-      // schema-1: the legacy exception, and it is an exception for ONE file.
-      assert.equal(earlyBootstrapPDigest(rows), LEGACY_EARLY_BOOTSTRAP_P_DIGEST,
-        'artifact carries no replay metadata and is not the pinned legacy artifact — stripping the metadata is not a way to have earlyBootstrapP taken on trust');
-      assert.equal(sim.generatedAt, LEGACY_BOOTSTRAP_ARTIFACT_GENERATED_AT);
-    } else {
-      // schema-2: all three, or nothing. Partial metadata is a fault, not a lenient path.
-      assert.equal(present.length, replayFields.length,
-        `replay metadata INCOMPLETE — carries ${present.map(([n]) => n).join(', ')}; all three are required together or none of them`);
-      assert.equal(isMasterSeed(sim.masterSeed), true,
-        `masterSeed ${JSON.stringify(sim.masterSeed)} is not a usable master seed — the bootstrap null cannot be rebuilt from it, so the run is UNVERIFIABLE, not exempt`);
-      assert.equal(sim.seedDerivation, SEED_DERIVATION_VERSION);
-      assert.equal(sim.pass2_casino_seeds.bootstrapSeedDerivation, SEED_DERIVATION_VERSION);
-    }
+  it('is master-seeded and replayable: all three replay fields present and usable', () => {
+    assert.equal(present.length, replayFields.length,
+      `replay metadata INCOMPLETE — carries ${present.map(([n]) => n).join(', ') || 'none'}; all three are required`);
+    assert.equal(isMasterSeed(sim.masterSeed), true,
+      `masterSeed ${JSON.stringify(sim.masterSeed)} is not a usable master seed — the bootstrap null cannot be rebuilt from it, so the run is UNVERIFIABLE, not exempt`);
+    assert.equal(sim.seedDerivation, SEED_DERIVATION_VERSION);
+    assert.equal(sim.pass2_casino_seeds.bootstrapSeedDerivation, SEED_DERIVATION_VERSION);
   });
 
   it('its earlyBootstrapP digest is order-insensitive — reordered rows digest to the ORIGINAL rows', () => {
@@ -435,7 +343,7 @@ describe('QA-05c: the live simulation artifact declares a supported replay forma
 });
 
 // ══════════════════════════════════════════════════════════════════════════════════════
-//  QA-02c — THE FALSE-ALARM SUM IS NOMINAL, AND THE COUNTEREXAMPLE IS RE-DERIVED HERE
+//  THE FALSE-ALARM SUM IS NOMINAL, AND THE COUNTEREXAMPLE IS RE-DERIVED HERE
 // ══════════════════════════════════════════════════════════════════════════════════════
 // Executed, in two halves.
 //
@@ -453,7 +361,7 @@ describe('QA-05c: the live simulation artifact declares a supported replay forma
 // The counterexample must not be taken on trust from the module that publishes it, so it is
 // RE-DERIVED here by a different decomposition: term-by-term BigInt sums of both tails, against
 // the module's cumulative-recurrence-plus-complement. Two independent routes, same number.
-describe('QA-02c: the false-alarm sum is nominal — the exact binomial refutes the bound reading', () => {
+describe('Regression: the false-alarm sum is nominal — the exact binomial refutes the bound reading', () => {
   const N = 1000;
   const M = 24;
 

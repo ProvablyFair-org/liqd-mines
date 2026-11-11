@@ -9,8 +9,8 @@
  *     a discrete binomial count; Nq ≥ 3,333 here, so the error is far below the threshold)
  *   - Serial tests of FIRST-DRAWN TILE VALUES (lag-1 + runs) — scored. NOT whole-layout serial
  *     coverage: dependence confined to tiles the first draw never touches is invisible to it (DL-8).
- * Pass 2: cherry-pick test on the first-draw statistic over the 0..49 early window
- *   with a parametric-bootstrap null (analytic chi² invalid at n=50).
+ * Pass 2: cherry-pick test on the first-draw statistic over the early window (the captured nonces,
+ *   0..199 on production) with a parametric-bootstrap null.
  *
  * ══════════════════════════════════════════════════════════════════════════════════════
  *  WHY THIS FILE IS AS LONG AS IT IS — G-BIND
@@ -18,9 +18,9 @@
  * These two steps are the only ones in the suite that score a PIPELINE ARTIFACT rather than
  * the captured dataset. Since 2026-09-24 simulation-results.json is SHA-256 pinned too (Step 19,
  * src/pins.ts ARTIFACT_PINS) and `npm run simulate` writes to outputs/run/, but a pin only says the
- * file is the committed one — a forger re-pins. Until then it was the one input an attacker (or
- * an honest mistake) could shape freely, and an external review demonstrated
- * exactly that: five separate hand-built artifacts — 138 empty `{}` seed rows; 138 copies of
+ * file is the committed one — a forger re-pins. Until then it was the one input a forger (or
+ * an honest mistake) could shape freely, and it was demonstrated
+ * exactly that: five separate hand-built artifacts — empty `{}` seed rows; copies of
  * one unflagged epoch row; `configs: 1` with a single real-shaped row; 24 copies of the m=1
  * row; every `simRTP` and `theoreticalRTP` set to 0.5 — each scored **Full Pass**. Every one
  * of them was internally consistent. None of them corresponded to a run that happened.
@@ -34,7 +34,7 @@
  *      including a field a forger adds and a field a future simulate.ts starts emitting.
  *      This is the only guard here that fails closed on a forgery nobody has thought of yet.
  *   1. CARDINALITY AGAINST A CONSTANT. 24 configs comes from MINE_COUNTS.length in
- *      src/config.ts and 138 seeds from ctx.seeds — never from `artifact.configs` or
+ *      src/config.ts and the seeds from ctx.seeds — never from `artifact.configs` or
  *      `artifact.seeds_tested`, which the forger controls. A threshold computed from an
  *      artifact-supplied sample size is forger-controlled: lower n and the band widens until
  *      the forgery fits, which is why roundsPerConfig carries a hard floor before it is used.
@@ -63,9 +63,8 @@ import { inverseCriticalZ, chiSquaredTest, chiSquaredPValue, normalTwoSidedP } f
 import { combination, GRID, MINE_COUNTS, HOUSE_EDGE, theoreticalRTP, minesMultiplierExact, pairCoOccurProb, winProbability } from '../../src/config';
 import { revealMines, firstMineTile } from '../../src/rng';
 import { deriveSeedHex, isMasterSeed, SEED_DERIVATION_VERSION } from '../../src/seed-derivation';
-import { earlyBootstrapPDigest, LEGACY_EARLY_BOOTSTRAP_P_DIGEST, LEGACY_BOOTSTRAP_ARTIFACT_GENERATED_AT } from '../../src/pins';
 import { falseAlarmAccounting, ENFORCED_ROUNDS_PER_CONFIG } from '../../src/false-alarm';
-import { EXPECTED_EPOCH_SIZE, NONCE_BASE } from '../../src/pins';
+import { EPOCH_PLAN, EPOCH_SIZES, EXPECTED_BETS, PASS2_EARLY_WINDOW, PROD_ON_GRID_TOLERANCE, NONCE_BASE } from '../../src/pins';
 import { numbersAgree, DIFF_ATOL, DIFF_RTOL } from '../../src/diff';
 import { runReplayJobs } from '../../src/replay-pool';
 import type { ReplayJob } from '../../src/replay-pool';
@@ -243,12 +242,18 @@ const MIN_ROUNDS_PER_CONFIG = 1_000_000;
 
 /**
  * SERVED-CONFIG CHERRY-PICK TEST (MINES-21) — THE RULE, IN CODE.
- * Written into this file on 2026-09-24, BEFORE the statistic was first computed on this capture,
- * and not changed after it was (flag a seed at bootstrap p ≤ 0.01; family gate = the binomial upper tail at family
- * α = 0.001 over the served epochs; pooled early-window z below −3.090, the one-sided family α).
- * Every revealed seed × 10,000 nonces; the early window is the captured nonce range.
+ * The constants below were written into this file before the statistic was computed on any production
+ * capture (flag a seed at bootstrap p ≤ 0.01; family gate = the binomial upper tail at family α = 0.001
+ * over the served epochs; pooled early-window z below −3.090, the one-sided family α).
+ * The early window of an epoch is its captured nonce range, 0 … size − 1 with `size` the epoch's length
+ * in the plan (src/pins.ts EPOCH_PLAN: 100, 124, 190 or 200). Every epoch is replayed over
+ * SERVED_WINDOWS of its own lengths — SERVED_WINDOWS × size nonces, between 20,000 and 40,000, all at or
+ * above the 10,000-nonce floor — so every epoch's bootstrap p has the same resolution, 1/SERVED_WINDOWS.
  */
-const SERVED_NONCES = 10_000;
+const SERVED_WINDOWS = 200;
+const servedNonces = (size: number) => SERVED_WINDOWS * size;
+/** MINES-21 floor: nonces replayed per revealed seed. */
+const SERVED_NONCE_FLOOR = 10_000;
 const SERVED_ALPHA = 0.01;
 const SERVED_FAMILY_ALPHA = 0.001;
 const SERVED_POOLED_Z = 3.090;
@@ -270,22 +275,22 @@ function normalCdf(x: number): number {
 
 /**
  * The configuration the casino served for one captured round: its mine count and the tiles the
- * capture ASKED to open. The capture opens `reveals` consecutive tiles from its first pick
- * (capture/capture-mines.reference.mjs playRound: tile_r = ((start + r − 1) mod 25) + 1), and the
- * operator stops at a bust, so a loss records only the prefix up to the mine. The plan is rebuilt
- * from that rule and REQUIRED to agree with every recorded opened sequence: a round whose opened
- * tiles are not a prefix of its rebuilt plan (or a win not opened to full depth) returns null and
- * fails the test's binding.
+ * capture ASKED to open. On production every round's tile order was drawn by the runner and written
+ * into the plan before any bet; the raw capture records it per round (`plannedTiles`), and the
+ * operator stops at a bust, so a loss records only the prefix up to the mine. The plan is taken from
+ * the raw capture and REQUIRED to agree with every recorded opened sequence: a round whose opened
+ * tiles are not a prefix of its plan (or a win not opened to full depth) returns null and fails the
+ * test's binding.
  */
-function servedConfigOf(b: { mineCount: number; reveals: number; openTiles: number[]; result: string }): ServedConfig | null {
+function servedConfigOf(b: { id: string; mineCount: number; reveals: number; openTiles: number[]; result: string }, planned: Map<string, number[]>): ServedConfig | null {
   const ot = Array.isArray(b.openTiles) ? b.openTiles : [];
   if (!Number.isInteger(b.mineCount) || b.mineCount < 1 || b.mineCount > GRID - 1) return null;
   if (!Number.isInteger(b.reveals) || b.reveals < 1 || b.reveals > GRID - b.mineCount) return null;
-  if (ot.length < 1 || !Number.isInteger(ot[0]) || ot[0] < 1 || ot[0] > GRID) return null;
-  const plan = Array.from({ length: b.reveals }, (_, r) => ((ot[0] + r - 1) % GRID) + 1);
-  if (ot.length > plan.length || ot.some((t, i) => t !== plan[i])) return null;
+  const plan = planned.get(b.id);
+  if (!Array.isArray(plan) || plan.length !== b.reveals || plan.some(t => !Number.isInteger(t) || t < 1 || t > GRID)) return null;
+  if (ot.length < 1 || ot.length > plan.length || ot.some((t, i) => t !== plan[i])) return null;
   if (b.result === 'won' ? ot.length !== plan.length : b.result !== 'lost') return null;
-  return { m: b.mineCount, plan };
+  return { m: b.mineCount, plan: [...plan] };
 }
 /** The convergence checkpoint re-drawn from each row's own seeds to bind row → RNG output. */
 const BIND_CHECKPOINT_N = 1_000;
@@ -430,16 +435,17 @@ export function run(ctx: VerifyContext): StepResult[] {
   const servedEpochs: Array<{ epoch: number; hash: string; bets: typeof ctx.bets; configs: ServedConfig[] }> = [];
   for (const sd of revealedForServed) {
     const ep = (ctx.byHash.get(sd.hashedServerSeed) ?? []).slice().sort((a, b) => a.nonce - b.nonce);
-    const windowOk = ep.length === EXPECTED_EPOCH_SIZE && ep.every((b, i) => b.nonce === NONCE_BASE + i && b.clientSeed === sd.clientSeed);
-    if (!windowOk) { servedBind.push(`epoch ${sd.epoch}: served sequence is not exactly nonces ${NONCE_BASE}…${NONCE_BASE + EXPECTED_EPOCH_SIZE - 1} under the seed record's client seed`); continue; }
-    const configs = ep.map(b => servedConfigOf(b));
+    const size = EPOCH_PLAN[sd.epoch]?.size ?? -1;
+    const windowOk = ep.length === size && servedNonces(size) >= SERVED_NONCE_FLOOR && ep.every((b, i) => b.nonce === NONCE_BASE + i && b.clientSeed === sd.clientSeed && b.epoch === sd.epoch);
+    if (!windowOk) { servedBind.push(`epoch ${sd.epoch}: served sequence is not exactly nonces ${NONCE_BASE}…${NONCE_BASE + size - 1} (the epoch's planned length, src/pins.ts EPOCH_PLAN) under the seed record's client seed`); continue; }
+    const configs = ep.map(b => servedConfigOf(b, ctx.prodCapture.plannedTilesById));
     const badAt = configs.findIndex(c => c === null);
-    if (badAt >= 0) { servedBind.push(`epoch ${sd.epoch} nonce ${ep[badAt].nonce}: opened tiles ${JSON.stringify(ep[badAt].openTiles)} are not a prefix of the plan rebuilt from the capture rule (reveals ${ep[badAt].reveals}, ${ep[badAt].result})`); continue; }
+    if (badAt >= 0) { servedBind.push(`epoch ${sd.epoch} nonce ${ep[badAt].nonce}: opened tiles ${JSON.stringify(ep[badAt].openTiles)} are not a prefix of the round's planned tiles in the raw capture (reveals ${ep[badAt].reveals}, ${ep[badAt].result})${ctx.prodCapture.problem ? ` — raw capture not loaded: ${ctx.prodCapture.problem}` : ''}`); continue; }
     servedEpochs.push({ epoch: sd.epoch, hash: sd.hashedServerSeed, bets: ep, configs: configs as ServedConfig[] });
   }
   const servedJobs: ReplayJob[] = servedEpochs.map(e => ({
     kind: 'served' as const, epoch: e.epoch, serverSeed: ctx.seedMap.get(e.hash) as string,
-    clientSeed: e.bets[0].clientSeed, configs: e.configs, nonces: SERVED_NONCES,
+    clientSeed: e.bets[0].clientSeed, configs: e.configs, nonces: servedNonces(e.configs.length),
   }));
 
   let replayError = '';
@@ -450,7 +456,7 @@ export function run(ctx: VerifyContext): StepResult[] {
   } catch (e) {
     replayError = (e as Error).message;
   }
-  console.log(`  [REPLAY] ${p1Jobs.length} Pass-1 rows × ${roundsPerConfig.toLocaleString()} rounds and ${servedJobs.length} served-config epochs × ${SERVED_NONCES.toLocaleString()} nonces replayed in parallel worker processes (${((Date.now() - replayStart) / 1000).toFixed(1)} s)${replayError ? ` — FAILED: ${replayError}` : ''}`);
+  console.log(`  [REPLAY] ${p1Jobs.length} Pass-1 rows × ${roundsPerConfig.toLocaleString()} rounds and ${servedJobs.length} served-config epochs × ${SERVED_WINDOWS} of their own lengths (${servedEpochs.reduce((a, e) => a + servedNonces(e.configs.length), 0).toLocaleString()} nonces) replayed in parallel worker processes (${((Date.now() - replayStart) / 1000).toFixed(1)} s)${replayError ? ` — FAILED: ${replayError}` : ''}`);
   const p1Replays = replayed.filter((x): x is Pass1Replay => x.kind === 'p1');
   const servedReplays = replayed.filter((x): x is ServedReplay => x.kind === 'served');
   const replayByM = new Map(p1Replays.map(x => [x.mineCount, x]));
@@ -828,14 +834,14 @@ export function run(ctx: VerifyContext): StepResult[] {
       + (s16Faults.length > 0 ? ` FAULTS: ${s16Faults.join('; ')}` : ''),
   );
 
-  // ── Step 17: Pass 2 (casino seeds, cherry-pick, 0..49 bootstrap null) ─────────
+  // ── Step 17: Pass 2 (casino seeds, cherry-pick, early-window bootstrap null) ─────
   const pass2 = sim.pass2_casino_seeds ?? {};
   const results2: any[] = Array.isArray(pass2.results) ? pass2.results : [];
 
   // G-BIND items 1+2 — the population is ctx.seeds, not `pass2.seeds_tested`. The row set must
   // BE the revealed casino seeds: same hashes, no duplicates, epoch and mineCount matching the
-  // seed record and the dataset's own bets. A count is not an identity — 138 copies of one row
-  // and 138 empty `{}` rows both satisfied "138 rows".
+  // seed record and the dataset's own bets. A count is not an identity — copies of one row
+  // and empty `{}` rows both satisfied the row count.
   const revealedSeeds = ctx.seeds.filter(s => s.serverSeed);
   const revealedSeedCount = revealedSeeds.length;
   const seedByHash = new Map(revealedSeeds.map(s => [s.hashedServerSeed, s]));
@@ -855,14 +861,17 @@ export function run(ctx: VerifyContext): StepResult[] {
   const late: any[] = Array.isArray(pass2.lateWindow) ? pass2.lateWindow : [];
   const earlyOk = early.length === 2 && early[0] === 0 && Number.isFinite(early[1]) && early[1] > 0;
   const earlyN = earlyOk ? early[1] + 1 : 0;
+  // The early window is a CODE constant (src/pins.ts PASS2_EARLY_WINDOW), and that constant must be the
+  // smallest epoch of the plan — the longest prefix every epoch played in full — not whatever the artifact says.
   const windowsOk = earlyOk && Number.isFinite(noncesPerSeed) && noncesPerSeed > earlyN
-    && late.length === 2 && late[0] === earlyN && late[1] === noncesPerSeed - 1;
+    && late.length === 2 && late[0] === earlyN && late[1] === noncesPerSeed - 1
+    && earlyN === PASS2_EARLY_WINDOW && PASS2_EARLY_WINDOW === EPOCH_SIZES[0];
   const lateN = windowsOk ? noncesPerSeed - earlyN : 0;
   const reps = Number(pass2.bootstrapReps);
   const repsOk = Number.isFinite(reps) && reps >= 1_000;
 
   // Every row's numeric statistic that any predicate reads must be finite BEFORE it is used
-  // (138 empty `{}` rows produced 0 flags and survival 1 under the old count-only guard).
+  // (empty `{}` rows produced 0 flags and survival 1 under the old count-only guard).
   const rows2Finite = results2.length > 0 && results2.every(r =>
     Number.isFinite(r?.epoch) && typeof r?.hashedServerSeed === 'string'
     && Number.isFinite(r?.mineCount)
@@ -872,7 +881,7 @@ export function run(ctx: VerifyContext): StepResult[] {
 
   // G-BIND item 3 — RE-DERIVE the chi² statistics from the dataset's own revealed serverSeeds.
   // The first drawn tile is one HMAC (src/rng.ts firstMineTile === revealMines(...)[0]), so all
-  // 138 seeds × 10,000 nonces recompute in ~1.9 s. This is what makes the rows evidence rather
+  // The seeds × 10,000 nonces recompute in seconds. This is what makes the rows evidence rather
   // than assertions: a fabricated row is now wrong about a number this file computes itself.
   // earlyBootstrapP is the ONE numeric that cannot be re-derived (its null is 10,000 fresh
   // random replicates); it is structurally constrained below and disclosed as such.
@@ -908,11 +917,11 @@ export function run(ctx: VerifyContext): StepResult[] {
       // smoothing is exactly (ge+1)/(reps+1) for integer ge ∈ [0, reps] — so it is quantized
       // and can never be 0. Not an attestation of its VALUE; it rules out a hand-typed p.
       const kUnits = r.earlyBootstrapP * (reps + 1);
-      if (Math.abs(kUnits - Math.round(kUnits)) > 1e-6) bootPQuantBad++;
+      if (Math.abs(kUnits - Math.round(kUnits)) > PROD_ON_GRID_TOLERANCE) bootPQuantBad++;
       if (!(r.earlyBootstrapP >= 1 / (reps + 1) - 1e-12 && r.earlyBootstrapP <= 1 + 1e-12)) bootPRangeBad++;
 
       // G-BIND item 4 — the flag is DERIVED from the RE-DERIVED latePValue (never the stored
-      // one) and the stored boolean must equal it. Under the old guard, 138 rows carrying
+      // one) and the stored boolean must equal it. Under the old guard, rows carrying
       // earlyBootstrapP=1e-10, latePValue=0.5 and cherryPickFlag=false scored a Full Pass even
       // though the stated criterion makes every one of them a flag.
       const derived = r.earlyBootstrapP < CHERRY_EARLY_ALPHA && lr.pValue >= CHERRY_LATE_ALPHA;
@@ -990,16 +999,10 @@ export function run(ctx: VerifyContext): StepResult[] {
       }
     }
   }
-  // The legacy exception: claimed nothing, AND is the one artifact src/pins.ts names.
-  const legacyDigest = earlyBootstrapPDigest(results2);
-  const legacyPinOk = legacyDigest === LEGACY_EARLY_BOOTSTRAP_P_DIGEST;
-  const legacyExceptionOk = !claimsReplay && legacyPinOk;
-
-  // FAILS CLOSED. There is no longer any state in which `earlyBootstrapP` goes unchallenged:
-  // either the replay ran and matched, or this is the pinned legacy artifact, or Step 17 fails.
-  const bootReplayOk = claimsReplay
-    ? (replayMetaOk && bootReplayAvailable && bootPMismatches === 0 && bootReplayed === results2.length)
-    : legacyExceptionOk;
+  // FAILS CLOSED. There is no state in which `earlyBootstrapP` goes unchallenged: either the artifact
+  // records its replay metadata and the replay ran and matched, or Step 17 fails. An artifact that
+  // records no master seed cannot have its p-values re-derived, and is not accepted.
+  const bootReplayOk = claimsReplay && replayMetaOk && bootReplayAvailable && bootPMismatches === 0 && bootReplayed === results2.length;
 
   // Within a mineCount every row's earlyBootstrapP came from the SAME sorted bootstrap null, so
   // p must be non-increasing in earlyChi2 there — exactly, with no tolerance. Cheap, and it
@@ -1041,19 +1044,19 @@ export function run(ctx: VerifyContext): StepResult[] {
   // ══════════════════════════════════════════════════════════════════════════════════════
   // The first-draw test above plays one statistic that does not depend on what was served. The
   // profile asks for "the return of the configs the casino actually served in that epoch against
-  // the exact per-config mean and variance". For each revealed epoch the 50 configurations it
-  // served — mine count and the tiles the capture requested, in nonce order, from the pinned
-  // dataset (servedConfigOf above) — are replayed over the epoch's revealed seed for 10,000 nonces:
-  // nonce n plays config n mod 50, so the early window is EXACTLY the captured nonce range
-  // NONCE_BASE … NONCE_BASE+49 and nonces 50 … 9,999 give 199 later windows of the same config
-  // sequence. The statistic is the window RETURN (Σ multiplier paid per unit staked). Exact null
-  // moments per config: μ = P(survive k)·mult(m,k), σ² = P·mult² − μ². The early window's return is
-  // ranked against the seed's own 199 later windows (a bootstrap null over the same seed and the same
-  // configs): p = (1 + #{later ≤ early}) / 200, lower tail. The rule is the constants block at the top
-  // of this file (SERVED_*), fixed there before the statistic was first computed (2026-09-24).
+  // the exact per-config mean and variance". For each revealed epoch the configurations it served —
+  // mine count and the tiles the capture requested, in nonce order, from the pinned dataset and the
+  // raw captures' plan (servedConfigOf above) — are replayed over the epoch's revealed seed for
+  // SERVED_WINDOWS × W nonces, W = the epoch's planned length: nonce n plays config n mod W, so the
+  // early window is EXACTLY the captured nonce range and the rest give SERVED_WINDOWS − 1 later
+  // windows of the same config sequence. The statistic is the window RETURN (Σ multiplier paid per
+  // unit staked). Exact null moments per config: μ = P(survive k)·mult(m,k), σ² = P·mult² − μ². The
+  // early window's return is ranked against the seed's own later windows (a bootstrap null over the
+  // same seed and the same configs): p = (1 + #{later ≤ early}) / SERVED_WINDOWS, lower tail. The rule
+  // is the constants block at the top of this file (SERVED_*).
   // The early window's replayed outcomes must EQUAL the outcomes the capture recorded, so the window
-  // scored IS the captured play; Step 8 separately settles each of those rounds' credits.
-  const WINDOWS = Math.floor(SERVED_NONCES / EXPECTED_EPOCH_SIZE);
+  // scored IS the captured play; Step 8 separately settles each of those rounds' booked amounts.
+  const WINDOWS = SERVED_WINDOWS;
   const servedByEpoch = new Map(servedReplays.map(x => [x.epoch, x]));
   let servedFlags = 0, earlyBindFail = 0, servedShapeBad = 0, firstServedFault = '';
   let muAll = 0, vAll = 0, earlyAll = 0;
@@ -1061,7 +1064,7 @@ export function run(ctx: VerifyContext): StepResult[] {
   if (!replayError) {
     for (const e of servedEpochs) {
       const x = servedByEpoch.get(e.epoch);
-      if (!x || x.windowReturns.length !== WINDOWS || x.earlyWins.length !== EXPECTED_EPOCH_SIZE) {
+      if (!x || x.windowReturns.length !== WINDOWS || x.earlyWins.length !== e.configs.length || e.configs.length !== EPOCH_PLAN[e.epoch]?.size) {
         servedShapeBad++; if (!firstServedFault) firstServedFault = `epoch ${e.epoch}: replay result missing or mis-shaped`;
         continue;
       }
@@ -1092,14 +1095,14 @@ export function run(ctx: VerifyContext): StepResult[] {
   const servedOver = servedFlags > servedGate || !(pooledZ >= -SERVED_POOLED_Z);
   const servedOk = servedBindOk && !servedOver;
   const servedNote = `SERVED-CONFIG TEST (the configurations each epoch actually served, mine count and requested tiles by nonce, replayed over its revealed seed): `
-    + `${nServed}/${revealedSeedCount} epochs × ${SERVED_NONCES.toLocaleString()} nonces; early window = the captured nonces ${NONCE_BASE}–${NONCE_BASE + EXPECTED_EPOCH_SIZE - 1}, `
-    + `its replayed outcomes bound to the ${(servedEpochs.length * EXPECTED_EPOCH_SIZE).toLocaleString('en-US')} recorded outcomes (${earlyBindFail} mismatches); `
+    + `${nServed}/${revealedSeedCount} epochs, each over ${SERVED_WINDOWS} of its own lengths (${[...new Set(servedEpochs.map(e => e.configs.length))].sort((a, z) => a - z).map(w => `${w} → ${servedNonces(w).toLocaleString('en-US')} nonces`).join(', ')}; floor ${SERVED_NONCE_FLOOR.toLocaleString('en-US')}); early window = the epoch's captured nonces ${NONCE_BASE} … size − 1, `
+    + `its replayed outcomes bound to the ${servedEpochs.reduce((a, e) => a + e.configs.length, 0).toLocaleString('en-US')} recorded outcomes of ${EXPECTED_BETS.toLocaleString('en-US')} (${earlyBindFail} mismatches); `
     + `statistic = window return against the exact per-config mean and variance; bootstrap p against the seed's own ${WINDOWS - 1} later windows: `
     + `${servedFlags}/${nServed} epochs flagged at p ≤ ${SERVED_ALPHA} (family gate ≤ ${servedGate} at family α ${SERVED_FAMILY_ALPHA})${servedFlaggedEpochs.length ? ` [epochs ${servedFlaggedEpochs.join(', ')}]` : ''}; `
     + `pooled early-window return ${earlyAll.toFixed(4)} vs exact expectation ${muAll.toFixed(4)}, z = ${Number.isFinite(pooledZ) ? pooledZ.toFixed(3) : 'n/a'} (gate −${SERVED_POOLED_Z}); `
     + `detection power of the pooled test ${servedPower.map(x => `${(x.power * 100).toFixed(1)}% at a ${x.shortfall * 100}% early-window return shortfall`).join(', ')}. `
-    + `Rule fixed in code (SERVED_* constants) before the statistic was first computed, 2026-09-24. `
-    + `The tiles a losing round did not reach are rebuilt from the capture's consecutive-tile rule, which every recorded opened sequence satisfies. `;
+    + `Rule fixed in code (SERVED_* constants) before the statistic was computed on production data. `
+    + `Each round's tiles are its planned order from the raw captures (drawn by the runner's CSPRNG, written into the plan before any bet), of which every recorded opened sequence is a prefix, so the tiles a losing round did not reach are the ones it was going to open. `;
 
   const pass2HasData = inventoryOk && seedSetOk && rows2Finite && windowsOk && repsOk && servedBindOk
     && recomputeOk && monoViolations === 0 && bootMCOk && scalarsOk && bootReplayOk
@@ -1111,14 +1114,14 @@ export function run(ctx: VerifyContext): StepResult[] {
   if (!inventoryOk) s17Faults.push(inventoryNote);
   if (!seedSetOk) s17Faults.push(`row seed set is not the ${revealedSeedCount} revealed dataset seeds (${results2.length} rows, ${rowHashSet.size} distinct hashes)`);
   if (!rows2Finite) s17Faults.push('non-finite / wrong-typed field in at least one seed row');
-  if (replayMetaFaults.length > 0) s17Faults.push(`QA-05 replay metadata rejected — ${replayMetaFaults.join('; ')}`);
+  if (replayMetaFaults.length > 0) s17Faults.push(`replay metadata rejected — ${replayMetaFaults.join('; ')}`);
   if (!bootReplayOk && replayMetaFaults.length === 0) {
     if (claimsReplay) {
       s17Faults.push(bootReplayAvailable
         ? `deterministic bootstrap replay: ${bootPMismatches} of ${results2.length} rows whose earlyBootstrapP does not re-derive from the recorded masterSeed${firstBootFault ? ` (${firstBootFault})` : ''}`
-        : `the artifact records valid QA-05 replay metadata but the replay could not be run against it (bootstrapReps / row finiteness / early-window declaration above), so earlyBootstrapP is unattested`);
+        : `the artifact records valid replay metadata but the replay could not be run against it (bootstrapReps / row finiteness / early-window declaration above), so earlyBootstrapP is unattested`);
     } else {
-      s17Faults.push(`the artifact records NO QA-05 replay metadata, so its earlyBootstrapP cannot be re-derived, and it is not the one artifact the legacy exception covers: earlyBootstrapP digest ${legacyDigest} != pinned ${LEGACY_EARLY_BOOTSTRAP_P_DIGEST} (src/pins.ts). Omitting masterSeed is not a way to have earlyBootstrapP taken on trust`);
+      s17Faults.push('the artifact records NO replay metadata (masterSeed, seedDerivation), so its earlyBootstrapP cannot be re-derived. Omitting masterSeed is not a way to have earlyBootstrapP taken on trust');
     }
   }
   if (!windowsOk) s17Faults.push(`window declaration inconsistent: noncesPerSeed ${pass2.noncesPerSeed}, early ${JSON.stringify(pass2.earlyWindow)}, late ${JSON.stringify(pass2.lateWindow)}`);
@@ -1141,7 +1144,7 @@ export function run(ctx: VerifyContext): StepResult[] {
 
   const s17 = step(17, 'Simulation — Pass 2 Cherry-Pick Test',
     pass2Ok ? 'PASS' : 'FAIL',
-    `${revealedSeedCount} revealed dataset seeds × ${(noncesPerSeed || 0).toLocaleString()} nonces; early window ${early[0] ?? '?'}..${early[1] ?? '?'}. `
+    `${revealedSeedCount} revealed dataset seeds × ${(noncesPerSeed || 0).toLocaleString()} nonces; early window ${early[0] ?? '?'}..${early[1] ?? '?'} (src/pins.ts PASS2_EARLY_WINDOW ${PASS2_EARLY_WINDOW}: the first ${PASS2_EARLY_WINDOW} nonces, the longest prefix every epoch played in full — epoch lengths ${EPOCH_SIZES.join(', ')}; the later nonces of the longer epochs fall in the late window, and the served-configuration test below covers each epoch's whole captured range). `
       + `Recalculated early/late statistics and late p-values: ${statMismatches} mismatching rows; epoch and mine-count mismatches: ${epochMismatches}, ${mcMismatches}. `
       + `Flags derived from earlyBootstrapP < ${CHERRY_EARLY_ALPHA} and latePValue >= ${CHERRY_LATE_ALPHA}: ${derivedFlags}; `
       + `nominal expectation ${expectedByChance.toFixed(3)}, binomial survival ${survival.toFixed(8)}; ${flagMismatches} stored-flag mismatches. `
@@ -1149,9 +1152,7 @@ export function run(ctx: VerifyContext): StepResult[] {
           ? `Bootstrap replay: ${(reps || 0).toLocaleString()} replicates per mine count rebuilt from the recorded master seed under '${bootVersion}'; ${bootReplayed}/${results2.length} p-values checked, ${bootPMismatches} mismatches. `
           : claimsReplay
             ? `Bootstrap replay did not run because the supplied replay metadata or statistical inputs are invalid; the faults below identify the rejected fields. `
-            : legacyExceptionOk
-              ? `Compatibility-fixture mode: early bootstrap values match the fixed reference digest ${LEGACY_EARLY_BOOTSTRAP_P_DIGEST}. This fixture lacks generating inputs, so its p-values are pinned rather than replayed. Range, lattice, ordering and downstream arithmetic are checked (${monoViolations} ordering violations). `
-              : `Bootstrap replay unavailable: replay metadata is absent and the values do not match the supported compatibility fixture. `)
+            : `Bootstrap replay unavailable: the artifact records no replay metadata, so its early bootstrap values cannot be re-derived. `)
       + `Unsupported, partial or malformed replay metadata fails verification. This first-draw diagnostic does not prove unbiased seed selection. `
       + servedNote
       + `Mitigation against selecting a server seed for a known client input requires a binding server commitment before learning an unpredictable client seed, with both inputs bound to the round. Player control alone does not establish those conditions.`

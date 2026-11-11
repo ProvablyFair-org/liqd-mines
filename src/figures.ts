@@ -8,6 +8,10 @@ import {
 import { revealMines, sameMines, moduloRejectionCensus, expectedModuloRejections } from './rng';
 import { falseAlarmAccounting, ENFORCED_ROUNDS_PER_CONFIG } from './false-alarm';
 import type { Bet, Seed } from './types';
+import type { ProdCapture } from './prod-capture';
+import { decimalUnits } from './prod-capture';
+import { AUDIT_SEED_FORMAT, PLAYER_SEED_FORMAT, EXPECTED_PHASE_ID_BETS, PROD_CAPTURES } from './pins';
+import { minesMultiplierRational } from './config';
 
 /** Filename of the derived-figure artifact, in ONE place (both the writer and Step 19 use it). */
 export const AUDIT_FIGURES_FILE = 'audit-figures.json';
@@ -16,9 +20,10 @@ export interface FiguresInput {
   bets: Bet[];
   seeds: Seed[];
   seedMap: Map<string, string>;
-  phaseD: Bet[];
   outputsDir: string;
   datasetSha256: string;
+  /** The raw production capture (pinned): the wallet amounts the Bet type has no field for. */
+  prodCapture: ProdCapture;
 }
 
 /**
@@ -49,7 +54,7 @@ export interface FiguresInput {
  * by the comparison, because a timestamp that differs on every run would make the check useless.
  */
 export function computeAuditFigures(input: FiguresInput): Record<string, unknown> {
-  const { bets, seeds, seedMap, phaseD, outputsDir, datasetSha256 } = input;
+  const { bets, seeds, seedMap, outputsDir, datasetSha256, prodCapture } = input;
 const referenceGrid: Array<Record<string, number>> = [];
 for (const m of MINE_COUNTS) {
   for (let k = 1; k <= GRID - m; k++) {
@@ -66,38 +71,55 @@ for (const m of MINE_COUNTS) {
 
 // The exact theoretical RTP of every (m,k) cell, EDGE_NUM/EDGE_DEN (derived from HOUSE_EDGE). The
 // simulation's z and the settled-RTP floor are measured against THIS, never against the published
-// figure src/config.ts PUBLISHED_RTP (FIXPASS2 C3, 2026-10-14): a simulation figure computed against the claim would
+// figure src/config.ts PUBLISHED_RTP (since 2026-10-14): a simulation figure computed against the claim would
 // move when the published figure moves. Today both are 0.99, so no emitted byte changed.
 const THEORY_RTP = Number(EDGE_NUM) / Number(EDGE_DEN);
 
-// Settlement floor: the credited amount is floor8(stake × multExact), so the SETTLED RTP is
-// strictly below the theoretical (1 − edge). Worst case per stake actually used in the capture,
-// in exact BigInt arithmetic. (Same computation as Step 10's emitted clause.)
-const stakesUsed = [...new Set(bets.map(b => Number(b.betAmount)))].filter(a => Number.isFinite(a) && a > 0).sort((a, b) => a - b);
-const settlementFloor = stakesUsed.map(stake => {
-  const stakeUnits = BigInt(Math.round(stake * 1e8));
+// Settlement floor, worst cell over the 300, in exact BigInt arithmetic (same computation as Step 10's
+// clause). Two amounts on production:
+//   recordedFiat — LIQD's recorded winningAmount, floor2(stake × multExact), per stake in the bets;
+//   walletField — the USDT wallet field in the reply, floor8(walletStake × floor8(multExact)) (LIQD's measured rule,
+//                  Step 22), at the smallest betAmountWallet in the raw capture.
+// The deficit is always measured against the EXACT multiplier.
+const worstFloor = (stakeUnits: bigint, scale: number, floorMultFirst: boolean, stake: number) => {
   let worst = { stake, mineCount: 0, tilesRevealed: 0, deficitOfTurnover: 0, settledRTP: THEORY_RTP };
   for (const m of MINE_COUNTS) {
     for (let k = 1; k <= GRID - m; k++) {
       // EDGE_NUM/EDGE_DEN, derived from HOUSE_EDGE — never a re-typed `99n/100n` literal.
       let num = EDGE_NUM, den = EDGE_DEN;
       for (let i = 0; i < k; i++) { num *= BigInt(GRID - i); den *= BigInt(GRID - m - i); }
-      const exactUnits = stakeUnits * num;
-      const fracUnits = Number(exactUnits - (exactUnits / den) * den) / Number(den);
-      const deficit = winProbability(m, k) * (fracUnits / 1e8) / stake;
+      let cn = num, cd = den;
+      if (floorMultFirst) { cn = (100_000_000n * num) / den; cd = 100_000_000n; }
+      const flooredUnits = (stakeUnits * cn) / cd;
+      const lostUnits = Number(stakeUnits * num - flooredUnits * den) / Number(den);
+      const deficit = winProbability(m, k) * (lostUnits / scale) / stake;
       if (Number.isFinite(deficit) && deficit > worst.deficitOfTurnover) {
         worst = { stake, mineCount: m, tilesRevealed: k, deficitOfTurnover: deficit, settledRTP: THEORY_RTP - deficit };
       }
     }
   }
   return worst;
-});
+};
+const stakesUsed = [...new Set(bets.map(b => Number(b.betAmount)))].filter(a => Number.isFinite(a) && a > 0).sort((a, b) => a - b);
+const settlementFloor = stakesUsed.map(stake => worstFloor(BigInt(Math.round(stake * 100)), 100, false, stake));
+let walletMin: bigint | null = null, walletMax: bigint | null = null;
+let walletStaked = 0n, walletPaid = 0n, walletRounds = 0;
+for (const { rec } of prodCapture.bets) {
+  const st = decimalUnits(rec?.placeRaw?.betAmountWallet, 8);
+  const w = rec?.settleRaw?.winningAmountWallet;
+  const pd = w === undefined || w === null ? 0n : decimalUnits(w, 8);
+  if (st === null || pd === null) continue;
+  walletRounds++; walletStaked += st; walletPaid += pd;
+  if (walletMin === null || st < walletMin) walletMin = st;
+  if (walletMax === null || st > walletMax) walletMax = st;
+}
+const walletFloor = walletMin !== null ? worstFloor(walletMin, 1e8, true, Number(walletMin) / 1e8) : null;
 
 // Client-seed format, distinctness, and nibble frequencies describe the recorded
 // strings. They do not authenticate the generator used at capture time.
 // See MANIFEST.md#game-and-algorithm.
 const clientSeeds = seeds.map(s => s.clientSeed);
-const auditSeeds = clientSeeds.filter(c => /^audit[0-9a-f]{12}$/.test(c));
+const auditSeeds = clientSeeds.filter(c => AUDIT_SEED_FORMAT.test(c));
 const nibbleFreq = new Array(16).fill(0);
 for (const c of auditSeeds) for (const ch of c.slice(5)) nibbleFreq[parseInt(ch, 16)]++;
 const nibbleN = auditSeeds.length * 12;
@@ -112,12 +134,62 @@ const nibbleChi2 = nibbleExp > 0 ? nibbleFreq.reduce((s, o) => s + ((o - nibbleE
 // when either count is non-zero, and a reader of this artifact can see that it was zero.
 const nonFiniteBetAmounts = bets.filter(b => !Number.isFinite(Number(b.betAmount))).length;
 const nonFiniteWinAmounts = bets.filter(b => !Number.isFinite(Number(b.winningAmount))).length;
-const wagered = bets.reduce((s, b) => s + (Number.isFinite(Number(b.betAmount)) ? Number(b.betAmount) : 0), 0);
-const returned = bets.reduce((s, b) => s + (Number.isFinite(Number(b.winningAmount)) ? Number(b.winningAmount) : 0), 0);
 const wins = bets.filter(b => b.result === 'won').length;
 
-// Pass-1 pooled SE of the mean across configs, recomputed here from src/config.ts (the same
-// quantity the convergence chart's ±2·SE band uses) plus the committed run's z against it.
+// BOOKED AMOUNTS, PER CAPTURE AND PER PHASE — in the fiat LIQD booked them in, in integer cents, never
+// summed across currencies. `bookedBelowUnrounded` / `droppedUnits`: the wins whose booked amount is
+// below floor8(stake × exact multiplier) and the total the cent floor dropped, in 1e-8 units of the
+// fiat. The wallet figures of the same rounds come from the raw captures (1e-8 USDT units).
+const cents = (v: unknown) => (Number.isFinite(Number(v)) ? BigInt(Math.round(Number(v) * 100)) : 0n);
+const rawByCapture = new Map<number, { staked: bigint; paid: bigint }>();
+for (const { rec, capture } of prodCapture.bets) {
+  const st = decimalUnits(rec?.placeRaw?.betAmountWallet, 8);
+  const w = rec?.settleRaw?.winningAmountWallet;
+  const pd = w === undefined || w === null ? 0n : decimalUnits(w, 8);
+  if (st === null || pd === null) continue;
+  const g = rawByCapture.get(capture) ?? { staked: 0n, paid: 0n };
+  g.staked += st; g.paid += pd; rawByCapture.set(capture, g);
+}
+const moneyGroup = (rows: Bet[]) => {
+  let staked = 0n, paid = 0n, w = 0, below = 0, dropped = 0n;
+  for (const b of rows) {
+    staked += cents(b.betAmount); paid += cents(b.winningAmount);
+    if (b.result !== 'won') continue;
+    w++;
+    const r = minesMultiplierRational(b.mineCount, b.openTiles.length);
+    if (!r) continue;
+    const unrounded = (cents(b.betAmount) * 1_000_000n * r.num) / r.den;
+    const booked = cents(b.winningAmount) * 1_000_000n;
+    if (unrounded > booked) { below++; dropped += unrounded - booked; }
+  }
+  return {
+    rounds: rows.length, wins: w, losses: rows.length - w,
+    bookedStakedCents: Number(staked), bookedPaidCents: Number(paid),
+    bookedStaked: Number(staked) / 100, bookedPaid: Number(paid) / 100,
+    bookedReturnPercent: staked > 0n ? (Number(paid) / Number(staked)) * 100 : 0,
+    bookedBelowUnrounded: below, droppedUnits: Number(dropped), dropped: Number(dropped) / 1e8,
+  };
+};
+const byCapture = PROD_CAPTURES.map(c => {
+  const raw = rawByCapture.get(c.capture) ?? { staked: 0n, paid: 0n };
+  return {
+    capture: c.capture, ...moneyGroup(bets.filter(b => b.capture === c.capture)),
+    walletStakedUnits: Number(raw.staked), walletPaidUnits: Number(raw.paid),
+    walletStaked: Number(raw.staked) / 1e8, walletPaid: Number(raw.paid) / 1e8,
+    walletNet: Number(raw.paid - raw.staked) / 1e8,
+    walletReturnPercent: raw.staked > 0n ? (Number(raw.paid) / Number(raw.staked)) * 100 : 0,
+  };
+});
+const PHASE_ORDER = Object.keys(EXPECTED_PHASE_ID_BETS);
+const byPhase = PHASE_ORDER.map((id, i) => ({ phaseIndex: i, ...moneyGroup(bets.filter(b => b.phaseId === id)) }));
+const cellsPlayed = new Set(bets.map(b => `${b.mineCount}:${b.reveals}`)).size;
+const mineCountsPlayed = new Set(bets.map(b => b.mineCount)).size;
+const multiRevealRounds = bets.filter(b => b.reveals > 1).length;
+const tilesOpened = bets.reduce((a, b) => a + b.openTiles.length, 0);
+const autoFinishRounds = bets.filter(b => b.autoFinish === true).length;
+const settingsRecords = bets.filter(b => b.currentGameSettings !== undefined && b.currentGameSettings !== null).length;
+const maxDisplayed = bets.reduce((mx, b) => (b.result === 'won' && Number.isFinite(Number(b.multiplier)) ? Math.max(mx, Number(b.multiplier)) : mx), 0);
+
 let simFigures: Record<string, unknown> | null = null;
 // The artifact's own Pass-1 depth, used by the false-alarm accounting to decide which
 // convergence checkpoints of the fixed ladder exist. Defaults to the enforced floor when there
@@ -187,7 +259,7 @@ if (fs.existsSync(simPath)) {
     cells: referenceGrid.length,
     minTheoreticalRTP: Math.min(...referenceGrid.map(c => c.theoreticalRTP)),
     maxTheoreticalRTP: Math.max(...referenceGrid.map(c => c.theoreticalRTP)),
-    // Off the edge-derived target THEORY_RTP, not the published figure (FIXPASS2 C3, 2026-10-14): Step 19
+    // Off the edge-derived target THEORY_RTP, not the published figure (since 2026-10-14): Step 19
     // re-derives this artifact from src/config.ts, so a count taken against PUBLISHED_RTP turned a raised
     // published figure into a Step 19 hard fail (exit 1) before the RTP-CLAIM rule could rule (measured).
     cellsOffTarget: referenceGrid.filter(c => Math.abs(c.theoreticalRTP - THEORY_RTP) > 1e-9).length,
@@ -238,37 +310,32 @@ if (fs.existsSync(simPath)) {
       probabilityCaptureWitnessesBranch: 1 - Math.exp(-expected),
     };
   })(),
-  phaseDTimestampPatternEpochs: (() => {
-    // ══════════════════════════════════════════════════════════════════════════════════
-    //  ALL TEN PHASE-D EPOCHS, 120–129, NOT NINE
-    // ══════════════════════════════════════════════════════════════════════════════════
-    // A filter reading `b.epoch >= 121` would rest on the argument that epoch 120 was the
-    // FIRST occurrence of the `pfaudit-<stamp>-<epoch>` pattern and so could not have been
-    // predicted from it. That argument does not survive being written down: it grants epoch 120
-    // an unpredictability assurance on the strength of its position in a sequence, not on the
-    // strength of anything about how its client seed was constructed. Every one of the ten seeds
-    // is `pfaudit-1785428583504-<epoch>` — one fixed stamp and the epoch number — and the stamp
-    // is recorded 5,250.153 s BEFORE epoch 120's own commitment (`seeds[119].at`). Whether the
-    // operator could in fact have derived it is unknown and is NOT claimed either way; what is
-    // claimed is only that the CONSTRUCTION does not deny foreknowledge, and that is as true of
-    // the first element as of the other nine.
-    //
-    // The field is named for the construction (`TimestampPattern`) rather than for an operator
-    // capability (`PredictableSeed`), because the dataset witnesses the former and cannot witness
-    // the latter. Historical bet seeds are NOT edited — only which epochs this group names.
-    const sub = phaseD.filter(b => b.epoch >= 120 && b.epoch <= 129);
-    // Count non-finite money fields so they cannot silently blank a reported total.
-    const fin = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : 0);
-    const nonFinite = sub.filter(b => !Number.isFinite(Number(b.betAmount)) || !Number.isFinite(Number(b.winningAmount))).length;
-    const staked = sub.reduce((s, b) => s + fin(b.betAmount), 0);
-    const credited = sub.reduce((s, b) => s + fin(b.winningAmount), 0);
-    return { epochs: new Set(sub.map(b => b.epoch)).size, bets: sub.length, staked, credited, netToPlayer: credited - staked, nonFiniteMoneyRows: nonFinite };
+  // A predictable client-seed construction (a seed carrying a 13-digit millisecond timestamp), counted
+  // over the scored epochs: 0 on production. Named for the construction, which the data witnesses,
+  // not for an operator capability, which it cannot.
+  timestampPatternEpochs: (() => {
+    const sub = bets.filter(b => /\d{13}/.test(b.clientSeed));
+    return { epochs: new Set(sub.map(b => b.epoch)).size, bets: sub.length };
   })(),
+  // The money in the bet currency, from the raw capture (Step 22 scores each wallet field).
+  walletLeg: {
+    rounds: walletRounds,
+    stakedUnits: Number(walletStaked),
+    paidUnits: Number(walletPaid),
+    staked: Number(walletStaked) / 1e8,
+    paid: Number(walletPaid) / 1e8,
+    liveRTP: walletStaked > 0n ? Number(walletPaid) / Number(walletStaked) : 0,
+    liveRTPPercent: walletStaked > 0n ? (Number(walletPaid) / Number(walletStaked)) * 100 : 0,
+    minStake: walletMin === null ? 0 : Number(walletMin) / 1e8,
+    maxStake: walletMax === null ? 0 : Number(walletMax) / 1e8,
+    settlementFloorAtMinStake: walletFloor,
+  },
   clientSeedProvenance: {
     epochs: clientSeeds.length,
     auditFormatSeeds: auditSeeds.length,
     distinctAuditFormatSeeds: new Set(auditSeeds).size,
-    customPhaseDSeeds: clientSeeds.filter(c => /^pfaudit-/.test(c)).length,
+    playerSetSeeds: clientSeeds.filter(c => PLAYER_SEED_FORMAT.test(c)).length,
+    distinctPlayerSetSeeds: new Set(clientSeeds.filter(c => PLAYER_SEED_FORMAT.test(c))).size,
     hexNibblesSampled: nibbleN,
     hexNibbleChi2: nibbleChi2,
     hexNibbleDf: 15,
@@ -278,17 +345,20 @@ if (fs.existsSync(simPath)) {
     wins,
     losses: bets.length - wins,
     winRate: wins / bets.length,
-    wagered,
-    returned,
-    liveRTP: returned / wagered,
-    liveRTPPercent: (returned / wagered) * 100,
-    // Rows excluded from the two money totals above because their field is not a finite
-    // number. Both must be 0 in a delivered capture; Step 8 hard-fails otherwise.
+    multiRevealRounds,
+    singleRevealRounds: bets.length - multiRevealRounds,
+    tilesOpened,
+    cellsPlayed,
+    mineCountsPlayed,
+    autoFinishRounds,
+    settingsRecords,
+    maxDisplayedMultiplier: maxDisplayed,
     nonFiniteBetAmounts,
     nonFiniteWinAmounts,
   },
-  // Counterfactual payout from the displayed multiplier. This is an analytical
-  // comparison; the captured settlements are checked against the exact multiplier.
+  // Index order of byPhase: EXPECTED_PHASE_ID_BETS (A, A+, C, D).
+  byCapture,
+  byPhase,
   flooredDisplayCounterfactual: (() => {
     const rows = [] as Array<Record<string, number>>;
     let worst = { mineCount: 0, tilesRevealed: 0, edge: 0, lossPerDollar: 0 };

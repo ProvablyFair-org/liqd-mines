@@ -1,0 +1,15 @@
+{
+ "read": "2026-11-11 ~13:15 UTC, logged-in capture account, Chrome on liqd.com, read-only",
+ "source": "GET https://liqd.com/api/v1/casino/get-personal-bet-history?page=N&limit=50, Mines rows only",
+ "window": "2026-11-10T04:40:00Z .. 2026-11-10T10:25:00Z (mines captures 2 and 3, USD runs)",
+ "rows": 1574,
+ "betIds": "1574 Mines rows; sorted-id-list sha256 equals the dataset's USD-run ids (9b9e21115a3d7bf5029edb578e9d441280155ec737326c0eff915e0ff923623b): 1574/1574",
+ "currency": "every row currencyCode USDT, placedCurrencyCode USD; bet 0.10000000 x1450, 10.00000000 x124",
+ "payouts": {
+  "rowsWithPayout": 712,
+  "matchedToReplyWalletField": "709/709: sorted 'betId,payout(8dp)' sha256 616b2210ba9089e8abb7a3d9c4c8516d5a3b4e7bfa469cc4ee69f3cf746997e2 equals the list from the capture replies' winningAmountWallet",
+  "siteSettled": "3 wins settled by the site (Z6B5Y_EKOsIi9rFGBZ8XX, 4FlJdIKXL00eGGkh2OQkS, I_uwyzpsU5tyFl4_rmzfZ; booked 2.47 on 0.10): their open-tile replies carry winningAmountWallet 2.47500000; history payout 2.47500000 each. The 709-row list above was built from settle replies only and left these 3 out.",
+  "sumPayoutUSDT": "1367.13221236",
+  "total": "history payout = reply winningAmountWallet on 712/712 USD-run wins"
+ }
+}

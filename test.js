@@ -357,84 +357,302 @@ function falseAlarmAccounting(roundsPerConfig = exports.ENFORCED_ROUNDS_PER_CONF
 "src/pins.js": function(module, exports, require, __filename, __dirname) {
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LEGACY_BOOTSTRAP_FIXTURE_RELATIVE_PATH = exports.LEGACY_BOOTSTRAP_ARTIFACT_SHA256 = exports.LEGACY_EARLY_BOOTSTRAP_P_DIGEST = exports.LEGACY_BOOTSTRAP_ARTIFACT_GENERATED_AT = exports.SITE_VERIFIER_DIR = exports.SITE_VERIFIER_PINS = exports.ARTIFACT_PINS = exports.EXPECTED_UNIT_TESTS = exports.AUDIT_ID = exports.SUPPLEMENT_ON_GRID_TOLERANCE = exports.SUPPLEMENT_HISTORY_GAME_SETTINGS = exports.SUPPLEMENT_HISTORY_DISPLAY_GAP_CELLS = exports.SUPPLEMENT_HISTORY_DISPLAY_CENT_BELOW = exports.SUPPLEMENT_HISTORY_CREDIT_GAP_TOTAL_UNITS = exports.SUPPLEMENT_HISTORY_CREDIT_GAP_UNITS_PER_WIN = exports.SUPPLEMENT_HISTORY_CREDIT_GAP_CELLS = exports.SUPPLEMENT_HISTORY_CREDIT_UNIT_BELOW = exports.SUPPLEMENT_HISTORY_WINS = exports.SUPPLEMENT_HISTORY_BETS = exports.SUPPLEMENT_HISTORY_JOURNAL_HASH = exports.SUPPLEMENT_HISTORY_JOURNAL_RELATIVE_PATH = exports.SUPPLEMENT_HISTORY_DATASET_HASH = exports.SUPPLEMENT_HISTORY_DATASET_RELATIVE_PATH = exports.SUPPLEMENT_HISTORY_CAPTURE_DATE = exports.SUPPLEMENT_GAME_SETTINGS = exports.SUPPLEMENT_DISPLAY_GAP_CELLS = exports.SUPPLEMENT_DISCLOSED_DISPLAY_CENT_BELOW = exports.SUPPLEMENT_CREDIT_GAP_TOTAL_UNITS = exports.SUPPLEMENT_CREDIT_GAP_CELLS = exports.SUPPLEMENT_DISCLOSED_CREDIT_UNIT_BELOW = exports.SUPPLEMENT_DECLARED_PER_STEP_MULTIPLIERS = exports.SUPPLEMENT_MIN_CASHOUT_RUNGS = exports.SUPPLEMENT_DEPTHS = exports.SUPPLEMENT_PER_CONFIG = exports.SUPPLEMENT_EXPECTED_SEEDS = exports.SUPPLEMENT_EXPECTED_BETS = exports.SUPPLEMENT_CAPTURE_DATE = exports.SUPPLEMENT_JOURNAL_HASH = exports.SUPPLEMENT_JOURNAL_RELATIVE_PATH = exports.SUPPLEMENT_DATASET_HASH = exports.SUPPLEMENT_DATASET_RELATIVE_PATH = exports.EXPECTED_CAPTURE_RETRY_GAPS = exports.NONCE_BASE = exports.EXPECTED_PHASE_BETS = exports.EXPECTED_EPOCH_SIZE = exports.EXPECTED_SEEDS = exports.EXPECTED_BETS = exports.DATASET_RELATIVE_PATH = exports.EXPECTED_DATASET_HASH = void 0;
+exports.SITE_VERIFIER_DIR = exports.SITE_VERIFIER_PINS = exports.ARTIFACT_PINS = exports.EXPECTED_UNIT_TESTS = exports.EXPECTED_STEPS = exports.AUDIT_ID = exports.PHASE_D_DISTINCT_SEEDS = exports.PLAYER_SEED_FORMAT = exports.AUDIT_SEED_FORMAT = exports.PROD_ON_GRID_TOLERANCE = exports.PROD_WALLET_CURRENCY_ID = exports.PROD_LEDGER_DEBITS = exports.PROD_GAME_SETTINGS = exports.BOOKED_BELOW_UNROUNDED = exports.PROD_WALLET_BELOW_EXACT_CELLS = exports.PROD_WALLET_BELOW_EXACT_TOTAL_UNITS = exports.PROD_WALLET_BELOW_EXACT = exports.PROD_DECLARED_PER_STEP_MULTIPLIERS = exports.PROD_AUTO_FINISH_ROUNDS = exports.PROD_WINS = exports.PROD_REQUESTS = exports.PROD_CAPTURES = exports.PASS2_EARLY_WINDOW = exports.EXPECTED_CAPTURE_RETRY_GAPS = exports.NONCE_BASE = exports.PHASE_C_MIN_WINS = exports.PROD_HOST = exports.PROD_WALLET_CURRENCY = exports.PROD_ELEVATED_STAKE = exports.PROD_BASE_STAKE = exports.PLAYED_CELLS = exports.SETTINGS_PLAN = exports.PHASE_C_ROUNDS = exports.PHASE_C_SETTING = exports.TOPUP_PER_MINE_COUNT = exports.TOPUP_MINE_COUNTS = exports.PHASE_D_PER_SETTING = exports.PROD_PER_SETTING = exports.PROD_DEPTHS = exports.EXPECTED_CHAIN_LINKS = exports.epochPlan = exports.EPOCH_SIZES = exports.EXPECTED_PHASE_ID_BETS = exports.EXPECTED_PHASE_BETS = exports.EXPECTED_SEEDS = exports.EXPECTED_BETS = exports.EPOCH_PLAN = exports.PHASE_BLOCKS = exports.DATASET_RELATIVE_PATH = exports.EXPECTED_DATASET_HASH = void 0;
 exports.earlyBootstrapPDigest = earlyBootstrapPDigest;
 const crypto_1 = require("crypto");
-exports.EXPECTED_DATASET_HASH = 'c7c2e8a930549e11e3e564a962aea0ca2875b6eb94bc1f4347cc703bc410b222';
-exports.DATASET_RELATIVE_PATH = 'data/mines-master-6900bets.json';
-exports.EXPECTED_BETS = 6900;
-exports.EXPECTED_SEEDS = 138;
-exports.EXPECTED_EPOCH_SIZE = 50;
-exports.EXPECTED_PHASE_BETS = { A: 4800, B: 1000, C: 200, D: 500, E: 400 };
+exports.EXPECTED_DATASET_HASH = '4d684d5e035e0be384685a2b44b9f5ab13b3f638e58686310cd778945c31741b';
+exports.DATASET_RELATIVE_PATH = 'data/mines-prod-full-6574bets.json';
+exports.PHASE_BLOCKS = [
+    { capture: 1, phase: 'A', phaseId: 'A', epochs: 25, size: 200, stake: 0.1, fiat: 'CAD' },
+    { capture: 2, phase: 'D', phaseId: 'D', epochs: 5, size: 100, stake: 0.1, fiat: 'USD' },
+    { capture: 2, phase: 'A', phaseId: 'A+', epochs: 5, size: 190, stake: 0.1, fiat: 'USD' },
+    { capture: 3, phase: 'C', phaseId: 'C', epochs: 1, size: 124, stake: 10, fiat: 'USD' },
+];
+exports.EPOCH_PLAN = (() => {
+    const out = [];
+    const perCapture = new Map();
+    for (const b of exports.PHASE_BLOCKS) {
+        for (let i = 0; i < b.epochs; i++) {
+            const captureEpoch = perCapture.get(b.capture) ?? 0;
+            perCapture.set(b.capture, captureEpoch + 1);
+            out.push({ epoch: out.length, captureEpoch, capture: b.capture, phase: b.phase, phaseId: b.phaseId, size: b.size, stake: b.stake, fiat: b.fiat });
+        }
+    }
+    return out;
+})();
+exports.EXPECTED_BETS = 6574;
+exports.EXPECTED_SEEDS = 36;
+exports.EXPECTED_PHASE_BETS = { A: 5950, C: 124, D: 500 };
+exports.EXPECTED_PHASE_ID_BETS = { A: 5000, 'A+': 950, C: 124, D: 500 };
+exports.EPOCH_SIZES = [...new Set(exports.PHASE_BLOCKS.map(b => b.size))].sort((a, z) => a - z);
+const epochPlan = (epoch) => exports.EPOCH_PLAN[epoch];
+exports.epochPlan = epochPlan;
+exports.EXPECTED_CHAIN_LINKS = exports.EPOCH_PLAN.filter((e, i) => i > 0 && exports.EPOCH_PLAN[i - 1].capture === e.capture).length;
+exports.PROD_DEPTHS = { 1: [2, 5, 10, 15], 3: [2, 4, 6, 8], 5: [2, 3, 5, 6], 8: [2, 3, 4, 5], 12: [2, 3, 4, 5] };
+exports.PROD_PER_SETTING = 250;
+exports.PHASE_D_PER_SETTING = 25;
+exports.TOPUP_MINE_COUNTS = [2, 4, 6, 7, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24];
+exports.TOPUP_PER_MINE_COUNT = 50;
+exports.PHASE_C_SETTING = { mineCount: 3, depth: 1 };
+exports.PHASE_C_ROUNDS = 124;
+exports.SETTINGS_PLAN = (() => {
+    const m = new Map();
+    for (const [mc, ks] of Object.entries(exports.PROD_DEPTHS))
+        for (const k of ks) {
+            m.set(`A|${mc}:${k}`, exports.PROD_PER_SETTING);
+            m.set(`D|${mc}:${k}`, exports.PHASE_D_PER_SETTING);
+        }
+    for (const mc of exports.TOPUP_MINE_COUNTS)
+        m.set(`A+|${mc}:1`, exports.TOPUP_PER_MINE_COUNT);
+    m.set(`C|${exports.PHASE_C_SETTING.mineCount}:${exports.PHASE_C_SETTING.depth}`, exports.PHASE_C_ROUNDS);
+    return m;
+})();
+exports.PLAYED_CELLS = [...new Set([...exports.SETTINGS_PLAN.keys()].map(k => k.split('|')[1]))];
+exports.PROD_BASE_STAKE = 0.1;
+exports.PROD_ELEVATED_STAKE = 10;
+exports.PROD_WALLET_CURRENCY = 'USDT';
+exports.PROD_HOST = 'liqd.com';
+exports.PHASE_C_MIN_WINS = 100;
 exports.NONCE_BASE = 0;
 exports.EXPECTED_CAPTURE_RETRY_GAPS = 0;
-exports.SUPPLEMENT_DATASET_RELATIVE_PATH = 'data/liqd-mines-capture-v3-2026-10-03T11-58-54-479Z.json';
-exports.SUPPLEMENT_DATASET_HASH = 'a7737572394215b0262eb467eec4fe5ff083e87c0d132746aa6e66c271277b45';
-exports.SUPPLEMENT_JOURNAL_RELATIVE_PATH = 'data/liqd-mines-capture-v3-2026-10-03T11-58-54-479Z.journal.ndjson';
-exports.SUPPLEMENT_JOURNAL_HASH = 'db16421c70d55331049ce186d03fa1c60367c84b208252f920e8e91f2074e9c9';
-exports.SUPPLEMENT_CAPTURE_DATE = '2026-10-03';
-exports.SUPPLEMENT_EXPECTED_BETS = 1000;
-exports.SUPPLEMENT_EXPECTED_SEEDS = 20;
-exports.SUPPLEMENT_PER_CONFIG = 50;
-exports.SUPPLEMENT_DEPTHS = { 1: [2, 5, 10, 15], 3: [2, 4, 6, 8], 5: [2, 3, 5, 6], 8: [2, 3, 4, 5], 12: [2, 3, 4, 5] };
-exports.SUPPLEMENT_MIN_CASHOUT_RUNGS = 20;
-exports.SUPPLEMENT_DECLARED_PER_STEP_MULTIPLIERS = 0;
-exports.SUPPLEMENT_DISCLOSED_CREDIT_UNIT_BELOW = 0;
-exports.SUPPLEMENT_CREDIT_GAP_CELLS = {};
-exports.SUPPLEMENT_CREDIT_GAP_TOTAL_UNITS = 0;
-exports.SUPPLEMENT_DISCLOSED_DISPLAY_CENT_BELOW = 0;
-exports.SUPPLEMENT_DISPLAY_GAP_CELLS = {};
-exports.SUPPLEMENT_GAME_SETTINGS = {
-    records: 607,
-    value: '{"minOdds":1.01,"houseEdge":1,"minBet":0.01,"maxBet":10000,"maxExposure":50000,"maxExposureUsdc":50000,"maxBetUsdc":"10000.00000000","exposureSource":"global","maxBetSource":"game"}',
+exports.PASS2_EARLY_WINDOW = 100;
+exports.PROD_CAPTURES = [
+    {
+        capture: 1, file: 'data/liqd-mines-prod-capture-2026-11-09T04-45-17-843Z.ndjson',
+        sha256: 'f4a35b0635fd8a196d31ebccd64fa3b617ab127716def789a0f1529b9ffe7d60', lines: 38801,
+        events: { meta: 1, pre: 1, rotate: 26, epoch: 25, intent: 5000, step: 23745, bet: 5000, 'bets-done': 1, verify: 5000, done: 1, 'export-note': 1 },
+        requests: { 'place-bet': 5000, 'open-tile': 16766, 'cash-out': 1979 },
+        rounds: 5000, wins: 1979, fiat: 'CAD', dates: '2026-11-08/09', runnerBuild: '218861d920b8', exportBuild: '218861d920b8',
+        walletStakedUnits: 35452607511n, walletPaidUnits: 35395401893n, bookedStakedCents: 50000n, bookedPaidCents: 48762n,
+    },
+    {
+        capture: 2, file: 'data/liqd-mines-prod-capture-2026-11-10T06-06-19-772Z.ndjson',
+        sha256: '3b8f81d5de58ccbf60fc809a53a34174d2c088aa78aba67ab1a0742a6d866141', lines: 9038,
+        events: { meta: 1, option: 1, pre: 1, rotate: 11, epoch: 10, intent: 1450, step: 4658, bet: 1450, stop: 1, 'resume-check': 1, recovered: 1, 'bets-done': 1, verify: 1450, done: 1, 'export-note': 1 },
+        requests: { 'place-bet': 1450, 'open-tile': 2608, 'cash-out': 600 },
+        rounds: 1450, wins: 603, fiat: 'USD', dates: '2026-11-10', runnerBuild: '4dbf8ae8f846', exportBuild: 'bfa80f1fc59d',
+        walletStakedUnits: 14500000000n, walletPaidUnits: 14088221236n, bookedStakedCents: 14500n, bookedPaidCents: 13739n,
+    },
+    {
+        capture: 3, file: 'data/liqd-mines-prod-capture-2026-11-10T10-27-49-259Z.ndjson',
+        sha256: '795825a548d786946d8ab0d9331dcd80d86a59b5b73dcea197707482bf177376', lines: 738,
+        events: { meta: 1, option: 1, pre: 1, rotate: 2, epoch: 1, intent: 124, step: 357, bet: 124, 'bets-done': 1, verify: 124, done: 1, 'export-note': 1 },
+        requests: { 'place-bet': 124, 'open-tile': 124, 'cash-out': 109 },
+        rounds: 124, wins: 109, fiat: 'USD', dates: '2026-11-10', runnerBuild: 'bfa80f1fc59d', exportBuild: 'bfa80f1fc59d',
+        walletStakedUnits: 124000000000n, walletPaidUnits: 122625000000n, bookedStakedCents: 124000n, bookedPaidCents: 122625n,
+    },
+];
+exports.PROD_REQUESTS = (() => {
+    const t = {};
+    for (const c of exports.PROD_CAPTURES)
+        for (const [k, n] of Object.entries(c.requests))
+            t[k] = (t[k] ?? 0) + n;
+    return t;
+})();
+exports.PROD_WINS = exports.PROD_CAPTURES.reduce((a, c) => a + c.wins, 0);
+exports.PROD_AUTO_FINISH_ROUNDS = ['Z6B5Y_EKOsIi9rFGBZ8XX', '4FlJdIKXL00eGGkh2OQkS', 'I_uwyzpsU5tyFl4_rmzfZ'];
+exports.PROD_DECLARED_PER_STEP_MULTIPLIERS = 3;
+exports.PROD_WALLET_BELOW_EXACT = 62;
+exports.PROD_WALLET_BELOW_EXACT_TOTAL_UNITS = 62;
+exports.PROD_WALLET_BELOW_EXACT_CELLS = {
+    '1:2': 3, '3:2': 18, '5:2': 2, '5:3': 1, '5:5': 10, '8:2': 12, '8:4': 5, '8:5': 1, '12:2': 5, '12:3': 4, '12:4': 1,
 };
-exports.SUPPLEMENT_HISTORY_CAPTURE_DATE = '2026-09-26';
-exports.SUPPLEMENT_HISTORY_DATASET_RELATIVE_PATH = 'data/liqd-mines-capture-v3-2026-09-26T16-46-41-121Z.json';
-exports.SUPPLEMENT_HISTORY_DATASET_HASH = '023c17920d103954ec3c27eab4be55bdeef027884c06d33bd5434139bb569309';
-exports.SUPPLEMENT_HISTORY_JOURNAL_RELATIVE_PATH = 'data/liqd-mines-capture-v3-2026-09-26T16-46-41-121Z.journal.ndjson';
-exports.SUPPLEMENT_HISTORY_JOURNAL_HASH = '4f464fba88a515692e3f8ddaad4f6466345a1cc8180a96910a96f7461ac25fdc';
-exports.SUPPLEMENT_HISTORY_BETS = 1000;
-exports.SUPPLEMENT_HISTORY_WINS = 404;
-exports.SUPPLEMENT_HISTORY_CREDIT_UNIT_BELOW = 50;
-exports.SUPPLEMENT_HISTORY_CREDIT_GAP_CELLS = { '1:10': 29, '1:15': 21 };
-exports.SUPPLEMENT_HISTORY_CREDIT_GAP_UNITS_PER_WIN = 1;
-exports.SUPPLEMENT_HISTORY_CREDIT_GAP_TOTAL_UNITS = 50;
-exports.SUPPLEMENT_HISTORY_DISPLAY_CENT_BELOW = 29;
-exports.SUPPLEMENT_HISTORY_DISPLAY_GAP_CELLS = { '1:10': 29 };
-exports.SUPPLEMENT_HISTORY_GAME_SETTINGS = {
-    records: 596,
-    value: '{"minOdds":1.01,"houseEdge":1,"minBet":0.01,"maxBet":10000}',
-};
-exports.SUPPLEMENT_ON_GRID_TOLERANCE = 1e-6;
+exports.BOOKED_BELOW_UNROUNDED = [
+    { capture: 1, wins: 1979, droppedUnits: 1156861635n },
+    { capture: 2, wins: 603, droppedUnits: 349221236n },
+    { capture: 3, wins: 0, droppedUnits: 0n },
+];
+exports.PROD_GAME_SETTINGS = [
+    { capture: 1, records: 413, value: '{"minOdds":1.01,"houseEdge":1,"minBet":0.01,"maxBet":7060,"maxExposure":70600,"maxExposureUsdc":50000,"maxBetUsdc":"5000.00000000","exposureSource":"game","maxBetSource":"game"}' },
+    { capture: 1, records: 2608, value: '{"minOdds":1.01,"houseEdge":1,"minBet":0.01,"maxBet":7050,"maxExposure":70500,"maxExposureUsdc":50000,"maxBetUsdc":"5000.00000000","exposureSource":"game","maxBetSource":"game"}' },
+    { capture: 2, records: 850, value: '{"minOdds":1.01,"houseEdge":1,"minBet":0.01,"maxBet":5000,"maxExposure":50000,"maxExposureUsdc":50000,"maxBetUsdc":"5000.00000000","exposureSource":"game","maxBetSource":"game"}' },
+    { capture: 3, records: 15, value: '{"minOdds":1.01,"houseEdge":1,"minBet":0.01,"maxBet":5000,"maxExposure":50000,"maxExposureUsdc":50000,"maxBetUsdc":"5000.00000000","exposureSource":"game","maxBetSource":"game"}' },
+];
+exports.PROD_LEDGER_DEBITS = [
+    { capture: 1, records: 3021, amountNotWalletStake: 3021 },
+    { capture: 2, records: 850, amountNotWalletStake: 0 },
+    { capture: 3, records: 15, amountNotWalletStake: 0 },
+];
+exports.PROD_WALLET_CURRENCY_ID = '3';
+exports.PROD_ON_GRID_TOLERANCE = 0.000001;
+exports.AUDIT_SEED_FORMAT = /^audit[0-9a-f]{12}$/;
+exports.PLAYER_SEED_FORMAT = /^pfaudit-prod-mines-d([1-5])-[0-9a-f]{12}$/;
+exports.PHASE_D_DISTINCT_SEEDS = 5;
 exports.AUDIT_ID = 'PF-2026-LQ02';
-exports.EXPECTED_UNIT_TESTS = 49;
+exports.EXPECTED_STEPS = 22;
+exports.EXPECTED_UNIT_TESTS = 43;
 exports.ARTIFACT_PINS = [
-    { file: 'outputs/simulation-results.json', sha256: '8854fc57e7f22f1960b9c89f6c8e003a5e92e19d899a3ecf20e0c0170e44fc2c' },
-    { file: 'outputs/simulation-provenance.json', sha256: '4eee6b2b2259244fd2402a825c829089e270d36e8700ef0b9e3f1f8b1660eaa6' },
-    { file: 'outputs/bootstrap-nulls.float64le', sha256: '477c58267cf890751abadaf48a723b569207838be7838d7a20da9b2e2d09cf18' },
+    { file: 'outputs/simulation-results.json', sha256: '50bef42d729a973376dee69e274900a037d6baa1d4b17a600c144beb46b329e6' },
+    { file: 'outputs/simulation-provenance.json', sha256: '036f4b3c0c4f9d241206bff2317a3d8632c3547844335653cdd89f9ed8532a86' },
+    { file: 'outputs/bootstrap-nulls.float64le', sha256: 'c8a946c806faa4e8896d68a70f66c6f20fa282571cfc4e14ef29fd29dae160a0' },
     { file: 'outputs/rtp-convergence.html', sha256: 'ad969c106e979f3f0eabcea69b5d2d881eb4a44be248e670a215e6a561989d2d' },
     { file: 'outputs/deep-replay-report.json', sha256: '6de3935092af3db155c9e608f7f5993b68b31ac25364ad24ac0c0ce021c8d6bc' },
-    { file: 'outputs/bootstrap-replay-report.json', sha256: 'a0395e57d8ccda10a9950334211380a43a02f4f01ab923b1472347fd43148573' },
-    { file: 'outputs/audit-figures.json', sha256: '942ba10e301d2c99a502cfbec4ad3441055f27df0d1ca907df2b8f95f8dc69ca' },
-    { file: 'outputs/verification-results.json', sha256: '25db7665027a4c0df089d1b711fb15c68449214be153ee0cd468d93eaf1ba745' },
+    { file: 'outputs/bootstrap-replay-report.json', sha256: '2064e369b17b74d7798dfa5440cbc8f4a71427cb49212fbd270e4aedb3c68d4e' },
+    { file: 'outputs/audit-figures.json', sha256: '5319211bcaf7011b2c88f8e264705ba583cfc2a7e8c68a634a436c187d3d6d9e' },
+    { file: 'outputs/verification-results.json', sha256: 'e1142b07f920b2702a46d9b5e240cdcfc829bc77d9946f879632deb240cbfb33' },
 ];
 exports.SITE_VERIFIER_PINS = [
     { file: 'games/mines/derive.js', sitePath: 'src/components/VerifyBets/games/mines/derive.js',
-        sha256: 'fa4dbd19b80e7ce74fc63bd57630fb76e89ce6a5794d81aacf4a1f0ec38ffb82' },
+        sha256: '0ee08caf082e0e1a88b6e1ff0123b6bdae06ff372303fdf4512161d2340d2d11' },
     { file: 'lib/hmac-sha256.js', sitePath: 'src/components/VerifyBets/lib/hmac-sha256.js',
         sha256: '2095571fecd77f536bb3363c801cd70786856e687d108e0ff2102a4e2a18b847' },
 ];
 exports.SITE_VERIFIER_DIR = 'verifier-parity';
-exports.LEGACY_BOOTSTRAP_ARTIFACT_GENERATED_AT = '2026-08-05T16:41:40.964Z';
-exports.LEGACY_EARLY_BOOTSTRAP_P_DIGEST = '292d8d546f924cf4cc469bb01061e271c1892f4657f2f28754a2793dba08bc6d';
-exports.LEGACY_BOOTSTRAP_ARTIFACT_SHA256 = 'bf1838490a7e9c173a04c06c1255a59e2bf17e114cca02e9d9b491c72fea0461';
-exports.LEGACY_BOOTSTRAP_FIXTURE_RELATIVE_PATH = 'tests/fixtures/legacy-simulation-results.json';
 function earlyBootstrapPDigest(rows) {
     const canon = [...rows]
         .sort((a, b) => (a?.epoch ?? -1) - (b?.epoch ?? -1))
         .map(r => `${r?.epoch}:${r?.earlyBootstrapP}`)
         .join('\n');
     return (0, crypto_1.createHash)('sha256').update(canon, 'utf8').digest('hex');
+}
+
+},
+"src/prod-capture.js": function(module, exports, require, __filename, __dirname) {
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.loadProdCapture = loadProdCapture;
+exports.unitsToDecimal = unitsToDecimal;
+exports.decimalUnits = decimalUnits;
+const node_crypto_1 = require("node:crypto");
+const node_fs_1 = require("node:fs");
+const path = __importStar(require("node:path"));
+const pins_1 = require("./pins");
+const empty = (problem) => ({
+    problem, files: [], lines: 0, rotates: [], epochs: [],
+    intents: new Map(), bets: [], steps: new Map(), firstStepLine: new Map(), verify: new Map(), plannedTilesById: new Map(),
+});
+let cached = null;
+function loadProdCapture(repoRoot) {
+    if (cached && cached.root === repoRoot)
+        return cached.cap;
+    const cap = { ...empty(''), problem: null };
+    let problem = null;
+    for (const pin of pins_1.PROD_CAPTURES) {
+        const p = path.join(repoRoot, pin.file);
+        if (!(0, node_fs_1.existsSync)(p)) {
+            problem = `${pin.file} is absent`;
+            break;
+        }
+        const raw = (0, node_fs_1.readFileSync)(p);
+        const sha256 = (0, node_crypto_1.createHash)('sha256').update(raw).digest('hex');
+        if (sha256 !== pin.sha256) {
+            problem = `${pin.file} hashes to ${sha256}, pinned ${pin.sha256}`;
+            break;
+        }
+        const text = raw.toString('utf8').split('\n');
+        if (text[text.length - 1] === '')
+            text.pop();
+        const events = [];
+        let bad = -1;
+        text.forEach((l, i) => { try {
+            events.push(JSON.parse(l));
+        }
+        catch {
+            if (bad < 0)
+                bad = i + 1;
+        } });
+        if (bad >= 0) {
+            problem = `${pin.file} line ${bad} is not JSON`;
+            break;
+        }
+        const epochOffset = pins_1.EPOCH_PLAN.findIndex(e => e.capture === pin.capture);
+        const file = { capture: pin.capture, file: pin.file, sha256, lines: text.length, events, meta: null, pre: null, epochOffset };
+        cap.files.push(file);
+        cap.lines += text.length;
+        events.forEach((ev, line) => {
+            switch (ev.t) {
+                case 'meta':
+                    file.meta = ev.meta ?? null;
+                    break;
+                case 'pre':
+                    file.pre = ev;
+                    break;
+                case 'rotate':
+                    cap.rotates.push({ ...ev, capture: pin.capture });
+                    break;
+                case 'epoch':
+                    cap.epochs.push({ ...ev, capture: pin.capture, datasetEpoch: epochOffset + Number(ev.epoch) });
+                    break;
+                case 'intent':
+                    cap.intents.set(String(ev.key), { ev, capture: pin.capture, line });
+                    break;
+                case 'step': {
+                    const key = String(ev.key);
+                    const a = cap.steps.get(key) ?? [];
+                    a.push(ev);
+                    cap.steps.set(key, a);
+                    if (!cap.firstStepLine.has(key))
+                        cap.firstStepLine.set(key, line);
+                    break;
+                }
+                case 'bet': {
+                    cap.bets.push({ rec: ev.rec, capture: pin.capture, epoch: epochOffset + Number(ev.rec?.epoch), line, at: ev.at });
+                    const id = ev.rec?.settleRaw?.id ?? ev.rec?.betId;
+                    if (typeof id === 'string' && Array.isArray(ev.rec?.plannedTiles))
+                        cap.plannedTilesById.set(id, ev.rec.plannedTiles);
+                    break;
+                }
+                case 'verify':
+                    if (typeof ev.betId === 'string')
+                        cap.verify.set(ev.betId, ev);
+                    break;
+                default: break;
+            }
+        });
+    }
+    const out = problem ? empty(problem) : cap;
+    cached = { root: repoRoot, cap: out };
+    return out;
+}
+function unitsToDecimal(u, digits) {
+    const neg = u < 0n, a = neg ? -u : u, scale = 10n ** BigInt(digits);
+    return `${neg ? '-' : ''}${a / scale}.${String(a % scale).padStart(digits, '0')}`;
+}
+function decimalUnits(v, scaleDigits) {
+    const s = typeof v === 'number' ? (Number.isFinite(v) ? v.toFixed(scaleDigits + 4) : '') : typeof v === 'string' ? v.trim() : '';
+    const m = /^(-?)(\d+)(?:\.(\d+))?$/.exec(s);
+    if (!m)
+        return null;
+    const frac = (m[3] ?? '');
+    const head = frac.slice(0, scaleDigits).padEnd(scaleDigits, '0');
+    const tail = frac.slice(scaleDigits);
+    if (/[1-9]/.test(tail))
+        return null;
+    const u = BigInt(m[2]) * 10n ** BigInt(scaleDigits) + BigInt(head || '0');
+    return m[1] === '-' ? -u : u;
 }
 
 },
@@ -1028,7 +1246,7 @@ function erf(x) {
 Object.defineProperty(exports, "__esModule", { value: true });
 
 },
-"tests/mines/qaRegressionTests.js": function(module, exports, require, __filename, __dirname) {
+"tests/mines/regressionTests.js": function(module, exports, require, __filename, __dirname) {
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -1074,17 +1292,17 @@ const seed_derivation_1 = require("../../src/seed-derivation");
 const simulation_1 = require("../steps/simulation");
 const pins_1 = require("../../src/pins");
 const false_alarm_1 = require("../../src/false-alarm");
-const QA01_SERVER = 'f4661fd009f7f0da9193607ffcb4a18d';
-const QA01_CLIENT = 'e944296a042a94bc2ab8dce48a3def1f';
-const QA01_N = 1000000;
-const QA01_M = 1;
-describe('QA-01: the support screen accepts a genuine exact-mean million-round result', () => {
+const R01_SERVER = 'f4661fd009f7f0da9193607ffcb4a18d';
+const R01_CLIENT = 'e944296a042a94bc2ab8dce48a3def1f';
+const R01_N = 1000000;
+const R01_M = 1;
+describe('Regression: the support screen accepts a genuine exact-mean million-round result', () => {
     let wins = 0;
     let winsAt1000 = 0;
     before(function () {
         this.timeout(600000);
-        for (let nonce = 0; nonce < QA01_N; nonce++) {
-            if ((0, rng_1.firstMineTile)(QA01_SERVER, QA01_CLIENT, nonce) !== 1)
+        for (let nonce = 0; nonce < R01_N; nonce++) {
+            if ((0, rng_1.firstMineTile)(R01_SERVER, R01_CLIENT, nonce) !== 1)
                 wins++;
             if (nonce === 999)
                 winsAt1000 = wins;
@@ -1092,64 +1310,64 @@ describe('QA-01: the support screen accepts a genuine exact-mean million-round r
     });
     it('replays to exactly 960,000 wins — the fair expectation, to the win', () => {
         node_assert_1.strict.equal(wins, 960000);
-        node_assert_1.strict.equal(wins, (QA01_N * (config_1.GRID - QA01_M)) / config_1.GRID);
+        node_assert_1.strict.equal(wins, (R01_N * (config_1.GRID - R01_M)) / config_1.GRID);
         node_assert_1.strict.equal(winsAt1000, 968);
     });
     it('and therefore produces simRTP === theoreticalRTP exactly', () => {
-        const mult1 = (0, config_1.theoreticalRTP)(QA01_M, 1) / ((config_1.GRID - QA01_M) / config_1.GRID);
-        const simRTP = (wins / QA01_N) * mult1;
-        node_assert_1.strict.equal(simRTP, (0, config_1.theoreticalRTP)(QA01_M, 1));
+        const mult1 = (0, config_1.theoreticalRTP)(R01_M, 1) / ((config_1.GRID - R01_M) / config_1.GRID);
+        const simRTP = (wins / R01_N) * mult1;
+        node_assert_1.strict.equal(simRTP, (0, config_1.theoreticalRTP)(R01_M, 1));
         node_assert_1.strict.equal(simRTP, 0.99);
     });
     it('POSITIVE CONTROL — the support screen returns NO fault and marks it a supported exact mean', () => {
-        const mult1 = (0, config_1.theoreticalRTP)(QA01_M, 1) / ((config_1.GRID - QA01_M) / config_1.GRID);
+        const mult1 = (0, config_1.theoreticalRTP)(R01_M, 1) / ((config_1.GRID - R01_M) / config_1.GRID);
         const row = {
-            mineCount: QA01_M,
-            simRTP: (wins / QA01_N) * mult1,
-            theoreticalRTP: (0, config_1.theoreticalRTP)(QA01_M, 1),
+            mineCount: R01_M,
+            simRTP: (wins / R01_N) * mult1,
+            theoreticalRTP: (0, config_1.theoreticalRTP)(R01_M, 1),
             jointMaxAbsZ: null,
-            convergence: [{ n: 1000, wins: winsAt1000 }, { n: QA01_N, wins }],
+            convergence: [{ n: 1000, wins: winsAt1000 }, { n: R01_N, wins }],
         };
-        const v = (0, simulation_1.nullCentreSupport)(row, QA01_N);
+        const v = (0, simulation_1.nullCentreSupport)(row, R01_N);
         node_assert_1.strict.deepEqual(v.faults, [], `a genuine seed-reproducible result must not be called fabrication: ${v.faults.join('; ')}`);
         node_assert_1.strict.equal(v.supportedExactMean, true);
     });
     it('NEGATIVE CONTROL — the same equality with a FABRICATED count still fails, on the count', () => {
         const row = {
-            mineCount: QA01_M,
-            simRTP: (0, config_1.theoreticalRTP)(QA01_M, 1),
-            theoreticalRTP: (0, config_1.theoreticalRTP)(QA01_M, 1),
+            mineCount: R01_M,
+            simRTP: (0, config_1.theoreticalRTP)(R01_M, 1),
+            theoreticalRTP: (0, config_1.theoreticalRTP)(R01_M, 1),
             jointMaxAbsZ: null,
-            convergence: [{ n: 1000, wins: winsAt1000 }, { n: QA01_N, wins: wins - 7 }],
+            convergence: [{ n: 1000, wins: winsAt1000 }, { n: R01_N, wins: wins - 7 }],
         };
-        const v = (0, simulation_1.nullCentreSupport)(row, QA01_N);
+        const v = (0, simulation_1.nullCentreSupport)(row, R01_N);
         node_assert_1.strict.equal(v.supportedExactMean, false);
         node_assert_1.strict.equal(v.faults.length, 1);
         node_assert_1.strict.match(v.faults[0], /claims exactly 960000 wins, but the row's own final checkpoint records 959993/);
     });
     it('NEGATIVE CONTROL — the equality with NO corroborating checkpoint fails', () => {
         const v = (0, simulation_1.nullCentreSupport)({
-            mineCount: QA01_M, simRTP: 0.99, theoreticalRTP: 0.99, jointMaxAbsZ: null, convergence: [],
-        }, QA01_N);
+            mineCount: R01_M, simRTP: 0.99, theoreticalRTP: 0.99, jointMaxAbsZ: null, convergence: [],
+        }, R01_N);
         node_assert_1.strict.equal(v.supportedExactMean, false);
         node_assert_1.strict.match(v.faults[0] ?? '', /no n=1000000 convergence checkpoint/);
     });
     it('jointMaxAbsZ === 0 is screened only where N·q is not an integer', () => {
-        const bad = (0, simulation_1.nullCentreSupport)({ mineCount: 2, simRTP: 1, theoreticalRTP: 2, jointMaxAbsZ: 0 }, QA01_N);
+        const bad = (0, simulation_1.nullCentreSupport)({ mineCount: 2, simRTP: 1, theoreticalRTP: 2, jointMaxAbsZ: 0 }, R01_N);
         node_assert_1.strict.equal(bad.faults.length, 1);
         node_assert_1.strict.match(bad.faults[0], /not an integer — outside the support/);
-        const ok = (0, simulation_1.nullCentreSupport)({ mineCount: 3, simRTP: 1, theoreticalRTP: 2, jointMaxAbsZ: 0 }, QA01_N);
+        const ok = (0, simulation_1.nullCentreSupport)({ mineCount: 3, simRTP: 1, theoreticalRTP: 2, jointMaxAbsZ: 0 }, R01_N);
         node_assert_1.strict.deepEqual(ok.faults, []);
     });
     it('an exactly-zero layoutR1 / layoutR1Z / layoutRunsZ is attainable and is NOT screened', () => {
         const v = (0, simulation_1.nullCentreSupport)({
             mineCount: 7, simRTP: 1, theoreticalRTP: 2, jointMaxAbsZ: 1.4,
             layoutR1: 0, layoutR1Z: 0, layoutRunsZ: 0,
-        }, QA01_N);
+        }, R01_N);
         node_assert_1.strict.deepEqual(v.faults, []);
     });
 });
-describe('QA-03: display multiplier floors in exact integer arithmetic', () => {
+describe('Regression: display multiplier floors in exact integer arithmetic', () => {
     const independentCents = (m, k) => {
         let n = 99n, d = 100n;
         for (let i = 0; i < k; i++) {
@@ -1209,7 +1427,7 @@ describe('QA-03: display multiplier floors in exact integer arithmetic', () => {
         node_assert_1.strict.ok(Number.isNaN((0, config_1.minesMultiplier)(24, 2)));
     });
 });
-describe('QA-12: modulo-bias rejection — the saved deterministic vector', () => {
+describe('Regression: modulo-bias rejection — the saved deterministic vector', () => {
     const SS = '1f1da0da5907129a0043f5ac8a12b5ee';
     const CS = '097bf01483879668f626781b35b297c2';
     const NONCE = 760455, CURSOR = 12, RANGE = 13, M = 5;
@@ -1248,8 +1466,8 @@ describe('QA-12: modulo-bias rejection — the saved deterministic vector', () =
         node_assert_1.strict.notDeepEqual(revealNoReject(config_1.GRID - 1), (0, rng_1.revealMines)(SS, CS, NONCE, config_1.GRID - 1));
     });
 });
-describe('QA-05: deterministic, versioned, domain-separated seed derivation', () => {
-    const MASTER = '00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff';
+describe('Regression: deterministic, versioned, domain-separated seed derivation', () => {
+    const MASTER = 'ffeeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100';
     it('is a pure function of (master, domain, index)', () => {
         node_assert_1.strict.equal((0, seed_derivation_1.deriveSeedHex)(MASTER, 'pass1-server:m=3', 0), (0, seed_derivation_1.deriveSeedHex)(MASTER, 'pass1-server:m=3', 0));
         node_assert_1.strict.match((0, seed_derivation_1.deriveSeedHex)(MASTER, 'pass1-server:m=3', 0), /^[0-9a-f]{32}$/);
@@ -1259,7 +1477,7 @@ describe('QA-05: deterministic, versioned, domain-separated seed derivation', ()
         node_assert_1.strict.notEqual(a, (0, seed_derivation_1.deriveSeedHex)(MASTER, 'pass1-client:m=3', 0));
         node_assert_1.strict.notEqual(a, (0, seed_derivation_1.deriveSeedHex)(MASTER, 'pass1-server:m=4', 0));
         node_assert_1.strict.notEqual(a, (0, seed_derivation_1.deriveSeedHex)(MASTER, 'pass1-server:m=3', 1));
-        node_assert_1.strict.notEqual(a, (0, seed_derivation_1.deriveSeedHex)(MASTER.replace(/^00/, '01'), 'pass1-server:m=3', 0));
+        node_assert_1.strict.notEqual(a, (0, seed_derivation_1.deriveSeedHex)(MASTER.replace(/^ff/, 'fe'), 'pass1-server:m=3', 0));
     });
     it('binds the version string, so a future expansion cannot masquerade as this one', () => {
         node_assert_1.strict.equal(seed_derivation_1.SEED_DERIVATION_VERSION, 'mines-seed-derivation-v1');
@@ -1276,41 +1494,7 @@ describe('QA-05: deterministic, versioned, domain-separated seed derivation', ()
         node_assert_1.strict.equal((0, seed_derivation_1.isMasterSeed)(undefined), false);
     });
 });
-describe('QA-05b: the legacy earlyBootstrapP pin (fixture — immutable by construction)', () => {
-    const fixturePath = path.join(__dirname, '..', 'fixtures', 'legacy-simulation-results.json');
-    const fixtureBytes = fs.readFileSync(fixturePath);
-    const legacy = JSON.parse(fixtureBytes.toString('utf-8'));
-    const rows = legacy.pass2_casino_seeds.results;
-    it('the fixture is the exact file that was reviewed — SHA-256 pinned in src/pins.ts', () => {
-        node_assert_1.strict.equal((0, node_crypto_1.createHash)('sha256').update(fixtureBytes).digest('hex'), pins_1.LEGACY_BOOTSTRAP_ARTIFACT_SHA256);
-        node_assert_1.strict.equal(path.relative(path.join(__dirname, '..', '..'), fixturePath).split(path.sep).join('/'), pins_1.LEGACY_BOOTSTRAP_FIXTURE_RELATIVE_PATH);
-    });
-    it('the fixture is the one the legacy exception covers', () => {
-        node_assert_1.strict.equal((0, pins_1.earlyBootstrapPDigest)(rows), pins_1.LEGACY_EARLY_BOOTSTRAP_P_DIGEST);
-    });
-    it('the fixture is the legacy one — it records no replay metadata at all', () => {
-        node_assert_1.strict.equal(legacy.masterSeed, undefined);
-        node_assert_1.strict.equal(legacy.seedDerivation, undefined);
-        node_assert_1.strict.equal(legacy.pass2_casino_seeds.bootstrapSeedDerivation, undefined);
-        node_assert_1.strict.equal(legacy.generatedAt, pins_1.LEGACY_BOOTSTRAP_ARTIFACT_GENERATED_AT);
-    });
-    it('moves off the pin when ONE p moves to a neighbouring legal lattice point (forgery A27)', () => {
-        const reps = legacy.pass2_casino_seeds.bootstrapReps;
-        const forged = rows.map((r, i) => i !== 0 ? r : {
-            ...r, earlyBootstrapP: (Math.round(r.earlyBootstrapP * (reps + 1)) + 1) / (reps + 1),
-        });
-        node_assert_1.strict.notEqual((0, pins_1.earlyBootstrapPDigest)(forged), pins_1.LEGACY_EARLY_BOOTSTRAP_P_DIGEST);
-    });
-    it('is order-insensitive, so a benign row reordering is not a fault (G-VALID)', () => {
-        node_assert_1.strict.equal((0, pins_1.earlyBootstrapPDigest)([...rows].reverse()), (0, pins_1.earlyBootstrapPDigest)(rows));
-        node_assert_1.strict.equal((0, pins_1.earlyBootstrapPDigest)([...rows].reverse()), pins_1.LEGACY_EARLY_BOOTSTRAP_P_DIGEST);
-    });
-    it('cannot be satisfied by a truncated or blanked row set', () => {
-        node_assert_1.strict.notEqual((0, pins_1.earlyBootstrapPDigest)(rows.slice(0, rows.length - 1)), pins_1.LEGACY_EARLY_BOOTSTRAP_P_DIGEST);
-        node_assert_1.strict.notEqual((0, pins_1.earlyBootstrapPDigest)(rows.map(() => ({}))), pins_1.LEGACY_EARLY_BOOTSTRAP_P_DIGEST);
-    });
-});
-describe('QA-05c: the live simulation artifact declares a supported replay format', () => {
+describe('Regression: the live simulation artifact declares a supported replay format', () => {
     const sim = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'outputs', 'simulation-results.json'), 'utf-8'));
     const rows = sim.pass2_casino_seeds.results;
     const replayFields = [
@@ -1319,17 +1503,11 @@ describe('QA-05c: the live simulation artifact declares a supported replay forma
         ['pass2_casino_seeds.bootstrapSeedDerivation', sim.pass2_casino_seeds.bootstrapSeedDerivation],
     ];
     const present = replayFields.filter(([, v]) => v !== undefined);
-    it('is schema-2 (master-seeded, replayable) or schema-1 (the one pinned legacy artifact)', () => {
-        if (present.length === 0) {
-            node_assert_1.strict.equal((0, pins_1.earlyBootstrapPDigest)(rows), pins_1.LEGACY_EARLY_BOOTSTRAP_P_DIGEST, 'artifact carries no replay metadata and is not the pinned legacy artifact — stripping the metadata is not a way to have earlyBootstrapP taken on trust');
-            node_assert_1.strict.equal(sim.generatedAt, pins_1.LEGACY_BOOTSTRAP_ARTIFACT_GENERATED_AT);
-        }
-        else {
-            node_assert_1.strict.equal(present.length, replayFields.length, `replay metadata INCOMPLETE — carries ${present.map(([n]) => n).join(', ')}; all three are required together or none of them`);
-            node_assert_1.strict.equal((0, seed_derivation_1.isMasterSeed)(sim.masterSeed), true, `masterSeed ${JSON.stringify(sim.masterSeed)} is not a usable master seed — the bootstrap null cannot be rebuilt from it, so the run is UNVERIFIABLE, not exempt`);
-            node_assert_1.strict.equal(sim.seedDerivation, seed_derivation_1.SEED_DERIVATION_VERSION);
-            node_assert_1.strict.equal(sim.pass2_casino_seeds.bootstrapSeedDerivation, seed_derivation_1.SEED_DERIVATION_VERSION);
-        }
+    it('is master-seeded and replayable: all three replay fields present and usable', () => {
+        node_assert_1.strict.equal(present.length, replayFields.length, `replay metadata INCOMPLETE — carries ${present.map(([n]) => n).join(', ') || 'none'}; all three are required`);
+        node_assert_1.strict.equal((0, seed_derivation_1.isMasterSeed)(sim.masterSeed), true, `masterSeed ${JSON.stringify(sim.masterSeed)} is not a usable master seed — the bootstrap null cannot be rebuilt from it, so the run is UNVERIFIABLE, not exempt`);
+        node_assert_1.strict.equal(sim.seedDerivation, seed_derivation_1.SEED_DERIVATION_VERSION);
+        node_assert_1.strict.equal(sim.pass2_casino_seeds.bootstrapSeedDerivation, seed_derivation_1.SEED_DERIVATION_VERSION);
     });
     it('its earlyBootstrapP digest is order-insensitive — reordered rows digest to the ORIGINAL rows', () => {
         node_assert_1.strict.equal((0, pins_1.earlyBootstrapPDigest)([...rows].reverse()), (0, pins_1.earlyBootstrapPDigest)(rows));
@@ -1346,7 +1524,7 @@ describe('QA-05c: the live simulation artifact declares a supported replay forma
         node_assert_1.strict.notEqual((0, pins_1.earlyBootstrapPDigest)(forged), own);
     });
 });
-describe('QA-02c: the false-alarm sum is nominal — the exact binomial refutes the bound reading', () => {
+describe('Regression: the false-alarm sum is nominal — the exact binomial refutes the bound reading', () => {
     const N = 1000;
     const M = 24;
     const exactTail = (lo, hi) => {
@@ -1442,7 +1620,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const assert = __importStar(require("assert"));
 const crypto_1 = require("crypto");
 const rng_1 = require("../../src/rng");
-const EXPECTED_CHECKS = 98;
+const EXPECTED_CHECKS = 97;
 function runSelftest() {
     let pass = 0;
     const failed = [];
@@ -1483,30 +1661,30 @@ function runSelftest() {
     function floorScaled(x, dp) { return (x.n * 10n ** BigInt(dp)) / x.d; }
     function scaledOfDecimal(s, dp) { return floorScaled(decimalQ(s), dp); }
     const V = [
-        { id: 'V1', seed: 'd1148d001c0ce343dcd526a17ab07de0', commit: '7ec1c4082572c9024863cfd98d32626586094f8308bd73b90965d10bed5796e3',
-            client: 'auditddad46097947', nonce: 0, m: 1, amount: '0.1',
-            hmac0: 'd6a9b79cade413b0e5bba6627d488435fb546b080db3ba334a1c2da737b404e9', u32: 3601446812, off0: 12,
-            mines: [13], opened: [2], win: true, edged: q(33n, 32n), mult: '1.03', won: '0.103125' },
-        { id: 'V2', seed: '72209686500593d7ff971a3848ff17b2', commit: '88244482041d4da91e1121ef8c106fc2a01affca138458535578e1301361f152',
-            client: 'audit36a14db8902c', nonce: 4, m: 24, amount: '0.1',
-            hmac0: 'db7b9d15550ee2dd28f85bcd0744f49be501e13413af528298f95ddc3a849c96', u32: 3682311445, off0: 20,
-            offsets: [20, 9, 11, 12, 17, 12, 6, 3, 2, 1, 3, 13, 9, 9, 9, 1, 0, 6, 3, 0, 1, 3, 0, 1],
-            mines: [21, 11, 14, 16, 22, 18, 13, 2, 8, 9, 3, 25, 5, 23, 24, 17, 4, 15, 7, 20, 19, 12, 10, 1],
-            opened: [6], win: true, edged: q(99n, 4n), mult: '24.75', won: '2.475' },
-        { id: 'V3', seed: 'aa25dc6c599ec12f86008226ed60cb11', commit: '66c283a045f5fa95fe2f4a8102d8f59877c067aef045be210e9d59596b1bbd22',
-            client: 'audit7a476e8c79bf', nonce: 0, m: 3, amount: '10',
-            hmac0: '70229348792baf639954ef3402f529e4c413f27aa8feaa58029353ba8d142f55', u32: 1881314120, off0: 20,
-            offsets: [20, 16, 11], mines: [21, 18, 14], opened: [2], win: true, edged: q(9n, 8n), mult: '1.12', won: '11.25' },
-        { id: 'V4', seed: 'cf5c6ca7bb3a767e9d9821c01a0c48cf', commit: 'df6cbf4cfe28cc8f2903c910b5bf134b6faca3690bdc850d4ecba0bf2b36f08d',
-            client: 'auditc956a502047c', nonce: 39, m: 12, amount: '0.1',
-            hmac0: 'ce7c610ded9d82fcb73b1abc2d91cf1a12a4545bc8c92d20bb24bc933d36274b', u32: 3464257805, off0: 5,
-            offsets: [5, 0, 18, 16, 7, 1, 2, 9, 9, 5, 3, 9], mines: [6, 2, 21, 20, 12, 7, 9, 17, 18, 15, 14, 3],
-            opened: [5, 4, 25, 19, 23], win: true, fair: q(1610n, 39n), edged: q(5313n, 130n), mult: '40.86', won: '4.08692307' },
-        { id: 'V5', seed: '58e66c2fe517062b6e8a80cfe57024fc', commit: 'd5eec12147e265db7b3d971670e9327145e1b8bd24421dcabfdfadbd2fcb8aca',
-            client: 'audit1ef7fc9bc054', nonce: 38, m: 12, amount: '0.10000000',
-            hmac0: 'c9740228cfc293d33c3c9981d5a9d9730c7992928fae62352f6b343fb5491aa1', u32: 3379823144, off0: 19,
-            offsets: [19, 8, 16, 18, 19, 19, 8, 2, 5, 14, 1, 8], mines: [20, 10, 19, 22, 24, 25, 15, 2, 14, 5, 12, 1],
-            opened: [11, 23, 2], win: false, won: '0' },
+        { id: 'V1', seed: 'c5777675456c54fb9096287dfb1cd804', commit: '4378c7dcd852995859795f0bbc5a535c98bbb7fa2c97fc141aae5292811e4119',
+            client: 'audit5065faa79b0b', nonce: 0, m: 1, amount: '0.1',
+            hmac0: '561e4a30dea37fad39e8109c7d3fc7c34e94bb58f824845ac3b21f9a798dbd36', u32: 1444825648, off0: 23,
+            mines: [24], opened: [2, 21], win: true, edged: q(99n, 92n), mult: '1.07', won: '0.10', wstake: '0.07085468', wwon: '0.07624579' },
+        { id: 'V2', seed: '00e770d6e05988f3ad2541120747356d', commit: '3d240b15cd531ef7e6b3d5b80382e6aaf3ed5fd6ab5b3c130a5ee114fb6992bd',
+            client: 'audit85eaa242e54a', nonce: 37, m: 24, amount: '0.1',
+            hmac0: '7f8acfbaafb92678d64a901c4ec8c2db497365c3df73df6df485bd8bede09d7c', u32: 2139803578, off0: 3,
+            offsets: [3, 17, 11, 6, 0, 11, 7, 10, 8, 10, 0, 6, 0, 10, 7, 5, 7, 2, 3, 1, 0, 2, 2, 0],
+            mines: [4, 19, 14, 10, 5, 17, 3, 18, 6, 20, 11, 8, 13, 24, 22, 21, 7, 1, 15, 16, 12, 9, 25, 2],
+            opened: [23], win: true, edged: q(99n, 4n), mult: '24.75', won: '2.47', wstake: '0.10000000', wwon: '2.47500000' },
+        { id: 'V3', seed: '3cf098f6c5ba08f60eb228995ec061e6', commit: '0f2be4ce60e2cdf3309e0de3525a1a7a1a326f120568a6f756e0c0b07658778b',
+            client: 'audit12902b0c80f4', nonce: 123, m: 3, amount: '10',
+            hmac0: 'b54ee76c0d1dff48465551da5e900896cc42924a1107d59a50fc3c37584f7c7b', u32: 3041847148, off0: 23,
+            offsets: [23, 5, 18], mines: [24, 7, 21], opened: [25], win: true, edged: q(9n, 8n), mult: '1.12', won: '11.25', wstake: '10.00000000', wwon: '11.25000000' },
+        { id: 'V4', seed: 'c66188d98acb72928e588e353413e929', commit: '8b6cf0887521631e00ce27b8290712427f7cf2cdc2bdf9094569b424e384e4b1',
+            client: 'audit1f90826fce1e', nonce: 139, m: 12, amount: '0.1',
+            hmac0: '55c612cc7fe35fed2855d3146d8fec11aef37b10c0c3c4b72b5025f904c69d96', u32: 1439044300, off0: 0,
+            offsets: [0, 5, 10, 2, 3, 11, 5, 5, 7, 5, 8, 5], mines: [1, 7, 13, 6, 8, 17, 12, 3, 16, 15, 19, 4],
+            opened: [18, 9, 22, 24, 21], win: true, fair: q(1610n, 39n), edged: q(5313n, 130n), mult: '40.86', won: '4.08', wstake: '0.07088791', wwon: '2.89713435' },
+        { id: 'V5', seed: 'dd0386a9ff7f578ad9369df19b6136ab', commit: '61669ff57a1550fe13e1066da7d7a0b194f8418a0ad31e15cb0692f753be8e12',
+            client: 'pfaudit-prod-mines-d1-d55af3b7500b', nonce: 38, m: 12, amount: '0.1',
+            hmac0: '0d0e0864868f13f14d76d255f201210296863dcdc6b9ebf9b204e9b7f33e986c', u32: 219023460, off0: 10,
+            offsets: [10, 17, 9, 2, 7, 3, 5, 6, 7, 6, 14, 2], mines: [11, 19, 12, 6, 3, 9, 5, 14, 16, 4, 25, 8],
+            opened: [10, 7, 12], win: false, won: '0', wstake: '0.10000000' },
     ];
     function settle(mines, opened) {
         const set = new Set(mines);
@@ -1541,8 +1719,11 @@ function runSelftest() {
                 check(`${P} fair == ${v.fair.n}/${v.fair.d}`, fairQ(v.m, s.k).n === v.fair.n && fairQ(v.m, s.k).d === v.fair.d);
             check(`${P} edged == ${v.edged.n}/${v.edged.d}`, e.n === v.edged.n && e.d === v.edged.d);
             check(`${P} multiplier floor2 == ${v.mult}`, floorScaled(e, 2) === scaledOfDecimal(v.mult, 2));
-            const won = floorScaled(mul(decimalQ(v.amount), e), 8);
-            check(`${P} winningAmount floor8 == ${v.won}`, won === scaledOfDecimal(v.won, 8));
+            const booked = floorScaled(mul(decimalQ(v.amount), e), 2);
+            check(`${P} booked winningAmount floor2 == ${v.won}`, booked === scaledOfDecimal(v.won, 2));
+            const mult8 = q(floorScaled(e, 8), 100000000n);
+            const walletAmt = floorScaled(mul(decimalQ(v.wstake), mult8), 8);
+            check(`${P} wallet field floor8(stake × floor8(edged)) == ${v.wwon}`, v.wwon !== undefined && walletAmt === scaledOfDecimal(v.wwon, 8));
         }
         else {
             check(`${P} loss pays 0`, !s.win && v.won === '0');
@@ -1551,25 +1732,16 @@ function runSelftest() {
         check(`${P} census draws 25, rejections 0`, cen.draws === 25 && cen.rejections === 0);
     }
     {
-        const sep = { seed: 'ba11c95fa563fc543b853e7d6b7aa4db', client: 'audit9c27195c9cc2', nonce: 2, mines: [4], opened: [5, 14, 3, 18, 1, 2, 24, 15, 8, 25] };
-        const oct = { seed: '58e66c2fe517062b6e8a80cfe57024fc', client: 'audit1ef7fc9bc054', nonce: 2, mines: [8], opened: [23, 17, 16, 9, 12, 13, 6, 18, 4, 7] };
-        const ms = (0, rng_1.revealMines)(sep.seed, sep.client, sep.nonce, 1);
-        const mo = (0, rng_1.revealMines)(oct.seed, oct.client, oct.nonce, 1);
-        check('V6 26Sep mines [4]', (0, rng_1.sameMines)(ms, sep.mines), ms.join(' '));
-        check('V6 3Oct mines [8]', (0, rng_1.sameMines)(mo, oct.mines), mo.join(' '));
-        check('V6 26Sep win k=10', settle(ms, sep.opened).win && settle(ms, sep.opened).k === 10);
-        check('V6 3Oct win k=10', settle(mo, oct.opened).win && settle(mo, oct.opened).k === 10);
-        const e = edgedQ(1, 10);
-        check('V6 exact edged == 1.65', e.n === 33n && e.d === 20n);
-        let x = 1.0;
-        for (let t = 0; t < 10; t++)
-            x = x * ((25 - t) / (25 - 1 - t));
-        const M = x * 0.99;
-        check('V6 double M == 1.6499999999999997', M === 1.6499999999999997, String(M));
-        check('V6 26Sep double multiplier 1.64', Math.floor(M * 100) / 100 === 1.64);
-        check('V6 26Sep double winningAmount 0.16499999', Math.floor(0.1 * M * 1e8) / 1e8 === 0.16499999);
-        check('V6 3Oct exact multiplier 1.65', floorScaled(e, 2) === 165n);
-        check('V6 3Oct exact winningAmount 0.165', floorScaled(mul(decimalQ('0.1'), e), 8) === 16500000n);
+        const e = edgedQ(12, 2);
+        const rule = floorScaled(mul(decimalQ('0.07085468'), q(floorScaled(e, 8), 100000000n)), 8);
+        const exact = floorScaled(mul(decimalQ('0.07085468'), e), 8);
+        check('r80BHxgD wallet rule == served wallet field 0.26979281', rule === 26979281n, String(rule));
+        check('r80BHxgD wallet rule is one 1e-8 unit below the exact product', exact - rule === 1n, `${exact} vs ${rule}`);
+        const v4 = V[3];
+        const e4 = edgedQ(v4.m, v4.opened.length);
+        check('V4 wallet rule equals the exact product', floorScaled(mul(decimalQ(v4.wstake), q(floorScaled(e4, 8), 100000000n)), 8) === floorScaled(mul(decimalQ(v4.wstake), e4), 8));
+        check('V2 booked 2.47 is below the wallet field 2.475', scaledOfDecimal(V[1].won, 8) < scaledOfDecimal(V[1].wwon, 8));
+        check('V3 booked 11.25 equals the wallet field 11.25', scaledOfDecimal(V[2].won, 8) === scaledOfDecimal(V[2].wwon, 8));
     }
     check('edged(1,1) == 1.03125', (() => { const e = edgedQ(1, 1); return e.n === 33n && e.d === 32n; })());
     check('edged(12,13) == 5148297', (() => { const e = edgedQ(12, 13); return e.n === 5148297n && e.d === 1n; })());
@@ -1621,7 +1793,7 @@ function runSelftest() {
         const per = (0, rng_1.expectedModuloRejections)(1);
         check('expectedModuloRejections(1) == sum (2^32 - maxFairFor(r))/2^32', per === s, String(per));
         check('expectedModuloRejections(0) == 0', (0, rng_1.expectedModuloRejections)(0) === 0);
-        check('expectedModuloRejections linear (8900 == 8900*per round)', (0, rng_1.expectedModuloRejections)(8900) === 8900 * per);
+        check('expectedModuloRejections linear (6574 == 6574*per round)', (0, rng_1.expectedModuloRejections)(6574) === 6574 * per);
         check('expectedModuloRejections per draw <= 4.9e-9 bound times 25', per <= 25 * 4.9e-9 && per > 0);
     }
     return { pass, total, failed };
@@ -1642,10 +1814,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const node_assert_1 = require("node:assert");
 const rng_1 = require("../../src/rng");
 const config_1 = require("../../src/config");
-const A_SERVER_SEED = '8b2fc7e909d2fff439692f648a9df0ba';
-const A_CLIENT_SEED = 'audit59c2b0bf86aa';
-const B_SERVER_SEED = '1973480c6bf1a4e3b62f7f8eb3f663d5';
-const B_CLIENT_SEED = 'audite90633066c80';
+const A_SERVER_SEED = 'c5777675456c54fb9096287dfb1cd804';
+const A_CLIENT_SEED = 'audit5065faa79b0b';
+const B_SERVER_SEED = '00e770d6e05988f3ad2541120747356d';
+const B_CLIENT_SEED = 'audit85eaa242e54a';
 describe('rng: operator-supplied validation vectors', () => {
     const OP_SERVER_SEED = 'a3f90b1c2d4e5f60718293a4b5c6d7e8';
     const OP_CLIENT_SEED = 'client-seed';
@@ -1661,13 +1833,14 @@ describe('rng: operator-supplied validation vectors', () => {
     });
 });
 describe('mines: real captured mine-layout reproduction', () => {
-    it('bet GbqOuPvhQekqcARNtHZ3_ (serverSeed 8b2f…, nonce=25, mineCount=3) -> [6,20,7]', () => {
-        const mines = (0, rng_1.revealMines)(A_SERVER_SEED, A_CLIENT_SEED, 25, 3);
-        node_assert_1.strict.ok((0, rng_1.sameMines)(mines, [6, 20, 7]), `got ${JSON.stringify(mines)}`);
+    it('bet WFQiZHXzP5KIiKp1mw5UO (serverSeed c577…, nonce=4, mineCount=3) -> [22,16,20]', () => {
+        const mines = (0, rng_1.revealMines)(A_SERVER_SEED, A_CLIENT_SEED, 4, 3);
+        node_assert_1.strict.ok((0, rng_1.sameMines)(mines, [22, 16, 20]), `got ${JSON.stringify(mines)}`);
     });
-    it('bet j2ICJ7NM_TrD_UMtv6Av0 (serverSeed 1973…, nonce=0, mineCount=24) -> full 24-tile draw order', () => {
-        const mines = (0, rng_1.revealMines)(B_SERVER_SEED, B_CLIENT_SEED, 0, 24);
-        node_assert_1.strict.ok((0, rng_1.sameMines)(mines, [23, 11, 2, 8, 20, 22, 16, 24, 12, 9, 5, 19, 1, 18, 15, 7, 21, 3, 6, 10, 17, 13, 25, 14]), `got ${JSON.stringify(mines)}`);
+    it('bet Z6B5Y_EKOsIi9rFGBZ8XX (serverSeed 00e7…, nonce=37, mineCount=24) -> full 24-tile draw order, tile 23 the one safe tile', () => {
+        const mines = (0, rng_1.revealMines)(B_SERVER_SEED, B_CLIENT_SEED, 37, 24);
+        node_assert_1.strict.ok((0, rng_1.sameMines)(mines, [4, 19, 14, 10, 5, 17, 3, 18, 6, 20, 11, 8, 13, 24, 22, 21, 7, 1, 15, 16, 12, 9, 25, 2]), `got ${JSON.stringify(mines)}`);
+        node_assert_1.strict.equal(mines.includes(23), false);
     });
 });
 describe('mines: firstMineTile is revealMines()[0] — the one-HMAC fast path Step 17 re-derives with', () => {
@@ -1686,12 +1859,12 @@ describe('mines: firstMineTile is revealMines()[0] — the one-HMAC fast path St
     });
 });
 describe('mines: commitment hash (SHA-256 of utf8 hex string)', () => {
-    it('commitHash(8b2f…) -> 5d6c4f10… (SHA-256 of utf8 hex string)', () => {
-        node_assert_1.strict.equal((0, rng_1.commitHash)(A_SERVER_SEED), '5d6c4f105f182f9798063a4ca29d2c4ad2c575449bc5742a9680ec31bd9d79a0');
+    it('commitHash(1725…) -> 9167d5e1…, the commitment of epoch 1 (SHA-256 of utf8 hex string)', () => {
+        node_assert_1.strict.equal((0, rng_1.commitHash)('17259e56806ba7ed6ebe6e4ef03858be'), '9167d5e1dfb29d6da7ba2d2d1d500f10a97b13836940451ab6abc2518b51957e');
     });
 });
 describe('mines: multiplier — exact payout vs floored display', () => {
-    it('minesMultiplierExact(3, 1) === 1.125 (the amount credited)', () => {
+    it('minesMultiplierExact(3, 1) === 1.125 (phase C: 11.25 booked, and in the wallet field, on a 10.00 stake)', () => {
         node_assert_1.strict.ok(Math.abs((0, config_1.minesMultiplierExact)(3, 1) - 1.125) < 1e-12);
     });
     it('minesMultiplier(3, 1) === 1.12 (floored display field, cosmetic)', () => {
@@ -1762,9 +1935,8 @@ const stats_1 = require("../../src/stats");
 const config_1 = require("../../src/config");
 const rng_1 = require("../../src/rng");
 const seed_derivation_1 = require("../../src/seed-derivation");
-const pins_1 = require("../../src/pins");
 const false_alarm_1 = require("../../src/false-alarm");
-const pins_2 = require("../../src/pins");
+const pins_1 = require("../../src/pins");
 const diff_1 = require("../../src/diff");
 const replay_pool_1 = require("../../src/replay-pool");
 function binomialSurvival(k, n, p) {
@@ -1886,7 +2058,9 @@ function nullCentreSupport(r, roundsPerConfig) {
     return { faults, supportedExactMean };
 }
 const MIN_ROUNDS_PER_CONFIG = 1000000;
-const SERVED_NONCES = 10000;
+const SERVED_WINDOWS = 200;
+const servedNonces = (size) => SERVED_WINDOWS * size;
+const SERVED_NONCE_FLOOR = 10000;
 const SERVED_ALPHA = 0.01;
 const SERVED_FAMILY_ALPHA = 0.001;
 const SERVED_POOLED_Z = 3.090;
@@ -1904,20 +2078,20 @@ function normalCdf(x) {
     const two = (0, stats_1.normalTwoSidedP)(x);
     return x >= 0 ? 1 - two / 2 : two / 2;
 }
-function servedConfigOf(b) {
+function servedConfigOf(b, planned) {
     const ot = Array.isArray(b.openTiles) ? b.openTiles : [];
     if (!Number.isInteger(b.mineCount) || b.mineCount < 1 || b.mineCount > config_1.GRID - 1)
         return null;
     if (!Number.isInteger(b.reveals) || b.reveals < 1 || b.reveals > config_1.GRID - b.mineCount)
         return null;
-    if (ot.length < 1 || !Number.isInteger(ot[0]) || ot[0] < 1 || ot[0] > config_1.GRID)
+    const plan = planned.get(b.id);
+    if (!Array.isArray(plan) || plan.length !== b.reveals || plan.some(t => !Number.isInteger(t) || t < 1 || t > config_1.GRID))
         return null;
-    const plan = Array.from({ length: b.reveals }, (_, r) => ((ot[0] + r - 1) % config_1.GRID) + 1);
-    if (ot.length > plan.length || ot.some((t, i) => t !== plan[i]))
+    if (ot.length < 1 || ot.length > plan.length || ot.some((t, i) => t !== plan[i]))
         return null;
     if (b.result === 'won' ? ot.length !== plan.length : b.result !== 'lost')
         return null;
-    return { m: b.mineCount, plan };
+    return { m: b.mineCount, plan: [...plan] };
 }
 const BIND_CHECKPOINT_N = 1000;
 const CHERRY_EARLY_ALPHA = 0.05;
@@ -1992,22 +2166,23 @@ function run(ctx) {
     const servedEpochs = [];
     for (const sd of revealedForServed) {
         const ep = (ctx.byHash.get(sd.hashedServerSeed) ?? []).slice().sort((a, b) => a.nonce - b.nonce);
-        const windowOk = ep.length === pins_2.EXPECTED_EPOCH_SIZE && ep.every((b, i) => b.nonce === pins_2.NONCE_BASE + i && b.clientSeed === sd.clientSeed);
+        const size = pins_1.EPOCH_PLAN[sd.epoch]?.size ?? -1;
+        const windowOk = ep.length === size && servedNonces(size) >= SERVED_NONCE_FLOOR && ep.every((b, i) => b.nonce === pins_1.NONCE_BASE + i && b.clientSeed === sd.clientSeed && b.epoch === sd.epoch);
         if (!windowOk) {
-            servedBind.push(`epoch ${sd.epoch}: served sequence is not exactly nonces ${pins_2.NONCE_BASE}…${pins_2.NONCE_BASE + pins_2.EXPECTED_EPOCH_SIZE - 1} under the seed record's client seed`);
+            servedBind.push(`epoch ${sd.epoch}: served sequence is not exactly nonces ${pins_1.NONCE_BASE}…${pins_1.NONCE_BASE + size - 1} (the epoch's planned length, src/pins.ts EPOCH_PLAN) under the seed record's client seed`);
             continue;
         }
-        const configs = ep.map(b => servedConfigOf(b));
+        const configs = ep.map(b => servedConfigOf(b, ctx.prodCapture.plannedTilesById));
         const badAt = configs.findIndex(c => c === null);
         if (badAt >= 0) {
-            servedBind.push(`epoch ${sd.epoch} nonce ${ep[badAt].nonce}: opened tiles ${JSON.stringify(ep[badAt].openTiles)} are not a prefix of the plan rebuilt from the capture rule (reveals ${ep[badAt].reveals}, ${ep[badAt].result})`);
+            servedBind.push(`epoch ${sd.epoch} nonce ${ep[badAt].nonce}: opened tiles ${JSON.stringify(ep[badAt].openTiles)} are not a prefix of the round's planned tiles in the raw capture (reveals ${ep[badAt].reveals}, ${ep[badAt].result})${ctx.prodCapture.problem ? ` — raw capture not loaded: ${ctx.prodCapture.problem}` : ''}`);
             continue;
         }
         servedEpochs.push({ epoch: sd.epoch, hash: sd.hashedServerSeed, bets: ep, configs: configs });
     }
     const servedJobs = servedEpochs.map(e => ({
         kind: 'served', epoch: e.epoch, serverSeed: ctx.seedMap.get(e.hash),
-        clientSeed: e.bets[0].clientSeed, configs: e.configs, nonces: SERVED_NONCES,
+        clientSeed: e.bets[0].clientSeed, configs: e.configs, nonces: servedNonces(e.configs.length),
     }));
     let replayError = '';
     let replayed = [];
@@ -2018,7 +2193,7 @@ function run(ctx) {
     catch (e) {
         replayError = e.message;
     }
-    console.log(`  [REPLAY] ${p1Jobs.length} Pass-1 rows × ${roundsPerConfig.toLocaleString()} rounds and ${servedJobs.length} served-config epochs × ${SERVED_NONCES.toLocaleString()} nonces replayed in parallel worker processes (${((Date.now() - replayStart) / 1000).toFixed(1)} s)${replayError ? ` — FAILED: ${replayError}` : ''}`);
+    console.log(`  [REPLAY] ${p1Jobs.length} Pass-1 rows × ${roundsPerConfig.toLocaleString()} rounds and ${servedJobs.length} served-config epochs × ${SERVED_WINDOWS} of their own lengths (${servedEpochs.reduce((a, e) => a + servedNonces(e.configs.length), 0).toLocaleString()} nonces) replayed in parallel worker processes (${((Date.now() - replayStart) / 1000).toFixed(1)} s)${replayError ? ` — FAILED: ${replayError}` : ''}`);
     const p1Replays = replayed.filter((x) => x.kind === 'p1');
     const servedReplays = replayed.filter((x) => x.kind === 'served');
     const replayByM = new Map(p1Replays.map(x => [x.mineCount, x]));
@@ -2357,7 +2532,8 @@ function run(ctx) {
     const earlyOk = early.length === 2 && early[0] === 0 && Number.isFinite(early[1]) && early[1] > 0;
     const earlyN = earlyOk ? early[1] + 1 : 0;
     const windowsOk = earlyOk && Number.isFinite(noncesPerSeed) && noncesPerSeed > earlyN
-        && late.length === 2 && late[0] === earlyN && late[1] === noncesPerSeed - 1;
+        && late.length === 2 && late[0] === earlyN && late[1] === noncesPerSeed - 1
+        && earlyN === pins_1.PASS2_EARLY_WINDOW && pins_1.PASS2_EARLY_WINDOW === pins_1.EPOCH_SIZES[0];
     const lateN = windowsOk ? noncesPerSeed - earlyN : 0;
     const reps = Number(pass2.bootstrapReps);
     const repsOk = Number.isFinite(reps) && reps >= 1000;
@@ -2402,7 +2578,7 @@ function run(ctx) {
                     firstStatFault = `epoch ${r.epoch}: stored (earlyChi2 ${r.earlyChi2}, lateChi2 ${r.lateChi2}, lateP ${r.latePValue}) vs re-derived (${ec.chi2}, ${lr.chi2}, ${lr.pValue})`;
             }
             const kUnits = r.earlyBootstrapP * (reps + 1);
-            if (Math.abs(kUnits - Math.round(kUnits)) > 1e-6)
+            if (Math.abs(kUnits - Math.round(kUnits)) > pins_1.PROD_ON_GRID_TOLERANCE)
                 bootPQuantBad++;
             if (!(r.earlyBootstrapP >= 1 / (reps + 1) - 1e-12 && r.earlyBootstrapP <= 1 + 1e-12))
                 bootPRangeBad++;
@@ -2485,12 +2661,7 @@ function run(ctx) {
             }
         }
     }
-    const legacyDigest = (0, pins_1.earlyBootstrapPDigest)(results2);
-    const legacyPinOk = legacyDigest === pins_1.LEGACY_EARLY_BOOTSTRAP_P_DIGEST;
-    const legacyExceptionOk = !claimsReplay && legacyPinOk;
-    const bootReplayOk = claimsReplay
-        ? (replayMetaOk && bootReplayAvailable && bootPMismatches === 0 && bootReplayed === results2.length)
-        : legacyExceptionOk;
+    const bootReplayOk = claimsReplay && replayMetaOk && bootReplayAvailable && bootPMismatches === 0 && bootReplayed === results2.length;
     let monoViolations = 0;
     if (rows2Finite) {
         const byM = new Map();
@@ -2518,7 +2689,7 @@ function run(ctx) {
         && pass2.cherryPickFlags === derivedFlags
         && Number.isFinite(pass2.expectedFlagsByChance) && Math.abs(pass2.expectedFlagsByChance - expectedByChance) < 1e-9
         && Number.isFinite(pass2.cherryPickSurvivalP) && Math.abs(pass2.cherryPickSurvivalP - survival) < 1e-9;
-    const WINDOWS = Math.floor(SERVED_NONCES / pins_2.EXPECTED_EPOCH_SIZE);
+    const WINDOWS = SERVED_WINDOWS;
     const servedByEpoch = new Map(servedReplays.map(x => [x.epoch, x]));
     let servedFlags = 0, earlyBindFail = 0, servedShapeBad = 0, firstServedFault = '';
     let muAll = 0, vAll = 0, earlyAll = 0;
@@ -2526,7 +2697,7 @@ function run(ctx) {
     if (!replayError) {
         for (const e of servedEpochs) {
             const x = servedByEpoch.get(e.epoch);
-            if (!x || x.windowReturns.length !== WINDOWS || x.earlyWins.length !== pins_2.EXPECTED_EPOCH_SIZE) {
+            if (!x || x.windowReturns.length !== WINDOWS || x.earlyWins.length !== e.configs.length || e.configs.length !== pins_1.EPOCH_PLAN[e.epoch]?.size) {
                 servedShapeBad++;
                 if (!firstServedFault)
                     firstServedFault = `epoch ${e.epoch}: replay result missing or mis-shaped`;
@@ -2566,14 +2737,14 @@ function run(ctx) {
     const servedOver = servedFlags > servedGate || !(pooledZ >= -SERVED_POOLED_Z);
     const servedOk = servedBindOk && !servedOver;
     const servedNote = `SERVED-CONFIG TEST (the configurations each epoch actually served, mine count and requested tiles by nonce, replayed over its revealed seed): `
-        + `${nServed}/${revealedSeedCount} epochs × ${SERVED_NONCES.toLocaleString()} nonces; early window = the captured nonces ${pins_2.NONCE_BASE}–${pins_2.NONCE_BASE + pins_2.EXPECTED_EPOCH_SIZE - 1}, `
-        + `its replayed outcomes bound to the ${(servedEpochs.length * pins_2.EXPECTED_EPOCH_SIZE).toLocaleString('en-US')} recorded outcomes (${earlyBindFail} mismatches); `
+        + `${nServed}/${revealedSeedCount} epochs, each over ${SERVED_WINDOWS} of its own lengths (${[...new Set(servedEpochs.map(e => e.configs.length))].sort((a, z) => a - z).map(w => `${w} → ${servedNonces(w).toLocaleString('en-US')} nonces`).join(', ')}; floor ${SERVED_NONCE_FLOOR.toLocaleString('en-US')}); early window = the epoch's captured nonces ${pins_1.NONCE_BASE} … size − 1, `
+        + `its replayed outcomes bound to the ${servedEpochs.reduce((a, e) => a + e.configs.length, 0).toLocaleString('en-US')} recorded outcomes of ${pins_1.EXPECTED_BETS.toLocaleString('en-US')} (${earlyBindFail} mismatches); `
         + `statistic = window return against the exact per-config mean and variance; bootstrap p against the seed's own ${WINDOWS - 1} later windows: `
         + `${servedFlags}/${nServed} epochs flagged at p ≤ ${SERVED_ALPHA} (family gate ≤ ${servedGate} at family α ${SERVED_FAMILY_ALPHA})${servedFlaggedEpochs.length ? ` [epochs ${servedFlaggedEpochs.join(', ')}]` : ''}; `
         + `pooled early-window return ${earlyAll.toFixed(4)} vs exact expectation ${muAll.toFixed(4)}, z = ${Number.isFinite(pooledZ) ? pooledZ.toFixed(3) : 'n/a'} (gate −${SERVED_POOLED_Z}); `
         + `detection power of the pooled test ${servedPower.map(x => `${(x.power * 100).toFixed(1)}% at a ${x.shortfall * 100}% early-window return shortfall`).join(', ')}. `
-        + `Rule fixed in code (SERVED_* constants) before the statistic was first computed, 2026-09-24. `
-        + `The tiles a losing round did not reach are rebuilt from the capture's consecutive-tile rule, which every recorded opened sequence satisfies. `;
+        + `Rule fixed in code (SERVED_* constants) before the statistic was computed on production data. `
+        + `Each round's tiles are its planned order from the raw captures (drawn by the runner's CSPRNG, written into the plan before any bet), of which every recorded opened sequence is a prefix, so the tiles a losing round did not reach are the ones it was going to open. `;
     const pass2HasData = inventoryOk && seedSetOk && rows2Finite && windowsOk && repsOk && servedBindOk
         && recomputeOk && monoViolations === 0 && bootMCOk && scalarsOk && bootReplayOk
         && revealedSeedCount === ctx.seeds.length
@@ -2587,15 +2758,15 @@ function run(ctx) {
     if (!rows2Finite)
         s17Faults.push('non-finite / wrong-typed field in at least one seed row');
     if (replayMetaFaults.length > 0)
-        s17Faults.push(`QA-05 replay metadata rejected — ${replayMetaFaults.join('; ')}`);
+        s17Faults.push(`replay metadata rejected — ${replayMetaFaults.join('; ')}`);
     if (!bootReplayOk && replayMetaFaults.length === 0) {
         if (claimsReplay) {
             s17Faults.push(bootReplayAvailable
                 ? `deterministic bootstrap replay: ${bootPMismatches} of ${results2.length} rows whose earlyBootstrapP does not re-derive from the recorded masterSeed${firstBootFault ? ` (${firstBootFault})` : ''}`
-                : `the artifact records valid QA-05 replay metadata but the replay could not be run against it (bootstrapReps / row finiteness / early-window declaration above), so earlyBootstrapP is unattested`);
+                : `the artifact records valid replay metadata but the replay could not be run against it (bootstrapReps / row finiteness / early-window declaration above), so earlyBootstrapP is unattested`);
         }
         else {
-            s17Faults.push(`the artifact records NO QA-05 replay metadata, so its earlyBootstrapP cannot be re-derived, and it is not the one artifact the legacy exception covers: earlyBootstrapP digest ${legacyDigest} != pinned ${pins_1.LEGACY_EARLY_BOOTSTRAP_P_DIGEST} (src/pins.ts). Omitting masterSeed is not a way to have earlyBootstrapP taken on trust`);
+            s17Faults.push('the artifact records NO replay metadata (masterSeed, seedDerivation), so its earlyBootstrapP cannot be re-derived. Omitting masterSeed is not a way to have earlyBootstrapP taken on trust');
         }
     }
     if (!windowsOk)
@@ -2629,7 +2800,7 @@ function run(ctx) {
             servedEpochs.length !== revealedSeedCount ? `${servedEpochs.length}/${revealedSeedCount} epochs replayable` : ''].filter(Boolean).join('; ')}${firstServedFault ? ` (${firstServedFault})` : ''}`);
     if (servedBindOk && servedOver)
         s17Faults.push(`served-config test over its gate: ${servedFlags} flagged (gate ${servedGate}), pooled z ${Number.isFinite(pooledZ) ? pooledZ.toFixed(3) : 'n/a'} (gate −${SERVED_POOLED_Z})`);
-    const s17 = (0, context_1.step)(17, 'Simulation — Pass 2 Cherry-Pick Test', pass2Ok ? 'PASS' : 'FAIL', `${revealedSeedCount} revealed dataset seeds × ${(noncesPerSeed || 0).toLocaleString()} nonces; early window ${early[0] ?? '?'}..${early[1] ?? '?'}. `
+    const s17 = (0, context_1.step)(17, 'Simulation — Pass 2 Cherry-Pick Test', pass2Ok ? 'PASS' : 'FAIL', `${revealedSeedCount} revealed dataset seeds × ${(noncesPerSeed || 0).toLocaleString()} nonces; early window ${early[0] ?? '?'}..${early[1] ?? '?'} (src/pins.ts PASS2_EARLY_WINDOW ${pins_1.PASS2_EARLY_WINDOW}: the first ${pins_1.PASS2_EARLY_WINDOW} nonces, the longest prefix every epoch played in full — epoch lengths ${pins_1.EPOCH_SIZES.join(', ')}; the later nonces of the longer epochs fall in the late window, and the served-configuration test below covers each epoch's whole captured range). `
         + `Recalculated early/late statistics and late p-values: ${statMismatches} mismatching rows; epoch and mine-count mismatches: ${epochMismatches}, ${mcMismatches}. `
         + `Flags derived from earlyBootstrapP < ${CHERRY_EARLY_ALPHA} and latePValue >= ${CHERRY_LATE_ALPHA}: ${derivedFlags}; `
         + `nominal expectation ${expectedByChance.toFixed(3)}, binomial survival ${survival.toFixed(8)}; ${flagMismatches} stored-flag mismatches. `
@@ -2637,9 +2808,7 @@ function run(ctx) {
             ? `Bootstrap replay: ${(reps || 0).toLocaleString()} replicates per mine count rebuilt from the recorded master seed under '${bootVersion}'; ${bootReplayed}/${results2.length} p-values checked, ${bootPMismatches} mismatches. `
             : claimsReplay
                 ? `Bootstrap replay did not run because the supplied replay metadata or statistical inputs are invalid; the faults below identify the rejected fields. `
-                : legacyExceptionOk
-                    ? `Compatibility-fixture mode: early bootstrap values match the fixed reference digest ${pins_1.LEGACY_EARLY_BOOTSTRAP_P_DIGEST}. This fixture lacks generating inputs, so its p-values are pinned rather than replayed. Range, lattice, ordering and downstream arithmetic are checked (${monoViolations} ordering violations). `
-                    : `Bootstrap replay unavailable: replay metadata is absent and the values do not match the supported compatibility fixture. `)
+                : `Bootstrap replay unavailable: the artifact records no replay metadata, so its early bootstrap values cannot be re-derived. `)
         + `Unsupported, partial or malformed replay metadata fails verification. This first-draw diagnostic does not prove unbiased seed selection. `
         + servedNote
         + `Mitigation against selecting a server seed for a known client input requires a binding server commitment before learning an unpredictable client seed, with both inputs bound to the round. Player control alone does not establish those conditions.`
@@ -2716,6 +2885,6 @@ function __installTestGlobals() {
 }
 
 __installTestGlobals();
-__load("tests/mines/qaRegressionTests.js");
+__load("tests/mines/regressionTests.js");
 __load("tests/mines/rngSpecTests.js");
 __load("tests/mines/rngTests.js");

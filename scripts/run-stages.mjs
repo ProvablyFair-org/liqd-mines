@@ -2,7 +2,7 @@
 /**
  * run-stages.mjs — run EVERY stage of `npm test` / `npm run test:toolchain` and report each one.
  *
- * WHY (QA fix list of 2026-10-02, A5). Both commands used to be `a && b && c` chains. `&&` stops at
+ * WHY (since 2026-10-02). Both commands used to be `a && b && c` chains. `&&` stops at
  * the first non-zero exit, and the verifier's exit code is the VERDICT — 0 Full Pass, 2 Conditional
  * Pass, 1 NOT PROVABLY FAIR — so on this package's committed data (Conditional Pass, exit 2) the
  * chain read a verdict as "stop": `npm test` never reached `release-manifest.mjs --check`, and
@@ -19,7 +19,7 @@
  *
  * Plain Node, no dependencies — `npm test` stays zero-install.
  *
- * Usage:  node scripts/run-stages.mjs test        (npm test)
+ * Usage:  node scripts/run-stages.mjs test [--stages=check-standalone.mjs,test.js,verify.js,release-manifest.mjs]   (npm test)
  *         node scripts/run-stages.mjs toolchain   (npm run test:toolchain)
  */
 
@@ -55,6 +55,18 @@ const stages = LISTS[which];
 if (!stages) {
   console.error(`run-stages: unknown list ${JSON.stringify(which)} — expected one of ${Object.keys(LISTS).join(', ')}`);
   process.exit(1);
+}
+// `--stages=a,b,c` states in the calling command (package.json) which stages the list runs, so the
+// command line itself names the verifier. It is CHECKED, not decoration: when given, it must be the
+// list's own stages in order (the last path segment of each stage's first argument), or nothing runs.
+const declared = process.argv.slice(3).find(a => a.startsWith('--stages='));
+if (declared) {
+  const want = declared.slice('--stages='.length).split(',');
+  const have = stages.map(s => path.basename(s.args[s.args.length > 1 && s.args[0] === 'run' ? 1 : 0]));
+  if (want.length !== have.length || want.some((w, i) => w !== have[i])) {
+    console.error(`run-stages: the command declares stages ${want.join(', ')} but list ${which} runs ${have.join(', ')}`);
+    process.exit(1);
+  }
 }
 
 const results = [];

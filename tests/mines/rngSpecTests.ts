@@ -1,5 +1,5 @@
 /**
- * Spec self-test: docs/ALGORITHM.md vectors (V1-V6) and properties, run against src/rng.ts.
+ * Spec self-test: docs/ALGORITHM.md vectors (V1-V5, production rounds) and properties, run against src/rng.ts.
  *
  * Written by the clean-room implementer together with src/rng.ts, from docs/ALGORITHM.md and the
  * module interface alone (never from LIQD's code). Integrated 20 Oct 2026: the checks are unchanged;
@@ -26,7 +26,7 @@ import {
   sameMines,
 } from '../../src/rng';
 
-const EXPECTED_CHECKS = 98;
+const EXPECTED_CHECKS = 97;
 
 function runSelftest(): { pass: number; total: number; failed: string[] } {
   let pass = 0;
@@ -62,37 +62,43 @@ function runSelftest(): { pass: number; total: number; failed: string[] } {
   function floorScaled(x: Q, dp: number): bigint { return (x.n * 10n ** BigInt(dp)) / x.d; }
   function scaledOfDecimal(s: string, dp: number): bigint { return floorScaled(decimalQ(s), dp); }
 
-  // ---------- vectors §5 ----------
+  // ---------- vectors §5 (production rounds, liqd.com, 8–10 November 2026) ----------
+  // amount / won: the booked fiat stake and win; wstake / wwon: the USDT wallet stake and wallet field.
   type Vec = {
     id: string; seed: string; commit: string; client: string; nonce: number; m: number; amount: string;
     hmac0: string; u32: number; off0: number; offsets?: number[]; mines: number[]; opened: number[];
-    win: boolean; edged?: Q; fair?: Q; mult?: string; won: string;
+    win: boolean; edged?: Q; fair?: Q; mult?: string; won: string; wstake: string; wwon?: string;
   };
   const V: Vec[] = [
-    { id: 'V1', seed: 'd1148d001c0ce343dcd526a17ab07de0', commit: '7ec1c4082572c9024863cfd98d32626586094f8308bd73b90965d10bed5796e3',
-      client: 'auditddad46097947', nonce: 0, m: 1, amount: '0.1',
-      hmac0: 'd6a9b79cade413b0e5bba6627d488435fb546b080db3ba334a1c2da737b404e9', u32: 3601446812, off0: 12,
-      mines: [13], opened: [2], win: true, edged: q(33n, 32n), mult: '1.03', won: '0.103125' },
-    { id: 'V2', seed: '72209686500593d7ff971a3848ff17b2', commit: '88244482041d4da91e1121ef8c106fc2a01affca138458535578e1301361f152',
-      client: 'audit36a14db8902c', nonce: 4, m: 24, amount: '0.1',
-      hmac0: 'db7b9d15550ee2dd28f85bcd0744f49be501e13413af528298f95ddc3a849c96', u32: 3682311445, off0: 20,
-      offsets: [20, 9, 11, 12, 17, 12, 6, 3, 2, 1, 3, 13, 9, 9, 9, 1, 0, 6, 3, 0, 1, 3, 0, 1],
-      mines: [21, 11, 14, 16, 22, 18, 13, 2, 8, 9, 3, 25, 5, 23, 24, 17, 4, 15, 7, 20, 19, 12, 10, 1],
-      opened: [6], win: true, edged: q(99n, 4n), mult: '24.75', won: '2.475' },
-    { id: 'V3', seed: 'aa25dc6c599ec12f86008226ed60cb11', commit: '66c283a045f5fa95fe2f4a8102d8f59877c067aef045be210e9d59596b1bbd22',
-      client: 'audit7a476e8c79bf', nonce: 0, m: 3, amount: '10',
-      hmac0: '70229348792baf639954ef3402f529e4c413f27aa8feaa58029353ba8d142f55', u32: 1881314120, off0: 20,
-      offsets: [20, 16, 11], mines: [21, 18, 14], opened: [2], win: true, edged: q(9n, 8n), mult: '1.12', won: '11.25' },
-    { id: 'V4', seed: 'cf5c6ca7bb3a767e9d9821c01a0c48cf', commit: 'df6cbf4cfe28cc8f2903c910b5bf134b6faca3690bdc850d4ecba0bf2b36f08d',
-      client: 'auditc956a502047c', nonce: 39, m: 12, amount: '0.1',
-      hmac0: 'ce7c610ded9d82fcb73b1abc2d91cf1a12a4545bc8c92d20bb24bc933d36274b', u32: 3464257805, off0: 5,
-      offsets: [5, 0, 18, 16, 7, 1, 2, 9, 9, 5, 3, 9], mines: [6, 2, 21, 20, 12, 7, 9, 17, 18, 15, 14, 3],
-      opened: [5, 4, 25, 19, 23], win: true, fair: q(1610n, 39n), edged: q(5313n, 130n), mult: '40.86', won: '4.08692307' },
-    { id: 'V5', seed: '58e66c2fe517062b6e8a80cfe57024fc', commit: 'd5eec12147e265db7b3d971670e9327145e1b8bd24421dcabfdfadbd2fcb8aca',
-      client: 'audit1ef7fc9bc054', nonce: 38, m: 12, amount: '0.10000000',
-      hmac0: 'c9740228cfc293d33c3c9981d5a9d9730c7992928fae62352f6b343fb5491aa1', u32: 3379823144, off0: 19,
-      offsets: [19, 8, 16, 18, 19, 19, 8, 2, 5, 14, 1, 8], mines: [20, 10, 19, 22, 24, 25, 15, 2, 14, 5, 12, 1],
-      opened: [11, 23, 2], win: false, won: '0' },
+    // V1: k09hZxP4ZhUYw3SuDhspz — capture 1, phase A, 1 mine, two tiles, 0.10 CAD
+    { id: 'V1', seed: 'c5777675456c54fb9096287dfb1cd804', commit: '4378c7dcd852995859795f0bbc5a535c98bbb7fa2c97fc141aae5292811e4119',
+      client: 'audit5065faa79b0b', nonce: 0, m: 1, amount: '0.1',
+      hmac0: '561e4a30dea37fad39e8109c7d3fc7c34e94bb58f824845ac3b21f9a798dbd36', u32: 1444825648, off0: 23,
+      mines: [24], opened: [2, 21], win: true, edged: q(99n, 92n), mult: '1.07', won: '0.10', wstake: '0.07085468', wwon: '0.07624579' },
+    // V2: Z6B5Y_EKOsIi9rFGBZ8XX — capture 2, phase A+, 24 mines, the one safe tile: settled by LIQD itself, 0.10 USD
+    { id: 'V2', seed: '00e770d6e05988f3ad2541120747356d', commit: '3d240b15cd531ef7e6b3d5b80382e6aaf3ed5fd6ab5b3c130a5ee114fb6992bd',
+      client: 'audit85eaa242e54a', nonce: 37, m: 24, amount: '0.1',
+      hmac0: '7f8acfbaafb92678d64a901c4ec8c2db497365c3df73df6df485bd8bede09d7c', u32: 2139803578, off0: 3,
+      offsets: [3, 17, 11, 6, 0, 11, 7, 10, 8, 10, 0, 6, 0, 10, 7, 5, 7, 2, 3, 1, 0, 2, 2, 0],
+      mines: [4, 19, 14, 10, 5, 17, 3, 18, 6, 20, 11, 8, 13, 24, 22, 21, 7, 1, 15, 16, 12, 9, 25, 2],
+      opened: [23], win: true, edged: q(99n, 4n), mult: '24.75', won: '2.47', wstake: '0.10000000', wwon: '2.47500000' },
+    // V3: 4QJN4i6P5Fxc_NB4gxkE4 — capture 3, phase C, 3 mines, one tile, 10.00 USD
+    { id: 'V3', seed: '3cf098f6c5ba08f60eb228995ec061e6', commit: '0f2be4ce60e2cdf3309e0de3525a1a7a1a326f120568a6f756e0c0b07658778b',
+      client: 'audit12902b0c80f4', nonce: 123, m: 3, amount: '10',
+      hmac0: 'b54ee76c0d1dff48465551da5e900896cc42924a1107d59a50fc3c37584f7c7b', u32: 3041847148, off0: 23,
+      offsets: [23, 5, 18], mines: [24, 7, 21], opened: [25], win: true, edged: q(9n, 8n), mult: '1.12', won: '11.25', wstake: '10.00000000', wwon: '11.25000000' },
+    // V4: PQMz0IhGUim57nUHy0IwG — capture 1, phase A, 12 mines, five tiles, 0.10 CAD
+    { id: 'V4', seed: 'c66188d98acb72928e588e353413e929', commit: '8b6cf0887521631e00ce27b8290712427f7cf2cdc2bdf9094569b424e384e4b1',
+      client: 'audit1f90826fce1e', nonce: 139, m: 12, amount: '0.1',
+      hmac0: '55c612cc7fe35fed2855d3146d8fec11aef37b10c0c3c4b72b5025f904c69d96', u32: 1439044300, off0: 0,
+      offsets: [0, 5, 10, 2, 3, 11, 5, 5, 7, 5, 8, 5], mines: [1, 7, 13, 6, 8, 17, 12, 3, 16, 15, 19, 4],
+      opened: [18, 9, 22, 24, 21], win: true, fair: q(1610n, 39n), edged: q(5313n, 130n), mult: '40.86', won: '4.08', wstake: '0.07088791', wwon: '2.89713435' },
+    // V5: NkMq1Is_kkTu9ZYCiCXIV — capture 2, phase D (player-set client seed), 12 mines, bust on the third tile
+    { id: 'V5', seed: 'dd0386a9ff7f578ad9369df19b6136ab', commit: '61669ff57a1550fe13e1066da7d7a0b194f8418a0ad31e15cb0692f753be8e12',
+      client: 'pfaudit-prod-mines-d1-d55af3b7500b', nonce: 38, m: 12, amount: '0.1',
+      hmac0: '0d0e0864868f13f14d76d255f201210296863dcdc6b9ebf9b204e9b7f33e986c', u32: 219023460, off0: 10,
+      offsets: [10, 17, 9, 2, 7, 3, 5, 6, 7, 6, 14, 2], mines: [11, 19, 12, 6, 3, 9, 5, 14, 16, 4, 25, 8],
+      opened: [10, 7, 12], win: false, won: '0', wstake: '0.10000000' },
   ];
 
   // §3.1: walk opened tiles; loss on the first mine (which must be the last opened).
@@ -128,8 +134,13 @@ function runSelftest(): { pass: number; total: number; failed: string[] } {
       if (v.fair) check(`${P} fair == ${v.fair.n}/${v.fair.d}`, fairQ(v.m, s.k).n === v.fair.n && fairQ(v.m, s.k).d === v.fair.d);
       check(`${P} edged == ${v.edged.n}/${v.edged.d}`, e.n === v.edged.n && e.d === v.edged.d);
       check(`${P} multiplier floor2 == ${v.mult}`, floorScaled(e, 2) === scaledOfDecimal(v.mult, 2));
-      const won = floorScaled(mul(decimalQ(v.amount), e), 8);
-      check(`${P} winningAmount floor8 == ${v.won}`, won === scaledOfDecimal(v.won, 8));
+      // §3.4 booked amount: floor to the cent of amount × edged, in the fiat the round was staked in.
+      const booked = floorScaled(mul(decimalQ(v.amount), e), 2);
+      check(`${P} booked winningAmount floor2 == ${v.won}`, booked === scaledOfDecimal(v.won, 2));
+      // §3.5 wallet field: floor8(wallet stake × floor8(edged)).
+      const mult8: Q = q(floorScaled(e, 8), 100000000n);
+      const walletAmt = floorScaled(mul(decimalQ(v.wstake), mult8), 8);
+      check(`${P} wallet field floor8(stake × floor8(edged)) == ${v.wwon}`, v.wwon !== undefined && walletAmt === scaledOfDecimal(v.wwon, 8));
     } else {
       check(`${P} loss pays 0`, !s.win && v.won === '0');
     }
@@ -137,27 +148,21 @@ function runSelftest(): { pass: number; total: number; failed: string[] } {
     check(`${P} census draws 25, rejections 0`, cen.draws === 25 && cen.rejections === 0);
   }
 
-  // V6 (§3.5): same cell m=1, k=10, amount 0.1.
+  // §3.5: the wallet rule floors the multiplier first. Round r80BHxgDMcDuXkFpe-h40 (capture 1, epoch 0,
+  // nonce 36, 12 mines, two tiles; wallet stake 0.07085468, wallet field 0.26979281) is one of the 62 wins
+  // where that costs one 1e-8 unit against floor8(stake × edged) — never more, never the other way.
   {
-    const sep = { seed: 'ba11c95fa563fc543b853e7d6b7aa4db', client: 'audit9c27195c9cc2', nonce: 2, mines: [4], opened: [5, 14, 3, 18, 1, 2, 24, 15, 8, 25] };
-    const oct = { seed: '58e66c2fe517062b6e8a80cfe57024fc', client: 'audit1ef7fc9bc054', nonce: 2, mines: [8], opened: [23, 17, 16, 9, 12, 13, 6, 18, 4, 7] };
-    const ms = revealMines(sep.seed, sep.client, sep.nonce, 1);
-    const mo = revealMines(oct.seed, oct.client, oct.nonce, 1);
-    check('V6 26Sep mines [4]', sameMines(ms, sep.mines), ms.join(' '));
-    check('V6 3Oct mines [8]', sameMines(mo, oct.mines), mo.join(' '));
-    check('V6 26Sep win k=10', settle(ms, sep.opened).win && settle(ms, sep.opened).k === 10);
-    check('V6 3Oct win k=10', settle(mo, oct.opened).win && settle(mo, oct.opened).k === 10);
-    const e = edgedQ(1, 10);
-    check('V6 exact edged == 1.65', e.n === 33n && e.d === 20n);
-    // double form (§3.5)
-    let x = 1.0;
-    for (let t = 0; t < 10; t++) x = x * ((25 - t) / (25 - 1 - t));
-    const M = x * 0.99;
-    check('V6 double M == 1.6499999999999997', M === 1.6499999999999997, String(M));
-    check('V6 26Sep double multiplier 1.64', Math.floor(M * 100) / 100 === 1.64);
-    check('V6 26Sep double winningAmount 0.16499999', Math.floor(0.1 * M * 1e8) / 1e8 === 0.16499999);
-    check('V6 3Oct exact multiplier 1.65', floorScaled(e, 2) === 165n);
-    check('V6 3Oct exact winningAmount 0.165', floorScaled(mul(decimalQ('0.1'), e), 8) === 16500000n);
+    const e = edgedQ(12, 2);
+    const rule = floorScaled(mul(decimalQ('0.07085468'), q(floorScaled(e, 8), 100000000n)), 8);
+    const exact = floorScaled(mul(decimalQ('0.07085468'), e), 8);
+    check('r80BHxgD wallet rule == served wallet field 0.26979281', rule === 26979281n, String(rule));
+    check('r80BHxgD wallet rule is one 1e-8 unit below the exact product', exact - rule === 1n, `${exact} vs ${rule}`);
+    const v4 = V[3]!;
+    const e4 = edgedQ(v4.m, v4.opened.length);
+    check('V4 wallet rule equals the exact product', floorScaled(mul(decimalQ(v4.wstake), q(floorScaled(e4, 8), 100000000n)), 8) === floorScaled(mul(decimalQ(v4.wstake), e4), 8));
+    // §3.4: the booked cent floor against the wallet field at rate 1 (V2): 2.47 booked, 2.475 in the wallet field.
+    check('V2 booked 2.47 is below the wallet field 2.475', scaledOfDecimal(V[1]!.won, 8) < scaledOfDecimal(V[1]!.wwon as string, 8));
+    check('V3 booked 11.25 equals the wallet field 11.25', scaledOfDecimal(V[2]!.won, 8) === scaledOfDecimal(V[2]!.wwon as string, 8));
   }
 
   // §3.2 page checks
@@ -213,7 +218,7 @@ function runSelftest(): { pass: number; total: number; failed: string[] } {
     const per = expectedModuloRejections(1);
     check('expectedModuloRejections(1) == sum (2^32 - maxFairFor(r))/2^32', per === s, String(per));
     check('expectedModuloRejections(0) == 0', expectedModuloRejections(0) === 0);
-    check('expectedModuloRejections linear (8900 == 8900*per round)', expectedModuloRejections(8900) === 8900 * per);
+    check('expectedModuloRejections linear (6574 == 6574*per round)', expectedModuloRejections(6574) === 6574 * per);
     check('expectedModuloRejections per draw <= 4.9e-9 bound times 25', per <= 25 * 4.9e-9 && per > 0);
   }
 

@@ -63,7 +63,7 @@ try {
   if (quotedSteps.length === 0 || quotedSteps.some(n => n !== scored)) fail(`scored-step count quoted in MANIFEST.md/README.md (${quotedSteps.join(', ') || 'none'}) != ${scored} steps in outputs/verification-results.json.`);
   console.log(`[standalone] Audit ID ${auditId}, ${unitCount} unit specs and ${scored} scored steps: MANIFEST.md, README.md and outputs/verification-results.json agree with src/pins.ts.`);
 
-  // EVERY SHIPPED CHAPTER, NOT TWO FILES (QA 2026-10-02, A12). Until this date the parity check above
+  // EVERY SHIPPED CHAPTER, NOT TWO FILES (since 2026-10-02). Until this date the parity check above
   // read only MANIFEST.md and README.md, and stale counts survived in the other chapters (21 checks
   // where there are 22, 45 unit tests where there are 48, 59 forgeries where there were 60). Every
   // *.md at the package root is now scanned for the phrasings below, which state a CURRENT count;
@@ -106,6 +106,18 @@ try {
         }
       }
     });
+  }
+  // EVIDENCE REGISTER PARITY. evidence.md states a SHA-256 for every exhibit file; each must be the
+  // hash of the file on disk, so the register cannot drift from the evidence it lists.
+  if (fs.existsSync(path.join(root, 'evidence.md'))) {
+    const rows = [...read('evidence.md').matchAll(/^\| (E\d{2}) \| `([^`]+)` \|.*\| `([0-9a-f]{64})` \|$/gm)];
+    if (rows.length === 0) fail('evidence.md lists no exhibit rows.');
+    for (const [, id, file, stated] of rows) {
+      if (!fs.existsSync(path.join(root, file))) fail(`evidence.md ${id}: ${file} does not exist.`);
+      const actual = createHash('sha256').update(fs.readFileSync(path.join(root, file))).digest('hex');
+      if (actual !== stated) fail(`evidence.md ${id}: ${file} hashes to ${actual}, the register states ${stated}.`);
+    }
+    console.log(`[standalone] evidence.md: ${rows.length} exhibit hashes equal the files on disk.`);
   }
   if (mismatches.length) fail(`${mismatches.length} stale count(s) in the shipped chapters:\n  ${mismatches.join('\n  ')}`);
   console.log(`[standalone] ${mdFiles.length} chapters scanned: ${unitCount} unit specs, ${scored} scored steps, ${mutationCount} declared source mutations, ${forgeryCount} forgeries and ${dlCount} declared limitations quoted consistently.`);

@@ -2,14 +2,15 @@ import { strict as assert } from 'node:assert';
 import { revealMines, commitHash, sameMines, firstMineTile, generateProvablyFairNumber } from '../../src/rng';
 import { minesMultiplier, minesMultiplierExact } from '../../src/config';
 
-// Real captured validation vectors, taken directly from the delivered dataset
-// (data/mines-master-6900bets.json, SHA-256 c7c2e8a9…) and recomputed offline via src/rng.ts.
-// Vector A — bet GbqOuPvhQekqcARNtHZ3_ (Phase A, mineCount 3).
-const A_SERVER_SEED = '8b2fc7e909d2fff439692f648a9df0ba';
-const A_CLIENT_SEED = 'audit59c2b0bf86aa';
-// Vector B — bet j2ICJ7NM_TrD_UMtv6Av0 (Phase A, mineCount 24, full draw order).
-const B_SERVER_SEED = '1973480c6bf1a4e3b62f7f8eb3f663d5';
-const B_CLIENT_SEED = 'audite90633066c80';
+// Real captured validation vectors, taken directly from the scored production dataset
+// (data/mines-prod-full-6574bets.json) and recomputed offline via src/rng.ts.
+// Vector A — bet WFQiZHXzP5KIiKp1mw5UO (capture 1, phase A, epoch 0, nonce 4, mineCount 3).
+const A_SERVER_SEED = 'c5777675456c54fb9096287dfb1cd804';
+const A_CLIENT_SEED = 'audit5065faa79b0b';
+// Vector B — bet Z6B5Y_EKOsIi9rFGBZ8XX (capture 2, phase A+, epoch 30, nonce 37, mineCount 24, full
+// draw order): the first round LIQD settled by itself on its last safe tile.
+const B_SERVER_SEED = '00e770d6e05988f3ad2541120747356d';
+const B_CLIENT_SEED = 'audit85eaa242e54a';
 
 // The OPERATOR'S own validation vectors, from the byte-level RNG specification LIQD supplied
 // privately for this audit (cited, not quoted, in src/rng.ts). Inputs and expected outputs are the
@@ -32,17 +33,18 @@ describe('rng: operator-supplied validation vectors', () => {
 });
 
 describe('mines: real captured mine-layout reproduction', () => {
-  it('bet GbqOuPvhQekqcARNtHZ3_ (serverSeed 8b2f…, nonce=25, mineCount=3) -> [6,20,7]', () => {
-    const mines = revealMines(A_SERVER_SEED, A_CLIENT_SEED, 25, 3);
-    assert.ok(sameMines(mines, [6, 20, 7]), `got ${JSON.stringify(mines)}`);
+  it('bet WFQiZHXzP5KIiKp1mw5UO (serverSeed c577…, nonce=4, mineCount=3) -> [22,16,20]', () => {
+    const mines = revealMines(A_SERVER_SEED, A_CLIENT_SEED, 4, 3);
+    assert.ok(sameMines(mines, [22, 16, 20]), `got ${JSON.stringify(mines)}`);
   });
 
-  it('bet j2ICJ7NM_TrD_UMtv6Av0 (serverSeed 1973…, nonce=0, mineCount=24) -> full 24-tile draw order', () => {
-    const mines = revealMines(B_SERVER_SEED, B_CLIENT_SEED, 0, 24);
+  it('bet Z6B5Y_EKOsIi9rFGBZ8XX (serverSeed 00e7…, nonce=37, mineCount=24) -> full 24-tile draw order, tile 23 the one safe tile', () => {
+    const mines = revealMines(B_SERVER_SEED, B_CLIENT_SEED, 37, 24);
     assert.ok(
-      sameMines(mines, [23, 11, 2, 8, 20, 22, 16, 24, 12, 9, 5, 19, 1, 18, 15, 7, 21, 3, 6, 10, 17, 13, 25, 14]),
+      sameMines(mines, [4, 19, 14, 10, 5, 17, 3, 18, 6, 20, 11, 8, 13, 24, 22, 21, 7, 1, 15, 16, 12, 9, 25, 2]),
       `got ${JSON.stringify(mines)}`,
     );
+    assert.equal(mines.includes(23), false);
   });
 });
 
@@ -68,16 +70,17 @@ describe('mines: firstMineTile is revealMines()[0] — the one-HMAC fast path St
 });
 
 describe('mines: commitment hash (SHA-256 of utf8 hex string)', () => {
-  it('commitHash(8b2f…) -> 5d6c4f10… (SHA-256 of utf8 hex string)', () => {
+  it('commitHash(1725…) -> 9167d5e1…, the commitment of epoch 1 (SHA-256 of utf8 hex string)', () => {
+    // Epoch 1 of capture 1: serverSeed 17259e56806ba7ed6ebe6e4ef03858be, committed as epoch 0's next hash.
     assert.equal(
-      commitHash(A_SERVER_SEED),
-      '5d6c4f105f182f9798063a4ca29d2c4ad2c575449bc5742a9680ec31bd9d79a0',
+      commitHash('17259e56806ba7ed6ebe6e4ef03858be'),
+      '9167d5e1dfb29d6da7ba2d2d1d500f10a97b13836940451ab6abc2518b51957e',
     );
   });
 });
 
 describe('mines: multiplier — exact payout vs floored display', () => {
-  it('minesMultiplierExact(3, 1) === 1.125 (the amount credited)', () => {
+  it('minesMultiplierExact(3, 1) === 1.125 (phase C: 11.25 booked, and in the wallet field, on a 10.00 stake)', () => {
     assert.ok(Math.abs(minesMultiplierExact(3, 1) - 1.125) < 1e-12);
   });
   it('minesMultiplier(3, 1) === 1.12 (floored display field, cosmetic)', () => {

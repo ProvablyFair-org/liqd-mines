@@ -1,4 +1,0 @@
-*.curl
-*.cookie
-cookie*.txt
-.env

@@ -1,14 +1,14 @@
 {
   "name": "mines-audit",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "license": "MIT",
   "private": true,
   "description": "Provably fair audit — LIQD.com Mines",
   "engines": {
-    "node": "22.x"
+    "node": ">=22.23.1 <23"
   },
   "scripts": {
-    "test": "node scripts/run-stages.mjs test",
+    "test": "node scripts/run-stages.mjs test --stages=check-standalone.mjs,test.js,verify.js,release-manifest.mjs",
     "verify": "ts-node tests/verify.ts",
     "figures": "ts-node src/write-figures.ts",
     "chart": "ts-node src/write-chart.ts",

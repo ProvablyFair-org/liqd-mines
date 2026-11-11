@@ -2,7 +2,8 @@
  * LIQD Mines — Verification suite
  * Run: npm run verify
  *
- * Loads the captured master dataset (SHA-256 guarded), runs all scored steps, and writes THIS
+ * Loads the scored production dataset (SHA-256 guarded) and the three raw production captures it was
+ * converted from (SHA-256 guarded), runs all scored steps, and writes THIS
  * RUN's results — pass or fail — under `outputs/run/`, leaving every committed artifact
  * byte-identical.
  *
@@ -41,7 +42,8 @@ import * as path from 'path';
 
 import { loadDataset } from '../src/loader';
 import { revealMines, sameMines } from '../src/rng';
-import { EXPECTED_DATASET_HASH, AUDIT_ID } from '../src/pins';
+import { EXPECTED_DATASET_HASH, AUDIT_ID, DATASET_RELATIVE_PATH, PROD_CAPTURES, EXPECTED_STEPS } from '../src/pins';
+import { loadProdCapture } from '../src/prod-capture';
 import { computeAuditFigures, AUDIT_FIGURES_FILE } from '../src/figures';
 import { fieldDiff, beyondTolerance, maxima, DIFF_ATOL, DIFF_RTOL } from '../src/diff';
 import { labelFor, profileCoverageBlock } from '../src/profile-map';
@@ -64,7 +66,7 @@ import * as phaseE      from './steps/phase-e';
 import * as simulation  from './steps/simulation';
 import * as statistical from './steps/statistical';
 import * as standardization from './steps/standardization';
-import * as supplement  from './steps/supplement';
+import * as rawCapture  from './steps/raw-capture';
 import { runWorkerIfRequested } from '../src/replay-pool';
 
 // REPLAY WORKER BRANCH (src/replay-pool.ts). Steps 16–17 replay the simulation of record and the
@@ -72,7 +74,7 @@ import { runWorkerIfRequested } from '../src/replay-pool';
 // dataset is read or anything is written, so a worker never scores a step.
 runWorkerIfRequested();
 
-const DATASET_PATH        = path.join(__dirname, '../data/mines-master-6900bets.json');
+const DATASET_PATH        = path.join(__dirname, '..', DATASET_RELATIVE_PATH);
 // The pin has ONE definition — src/pins.ts — imported by both the producer (src/simulate.ts)
 // and this verifier, so a re-pin cannot update one and leave the other behind.
 const OUTPUTS_DIR         = path.join(__dirname, '../outputs');
@@ -90,8 +92,8 @@ console.log(EMIT
 
 // ── Dataset presence guard (graceful) ─────────────────────────────────────────
 if (!fs.existsSync(DATASET_PATH)) {
-  console.log('\n  [ERROR] Dataset not found at data/mines-master-6900bets.json');
-  console.log('  Cannot run verification without the captured master dataset.');
+  console.log(`\n  [ERROR] Dataset not found at ${DATASET_RELATIVE_PATH}`);
+  console.log('  Cannot run verification without the scored production dataset.');
   console.log('\n══════════════════════════════════════════════════════════\n');
   process.exit(1);
 }
@@ -116,24 +118,27 @@ for (const b of bets) {
 }
 
 const phaseABets = bets.filter(b => b.phase === 'A');
-const phaseBBets = bets.filter(b => b.phase === 'B');
 const phaseCBets = bets.filter(b => b.phase === 'C');
 const phaseDBets = bets.filter(b => b.phase === 'D');
-const phaseEBets = bets.filter(b => b.phase === 'E');
 
 if (!fs.existsSync(OUTPUTS_DIR)) fs.mkdirSync(OUTPUTS_DIR, { recursive: true });
 
-console.log(`  Dataset: ${bets.length} bets | Seeds: ${seeds.length} | SHA-256 verified`);
-console.log(`  Phase A:${phaseABets.length} B:${phaseBBets.length} C:${phaseCBets.length} D:${phaseDBets.length} E:${phaseEBets.length}\n`);
+// The raw production captures (pinned; src/prod-capture.ts). A pin mismatch leaves them empty with
+// `problem` set, and every step that reads it fails its coverage guard instead of scoring a partial file.
+const prodCapture = loadProdCapture(path.join(__dirname, '..'));
+
+console.log(`  Dataset: ${bets.length} bets | Seeds: ${seeds.length} | SHA-256 verified | raw captures ${prodCapture.problem ? `NOT LOADED (${prodCapture.problem})` : `${prodCapture.files.length} files, ${prodCapture.lines} lines, SHA-256 verified`}`);
+console.log(`  Phase A:${phaseABets.length} (of which top-up A+:${bets.filter(b => b.phaseId === 'A+').length}) C:${phaseCBets.length} D:${phaseDBets.length}\n`);
 
 const ctx: VerifyContext = {
   bets, seeds, seedMap, byHash,
-  phaseA: phaseABets, phaseB: phaseBBets, phaseC: phaseCBets, phaseD: phaseDBets, phaseE: phaseEBets,
+  phaseA: phaseABets, phaseC: phaseCBets, phaseD: phaseDBets,
   outputsDir: OUTPUTS_DIR,
   datasetSha256: ds.sha256,
   expectedDatasetHash: EXPECTED_DATASET_HASH,
   meta: ds.meta,
-  simArtifact: null,   // populated by the simulation step (FIX-3)
+  simArtifact: null,   // populated by the simulation step 
+  prodCapture,
 };
 
 // ── Run scored steps ──────────────────────────────────────────────────────────
@@ -148,8 +153,19 @@ const results = [
   ...phaseE.run(ctx),         // Step  15
   ...simulation.run(ctx),     // Steps 16–17
   ...standardization.run(ctx),// Steps 18–21
-  ...supplement.run(ctx),     // Step  22 — the v3 multi-reveal SUPPLEMENT (its own pinned dataset)
+  ...rawCapture.run(ctx),     // Step  22 — the raw production captures, bound row by row
 ];
+
+// ── Every step ran (G-EXEC) ─────────────────────────────────────────────────────
+// The verdict below is a summary of `results`. If a step module returned fewer results than the
+// suite declares, or the same step twice, that summary would describe a partial run and read like a
+// complete one. The count comes from src/pins.ts, outside the results array; no verdict is printed
+// and nothing is written when it does not hold.
+if (results.length !== EXPECTED_STEPS || new Set(results.map(r => r.step)).size !== EXPECTED_STEPS) {
+  console.log(`\n  [ERROR] ${results.length} step results (${new Set(results.map(r => r.step)).size} distinct step numbers), ${EXPECTED_STEPS} declared in src/pins.ts EXPECTED_STEPS.`);
+  console.log('  The run is incomplete: no summary is printed and no result is written.');
+  process.exit(1);
+}
 
 // ── Profile labels ──────────────────────────────────────────────────────────────
 // Each scored step says which ProvablyFair.org Mines profile check it implements, so the
@@ -240,12 +256,17 @@ const verificationBody = {
     // expected = the pin in this file; actual = the recomputed hash; match must be true
     // (loadDataset already exits(1) on mismatch, so a written file always has match: true).
     dataset: {
-      file: 'data/mines-master-6900bets.json',
+      file: DATASET_RELATIVE_PATH,
       expected: EXPECTED_DATASET_HASH,
       actual: ds.sha256,
       match: ds.sha256 === EXPECTED_DATASET_HASH,
       sha256: ds.sha256,
     },
+    // The raw production captures the dataset was converted from (Step 22 binds them row by row).
+    ...Object.fromEntries(PROD_CAPTURES.map(c => {
+      const actual = prodCapture.files.find(f => f.capture === c.capture)?.sha256 ?? null;
+      return [`rawCapture${c.capture}`, { file: c.file, expected: c.sha256, actual, match: actual === c.sha256 }];
+    })),
     // Records WHICH simulation artifact Steps 16–17 actually scored (actual sha256). The pin is
     // src/pins.ts ARTIFACT_PINS, asserted by Step 19; `npm run simulate` writes to outputs/run/
     // and no longer rewrites this file. Null if the sim artifact was absent.
@@ -285,7 +306,7 @@ const verificationBody = {
 // be diffed against the committed copy without replacing it.
 const step19 = results.find(r => r.step === 19);
 const figuresBody = {
-  ...computeAuditFigures({ bets, seeds, seedMap, phaseD: phaseDBets, outputsDir: OUTPUTS_DIR, datasetSha256: ds.sha256 }),
+  ...computeAuditFigures({ bets, seeds, seedMap, outputsDir: OUTPUTS_DIR, datasetSha256: ds.sha256, prodCapture }),
 };
 
 const VERIFICATION_FILE = 'verification-results.json';
@@ -313,7 +334,7 @@ if (EMIT) {
     write(OUTPUTS_DIR, AUDIT_FIGURES_FILE, figuresBody);
     console.log(`  REPORT GENERATION: rewrote outputs/${AUDIT_FIGURES_FILE}`);
   } else {
-    console.log(`  NOT written: outputs/${AUDIT_FIGURES_FILE} — Step 19 returned ${step19?.status ?? '(absent)'} (H-B).`);
+    console.log(`  NOT written: outputs/${AUDIT_FIGURES_FILE} — Step 19 returned ${step19?.status ?? '(absent)'}.`);
     console.log('  The copy on disk is left untouched so the discrepancy stays visible.');
     console.log('  Regenerate deliberately with `npm run figures`, then re-run `npm run verify`.');
   }

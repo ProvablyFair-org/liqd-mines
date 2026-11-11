@@ -17,7 +17,7 @@
  *
  * Paths: array elements become `[*]`. Ported in shape from an earlier ProvablyFair.org package.
  */
-import { EXPECTED_BETS, EXPECTED_SEEDS } from './pins';
+import { EXPECTED_BETS, EXPECTED_SEEDS, EXPECTED_PHASE_ID_BETS, PROD_CAPTURES } from './pins';
 import { GRID, MINE_COUNTS } from './config';
 import { ENFORCED_ROUNDS_PER_CONFIG } from './false-alarm';
 
@@ -51,7 +51,6 @@ const PAIRS = exactly((GRID * (GRID - 1)) / 2, 'tile pairs of a 25-tile board');
 const MULT = D('a multiplier ≥ 1', v => Number.isFinite(v) && v >= 1);
 const STAKE = D('a stake > 0', v => Number.isFinite(v) && v > 0);
 const MONEY = D('a money amount ≥ 0', v => Number.isFinite(v) && v >= 0);
-const SIGNED_MONEY = D('a signed money amount', v => Number.isFinite(v));
 
 const SIMULATION: Record<string, Domain> = {
   'houseEdge': PROB,
@@ -128,7 +127,7 @@ const PROVENANCE: Record<string, Domain> = {
 const RESULTS: Record<string, Domain> = {
   'totalBets': exactly(EXPECTED_BETS, 'src/pins.ts EXPECTED_BETS'),
   'totalSeeds': exactly(EXPECTED_SEEDS, 'src/pins.ts EXPECTED_SEEDS'),
-  // 22 scored steps since 2026-09-26 (Step 22, the v3 multi-reveal supplement).
+  // 22 scored steps.
   'steps[*].step': intIn(1, 22, 'a scored step number'),
   'summary.passed': intIn(0, 22, 'scored steps'), 'summary.flags': intIn(0, 22, 'scored steps'),
   'summary.operatorFlags': intIn(0, 22, 'scored steps'), 'summary.captureFlags': intIn(0, 22, 'scored steps'),
@@ -154,17 +153,35 @@ const FIGURES: Record<string, Domain> = {
   'moduloBiasRejectionCensus.rejectionsObserved': intIn(0, EXPECTED_BETS * GRID, 'draws'),
   'moduloBiasRejectionCensus.rejectionsExpected': NONNEG,
   'moduloBiasRejectionCensus.probabilityCaptureWitnessesBranch': PROB,
-  'phaseDTimestampPatternEpochs.epochs': SEEDS, 'phaseDTimestampPatternEpochs.bets': BETS,
-  'phaseDTimestampPatternEpochs.staked': MONEY, 'phaseDTimestampPatternEpochs.credited': MONEY,
-  'phaseDTimestampPatternEpochs.netToPlayer': SIGNED_MONEY, 'phaseDTimestampPatternEpochs.nonFiniteMoneyRows': BETS,
+  'timestampPatternEpochs.epochs': SEEDS, 'timestampPatternEpochs.bets': BETS,
+  'walletLeg.rounds': BETS, 'walletLeg.stakedUnits': INT, 'walletLeg.paidUnits': INT,
+  'walletLeg.staked': MONEY, 'walletLeg.paid': MONEY, 'walletLeg.liveRTP': NONNEG,
+  'walletLeg.liveRTPPercent': PCT_ANY, 'walletLeg.minStake': MONEY, 'walletLeg.maxStake': MONEY,
+  'walletLeg.settlementFloorAtMinStake.stake': STAKE, 'walletLeg.settlementFloorAtMinStake.mineCount': MINES,
+  'walletLeg.settlementFloorAtMinStake.tilesRevealed': DEPTH, 'walletLeg.settlementFloorAtMinStake.deficitOfTurnover': PROB,
+  'walletLeg.settlementFloorAtMinStake.settledRTP': NONNEG,
   'clientSeedProvenance.epochs': SEEDS, 'clientSeedProvenance.auditFormatSeeds': SEEDS,
-  'clientSeedProvenance.distinctAuditFormatSeeds': SEEDS, 'clientSeedProvenance.customPhaseDSeeds': SEEDS,
+  'clientSeedProvenance.distinctAuditFormatSeeds': SEEDS, 'clientSeedProvenance.playerSetSeeds': SEEDS,
+  'clientSeedProvenance.distinctPlayerSetSeeds': SEEDS,
   'clientSeedProvenance.hexNibblesSampled': INT, 'clientSeedProvenance.hexNibbleChi2': NONNEG,
   'clientSeedProvenance.hexNibbleDf': exactly(15, '16 hex digits − 1'),
   'liveAggregate.bets': exactly(EXPECTED_BETS, 'src/pins.ts EXPECTED_BETS'), 'liveAggregate.wins': BETS,
-  'liveAggregate.losses': BETS, 'liveAggregate.winRate': PROB, 'liveAggregate.wagered': MONEY,
-  'liveAggregate.returned': MONEY, 'liveAggregate.liveRTP': NONNEG, 'liveAggregate.liveRTPPercent': PCT_ANY,
+  'liveAggregate.losses': BETS, 'liveAggregate.winRate': PROB,
+  'liveAggregate.multiRevealRounds': BETS, 'liveAggregate.singleRevealRounds': BETS,
+  'liveAggregate.tilesOpened': intIn(0, EXPECTED_BETS * GRID, 'bets × 25 tiles'),
+  'liveAggregate.cellsPlayed': intIn(0, 300, 'the 300 legal (m,k) cells'), 'liveAggregate.mineCountsPlayed': CFG,
+  'liveAggregate.autoFinishRounds': BETS, 'liveAggregate.settingsRecords': BETS, 'liveAggregate.maxDisplayedMultiplier': NONNEG,
   'liveAggregate.nonFiniteBetAmounts': BETS, 'liveAggregate.nonFiniteWinAmounts': BETS,
+  'byCapture[*].capture': intIn(1, PROD_CAPTURES.length, 'a capture index, src/pins.ts PROD_CAPTURES'),
+  'byCapture[*].rounds': BETS, 'byCapture[*].wins': BETS, 'byCapture[*].losses': BETS,
+  'byCapture[*].bookedStakedCents': INT, 'byCapture[*].bookedPaidCents': INT, 'byCapture[*].bookedStaked': MONEY, 'byCapture[*].bookedPaid': MONEY,
+  'byCapture[*].bookedReturnPercent': PCT_ANY, 'byCapture[*].bookedBelowUnrounded': BETS, 'byCapture[*].droppedUnits': INT, 'byCapture[*].dropped': MONEY,
+  'byCapture[*].walletStakedUnits': INT, 'byCapture[*].walletPaidUnits': INT, 'byCapture[*].walletStaked': MONEY,
+  'byCapture[*].walletPaid': MONEY, 'byCapture[*].walletNet': FINITE, 'byCapture[*].walletReturnPercent': PCT_ANY,
+  'byPhase[*].phaseIndex': intIn(0, Object.keys(EXPECTED_PHASE_ID_BETS).length - 1, 'an index into EXPECTED_PHASE_ID_BETS'),
+  'byPhase[*].rounds': BETS, 'byPhase[*].wins': BETS, 'byPhase[*].losses': BETS,
+  'byPhase[*].bookedStakedCents': INT, 'byPhase[*].bookedPaidCents': INT, 'byPhase[*].bookedStaked': MONEY, 'byPhase[*].bookedPaid': MONEY,
+  'byPhase[*].bookedReturnPercent': PCT_ANY, 'byPhase[*].bookedBelowUnrounded': BETS, 'byPhase[*].droppedUnits': INT, 'byPhase[*].dropped': MONEY,
   'flooredDisplayCounterfactual.worstMineCount': MINES, 'flooredDisplayCounterfactual.worstTilesRevealed': DEPTH,
   'flooredDisplayCounterfactual.worstEffectiveEdge': FINITE, 'flooredDisplayCounterfactual.worstEffectiveEdgePercent': FINITE,
   'flooredDisplayCounterfactual.worstLossOn010Stake': FINITE,

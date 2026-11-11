@@ -101,7 +101,7 @@ def main():
     check(1 <= args.workers <= 8, '--workers must be between 1 and 8')
     provenance_raw = (root/'outputs/simulation-provenance.json').read_bytes()
     provenance = json.loads(provenance_raw)
-    dataset_path = root/'data/mines-master-6900bets.json'
+    dataset_path = root/'data/mines-prod-full-6574bets.json'
     simulation_path = root/'outputs/simulation-results.json'
     null_path = root/'outputs/bootstrap-nulls.float64le'
     destination = args.out.resolve()

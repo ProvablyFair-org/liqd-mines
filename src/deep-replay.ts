@@ -5,9 +5,9 @@
  * ══════════════════════════════════════════════════════════════════════════════════════
  *  WHY THIS EXISTS
  * ══════════════════════════════════════════════════════════════════════════════════════
- * `npm run verify` re-draws only the n = 1,000 convergence checkpoint of each Pass-1 row and holds
- * everything deeper to MUTUAL CONSISTENCY. That is honest but weak, and it is documented as
- * limitation DL-1. The remedy is NOT "record a deterministic Pass-1 master seed", and it is worth
+ * This is the stand-alone form of the full Pass-1 replay that Step 16 runs inside every `npm run
+ * verify`: every Pass-1 row re-drawn over all its rounds from the seed pair it records. The way to
+ * make Pass 1 replayable is NOT "record a deterministic Pass-1 master seed", and it is worth
  * stating plainly why:
  *
  *   A MASTER SEED WAS NEVER REQUIRED TO REPLAY THESE ROWS. Every Pass-1 row already records the
@@ -29,7 +29,7 @@
  * WHAT A ZERO-DIFFERENCE RESULT ESTABLISHES: that the committed Pass-1 statistics are the output
  * of this RNG on those seeds. It does NOT establish where the seeds came from (they are auditor
  * seeds; there is nothing to establish), nor anything about the operator — the chain to LIQD runs
- * through the 6,900/6,900 layout recomputation, not through Pass 1.
+ * through the layout recomputation of every captured round (Step 5), not through Pass 1.
  */
 
 import * as fs from 'fs';

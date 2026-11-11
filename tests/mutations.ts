@@ -30,7 +30,7 @@
  *   3. runs the declared runner (`tests/verify.ts` or mocha) inside the copy,
  *   4. asserts the VERDICT line and the named step's status.
  *
- * The dataset- and artifact-level battery (forged simulation rows, edited credits, orphaned
+ * The dataset- and artifact-level battery (forged simulation rows, edited wallet fields, orphaned
  * nonces, an un-repinned dataset) is NOT here: those are not source find/replace edits, and
  * they live in `tests/forgeries.ts` (`npm run forgeries`). They run through their named commands and through `npm run test:toolchain`.
  */
@@ -56,7 +56,7 @@ interface Mutation {
   expectStep?: number;
   expectStatus?: 'FAIL' | 'FLAG' | 'INFO' | 'PASS' | 'OVERSTATED';
   /**
-   * RTP FIGURE OVERSTATED route (FIXPASS2 C3, 2026-10-14). `regen: true` does in the copy what an auditor
+   * RTP FIGURE OVERSTATED route (since 2026-10-14). `regen: true` does in the copy what an auditor
    * does after a change to the paytable or the published figure: re-writes outputs/rtp-claim-table.json
    * (src/rtp-settings.ts as main), re-pins RTP_CLAIM_TABLE_SHA256, re-emits the scored record
    * (PF_EMIT=1) and re-pins it in src/pins.ts ARTIFACT_PINS, so the judged run reproduces its own
@@ -69,7 +69,7 @@ interface Mutation {
   regen?: boolean;
   expectExit?: number;
   /**
-   * A literal the named step's printed detail must contain in the mutated run (QA 2026-10-02).
+   * A literal the named step's printed detail must contain in the mutated run.
    * Needed when the named step ALREADY carries `expectStatus` on the unmutated tree — Step 10 FLAGs
    * at baseline since the supplement's settings were read — so a status match alone would be
    * vacuous. The gate runs the unmutated tree once and an entry whose marker is already present
@@ -113,7 +113,7 @@ const ONLY = process.argv.slice(2).filter(a => !a.startsWith('-'));
 const manifest: Mutation[] = ONLY.length ? ALL.filter(m => ONLY.some(o => m.name === o || m.name.startsWith(`${o} `))) : ALL;
 const COPY = ['src', 'tests', 'data', 'outputs', 'verifier-parity', 'tsconfig.json', 'package.json', '.mocharc.yml', '.gitignore'];
 
-// PER-RUN TIME LIMIT (QA 2026-10-02, A6). One verify run took 10–14 minutes on a 2-core machine,
+// PER-RUN TIME LIMIT. One verify run took 10–14 minutes on a 2-core machine,
 // so a fixed 300 s cut-off scored a mutation whose named step HAD failed as a MISS. The limit is
 // now PF_MUTATION_TIMEOUT_S (seconds, default 1200), and a run that hits it is reported as
 // TIMED OUT — never as CAUGHT and never as an ordinary MISS. A timed-out entry is inconclusive, so

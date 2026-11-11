@@ -63,7 +63,7 @@ const WRONG_CLIENT = 'wrong-client-seed-test';
 export function run(ctx: VerifyContext): StepResult[] {
   const { bets, seedMap } = ctx;
 
-  // ── Step 5: Mine-layout recomputation (all 6,900 bets) ────────────────────────
+  // ── Step 5: Mine-layout recomputation (every bet, EXPECTED_BETS) ───────────────
   let mismatches = 0, skipped = 0;
   for (const b of bets) {
     const ss = seedMap.get(b.hashedServerSeed);
@@ -74,7 +74,7 @@ export function run(ctx: VerifyContext): StepResult[] {
   // Coverage guard: a delivered dataset reveals 100% of seeds, so every bet must recompute.
   // skipped > 0 (e.g. all server seeds nulled) is incomplete coverage → FAIL, never a pass
   // on `mismatches === 0` alone.
-  // G-BIND: "6,900/6,900 recomputed" is the single most-quoted figure in this report, and
+  // G-BIND: "5,000/5,000 recomputed" is the single most-quoted figure in this report, and
   // `bets.length` on both sides of it would make it true of whatever the file contained. The
   // denominator is EXPECTED_BETS from src/pins.ts.
   const s5PopulationOk = bets.length === EXPECTED_BETS;
@@ -119,7 +119,7 @@ export function run(ctx: VerifyContext): StepResult[] {
   // draw-order minePositions must equal this package's revealMines — the same computeLayout the
   // population is scored by. A digest mismatch, a load error, a skipped round or one differing
   // layout FAILs the step. The display-multiplier cents it shows are compared at all 300 legal
-  // cells and printed (informational: the credited value is Steps 7–8).
+  // cells and printed (informational: the booked amount and wallet field are Steps 8 and 22).
   const site = loadSiteVerifier(path.join(__dirname, '../..'));
   let siteChecked = 0, siteMismatch = 0, siteVsServed = 0;
   let siteCells = 0, siteCellMismatch = 0;
@@ -163,11 +163,12 @@ export function run(ctx: VerifyContext): StepResult[] {
   // of chance collisions, E = Σ 1/P(25,m) ordered and Σ 1/C(25,m) as a set over the tested bets'
   // own mine counts. 0% change is a hard fail by construction (every bet would survive).
   //
-  // A–C GENERATOR, BOUND TO THE DATA. The capture's generator for phases A, B, C and E is
-  // disclosed in capture/capture-mines.reference.mjs as `audit${randomBytes(6).toString('hex')}` —
-  // Node's CSPRNG, drawn fresh per epoch. Every non-Phase-D epoch's client seed must be of that
-  // form and all must be distinct; a counter or a timestamp seed there fails the step. The
-  // predictable Phase D seeds are enumerated by Step 14 and carried as MANIFEST DL-13.
+  // GENERATOR, BOUND TO THE DATA. The production runner's client-seed generator is declared in the
+  // raw capture's meta (`clientSeedGenerator`: "audit" + 6 bytes of crypto.getRandomValues as hex, the
+  // browser CSPRNG), drawn fresh per epoch after the
+  // epoch's commitment was published. Every epoch's client seed must be of that form and all must be
+  // distinct; a counter or a timestamp seed fails the step. (Phase D's player-set seeds are scored
+  // by Step 14.)
   let tested = 0, emptyReproduce = 0, wrongReproduce = 0, emptyMineCount1 = 0;
   let emptySet = 0, wrongSet = 0;
   const testedMineCounts: number[] = [];
@@ -207,9 +208,9 @@ export function run(ctx: VerifyContext): StepResult[] {
       + `empty clientSeed reproduces ${emptyReproduce}/${tested} in draw order (${pct(emptyReproduce)}%, ${emptyMineCount1} at mineCount 1) and ${emptySet} as a set; `
       + `${changed}/${tested} bets change under a wrong seed. `
       + `Model-predicted chance collisions over these bets' own mine counts: draw order E = Σ 1/P(25,m) = ${ordered.expected.toFixed(3)} (σ ${ordered.sd.toFixed(3)}, gate E+5σ = ${ordered.bound.toFixed(3)}); as a set E = Σ 1/C(25,m) = ${unordered.expected.toFixed(3)} (σ ${unordered.sd.toFixed(3)}, gate ${unordered.bound.toFixed(3)}) — all four survivor counts ${withinModel ? 'within' : 'ABOVE'} the model. `
-      + `A–C generator (capture/capture-mines.reference.mjs, \`audit\${randomBytes(6).toString('hex')}\`, a CSPRNG): ${nonDSeeds.length - badFormat.length}/${nonDSeeds.length} non-Phase-D epoch client seeds match /^audit[0-9a-f]{12}$/, ${distinctNonD} distinct`
+      + `client-seed generator of phases A, A+ and C (declared in each raw capture's meta: "audit" + 6 bytes of crypto.getRandomValues as hex, a CSPRNG): ${nonDSeeds.length - badFormat.length}/${nonDSeeds.length} epoch client seeds match /^audit[0-9a-f]{12}$/, ${distinctNonD} distinct; the ${new Set(bets.filter(b => b.phase === 'D').map(b => b.epoch)).size} phase D epochs use player-set seeds (Step 14)`
       + (badFormat.length ? ` — NOT OF THE DISCLOSED FORM: ${badFormat.slice(0, 3).join(', ')}` : '')
-      + `. The Phase D seeds are predictable by construction and are enumerated by Step 14 (MANIFEST DL-13).`,
+      + `. Step 14 enumerates the client seeds per epoch and the order in which each was submitted.`,
   );
 
   return [s5, s6];

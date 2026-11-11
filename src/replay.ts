@@ -11,8 +11,8 @@
  *   reals at the reproduction tolerance (src/diff.ts).
  *
  *   SERVED CONFIGS (MINES-21). One revealed epoch replayed over 10,000 nonces playing, at nonce n,
- *   the configuration the casino actually served at nonce n mod 50 (its mine count and the tiles the
- *   capture requested). Returns the 200 window returns and the early window's win bits, from which
+ *   the configuration the casino actually served at nonce n mod W, W = the epoch's length (its mine
+ *   count and the tiles the capture requested). Returns the window returns and the early window's win bits, from which
  *   Step 17 computes the served-config cherry-pick statistic.
  *
  * WHY A PREFIX OF THE SHUFFLE. revealMines runs the whole 25-position Fisher-Yates and returns the

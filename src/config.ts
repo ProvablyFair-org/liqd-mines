@@ -13,7 +13,7 @@ export const MINE_COUNTS = Array.from({ length: 24 }, (_, i) => i + 1); // 1..24
 /**
  * (1 − HOUSE_EDGE) as an EXACT rational, DERIVED from the one definition of the edge above.
  *
- * The exact-floor8 credit identity (tests/steps/payouts.ts) and the settlement-floor sweep
+ * The exact-floor8 wallet field identity (tests/steps/payouts.ts) and the settlement-floor sweep
  * (there and in src/figures.ts) both need the retention factor in integer arithmetic. Spelling
  * it out at each site as `let num = 99n, den = 100n` gives BigInt literals that merely happen
  * to agree with HOUSE_EDGE without being derived from it. Mutating HOUSE_EDGE 0.01 → 0.02 then
@@ -43,22 +43,13 @@ export const MINE_COUNTS = Array.from({ length: 24 }, (_, i) => i + 1); // 1..24
 export const PUBLISHED_RTP = 0.99;
 
 /**
- * The operator's DECLARED max-odds cap, 10000×. Declared here from the AUDITED dataset's own
- * game-settings record (`currentGameSettings.maxOdds`, carried on 3,844 of the 6,900 settle
- * responses of the 30 July 2026 capture as the single value 10000) and cross-checked by Step 10
- * rather than read from it: settings that drift from the declaration are disclosed (FLAG).
- *
- * The declaration describes the July build only. The scored 2026-10-03 supplement's 607 settings
- * records carry NO maxOdds key (minBet 0.01, maxBet 10000 where July had 0.1 and 5000, plus
- * maxExposure 50000, maxExposureUsdc 50000, maxBetUsdc "10000.00000000", exposureSource "global",
- * maxBetSource "game") — src/pins.ts SUPPLEMENT_GAME_SETTINGS, bound to the data by Step 22; the
- * 2026-09-26 capture's 596 carried none either (dated history) — and the live page read 2026-10-01
- * advertises a 5,148,297× top payout, the uncapped exact multiplier at m=12, k=13. Settled
- * 2026-10-15 (MANIFEST DL-7): LIQD states the 10,000× multiplier cap was removed at the end of August
- * 2026 and the setting taken out of the configuration; maxExposure is a per-round payout limit, and
- * payout caps are excluded from the audit (profile owner, 2026-10-15). Step 10 therefore prints this
- * declaration as the July build's history and does not score it (it FLAGged on the disagreement from
- * 2026-10-02 to 2026-10-15).
+ * The 10,000× reference threshold of Step 10's cap DISCLOSURE (not scored). LIQD states (operator
+ * statement, 2026-10-15, MANIFEST DL-7) that Mines had a 10,000× multiplier cap until the end of
+ * August 2026, when the setting was taken out of the configuration. The production build's settings
+ * records (src/pins.ts PROD_GAME_SETTINGS, bound to the raw captures by Step 22) carry NO maxOdds
+ * key; maxExposure is a per-round payout limit, and payout caps are excluded from the audit (profile
+ * owner, 2026-10-15). Step 10 prints how many reference cells exceed this threshold and that no
+ * displayed multiplier does.
  */
 export const MAX_ODDS_DECLARED = 10000;
 
@@ -130,7 +121,7 @@ export function pairCoOccurProb(mineCount: number): number {
 }
 
 /**
- * EXACT payout multiplier — the value liqd now CREDITS (full precision), validated
+ * EXACT payout multiplier — the value liqd now PAYS (full precision), validated
  * against every captured winningAmount to 2e-8:
  *   multExact = (1 - edge) · Π_{i=0}^{k-1} (25-i)/(25-m-i)
  * Since payout = fair · (1 - edge) with no truncation, the effective RTP is exactly
@@ -178,9 +169,9 @@ export function minesMultiplierRational(
  * `minesMultiplierExact(1, 10)` telescopes to the exact rational 99/100 · 25/15 =
  * 33/20 = 1.65, but evaluated as a chain of binary64 divisions it lands on 1.6499999999999997;
  * ×100 gives 164.99999999999997 and the floor is 164, so the grid published **1.64** for a cell
- * whose exact floor is **1.65**. All 31 are listed in the QA-03 erratum in MANIFEST.md#payouts-and-rtp, and the
+ * whose exact floor is **1.65**. All 31 are listed in MANIFEST.md#payouts-and-rtp, and the
  * unit spec "exactly 31 of the 300 cells moved, and every one moved UP by one cent"
- * (tests/mines/qaRegressionTests.ts) recomputes them.
+ * (tests/mines/regressionTests.ts) recomputes them.
  *
  * The rule here is explicit: a function that CLAIMS a
  * mathematical floor must not be repaired with an epsilon, and must not silently become a round.
@@ -190,8 +181,8 @@ export function minesMultiplierRational(
  * boundary to tune: `num` and `den` are exact, BigInt `/` truncates toward zero, and both are
  * positive here, so `(100n * num) / den` IS `floor(100 · mult)` by construction.
  *
- * This is COSMETIC in the money sense — the field understates the credited amount and is not
- * what liqd pays (see `minesMultiplierExact`, which settles) — but it is the reference grid the
+ * This is COSMETIC in the money sense — the field understates the wallet field in the reply and is
+ * not what liqd settles at (see `minesMultiplierExact`) — but it is the reference grid the
  * report publishes and the input to the display-payout counterfactual, so a wrong value there is
  * a wrong published number regardless of who it favours.
  */
@@ -203,8 +194,8 @@ export function minesMultiplierDisplayCents(mineCount: number, tilesRevealed: nu
 
 /**
  * DISPLAY multiplier — the `multiplier` field liqd returns for the fairness panel is
- * still floored to 2 decimals. This is COSMETIC: it now understates the actual paid
- * amount (player-favourable), and is no longer the value used to compute the payout.
+ * still floored to 2 decimals. This is COSMETIC: it understates the wallet field in the
+ * reply (player-favourable), and is not the value the amounts are computed from.
  *   multDisplay = floor( multExact · 100 ) / 100,  computed in exact integer arithmetic.
  *
  * Cents are ≤ 5.15e8 across the whole legal grid (the largest exact multiplier is m=12,k=13 at
@@ -219,8 +210,8 @@ export function minesMultiplier(mineCount: number, tilesRevealed: number): numbe
 }
 
 /**
- * Theoretical RTP for a fixed strategy (open k tiles, cash out): win pays the EXACT
- * multiplier (the credited amount), bust pays 0.  RTP = P(win) · multExact = 1 - edge
+ * Theoretical RTP for a fixed strategy (open k tiles, cash out): win returns the EXACT
+ * multiplier (before settlement rounding), bust returns 0.  RTP = P(win) · multExact = 1 - edge
  * = 99.00% exactly.  Uses anti-circular winProbability.
  */
 export function theoreticalRTP(mineCount: number, tilesRevealed: number): number {
@@ -228,7 +219,7 @@ export function theoreticalRTP(mineCount: number, tilesRevealed: number): number
 }
 
 /**
- * COUNTERFACTUAL RTP if the operator credited the FLOORED DISPLAY multiplier instead of the exact
+ * COUNTERFACTUAL RTP if the operator paid the FLOORED DISPLAY multiplier instead of the exact
  * one — the behaviour a prior capture found and this one did not. Computed as one exact rational,
  * `C(25−m,k) · cents / (C(25,k) · 100)`, then divided once.
  *
@@ -236,7 +227,7 @@ export function theoreticalRTP(mineCount: number, tilesRevealed: number): number
  * cell returns 0.9899999999999999 and an edge of 1.000000000000012e-2, where the rational form
  * lands on the nearest double to 0.99 and its edge reads 1.0000000000000009e-2 — the best
  * binary64 can do. Noise at the 15th digit, immaterial to any published figure but exactly the
- * kind of near-miss that costs a reviewer an hour. There is no reason to leave it in a quantity
+ * kind of near-miss that costs whoever checks it an hour. There is no reason to leave it in a quantity
  * that has a closed rational form.
  */
 export function displayPayoutRTP(mineCount: number, tilesRevealed: number): number {

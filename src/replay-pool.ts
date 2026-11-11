@@ -1,7 +1,7 @@
 /**
  * REPLAY WORKER POOL — runs src/replay.ts jobs in parallel child processes of the verifier.
  *
- * The replay is ~24,000,000 Pass-1 rounds plus 138 × 10,000 served-config rounds: minutes on one
+ * The replay is 24,000,000 Pass-1 rounds plus the served-config rounds of every epoch: minutes on one
  * core, so it is fanned out. Scored steps are synchronous, so the parent runs a small orchestrator
  * synchronously (`node -e`, below); the orchestrator starts `width` worker children and collects
  * their results. A worker is THIS SAME ENTRY SCRIPT re-run with PF_REPLAY_WORKER=1 — tests/verify.ts
@@ -89,7 +89,7 @@ function cost(job: ReplayJob): number {
 /**
  * How many worker processes to run. Default: one per CPU. `PF_REPLAY_WORKERS=<n>` (a positive
  * integer) caps it — for a shared machine, or for the mutation and forgery batteries, which run one
- * full verify per entry (QA 2026-10-02, A6). The width changes only how the jobs are split across
+ * full verify per entry. The width changes only how the jobs are split across
  * processes, never what is replayed or compared.
  */
 export function replayWidth(): number {

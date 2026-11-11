@@ -32,11 +32,10 @@ export interface VerifyContext {
   seedMap: Map<string, string>;
   /** hashedServerSeed → bets in that epoch. */
   byHash: Map<string, Bet[]>;
-  phaseA: Bet[];   // 4,800 — all 24 mineCounts × 200, reveals=1
-  phaseB: Bet[];   // 1,000 — mineCount 24, reveals=1
-  phaseC: Bet[];   //   200 — $10 stake, mineCount 3, reveals=1
-  phaseD: Bet[];   //   500 — custom pfaudit- client seeds, cycled mineCounts, reveals=1
-  phaseE: Bet[];   //   400 — multi-reveal: mineCount 3, reveals=5
+  /** Rounds by phase letter: A (5,950, of which 950 are the A+ top-up), C (124), D (500). */
+  phaseA: Bet[];
+  phaseC: Bet[];
+  phaseD: Bet[];
   outputsDir: string;
   /** Recomputed SHA-256 of the loaded dataset file. */
   datasetSha256: string;
@@ -51,6 +50,8 @@ export interface VerifyContext {
    * artifact was absent (steps 16–17 FLAG).
    */
   simArtifact?: { file: string; sha256: string } | null;
+  /** The raw production captures (src/prod-capture.ts), pinned; `problem` set when one did not load. */
+  prodCapture: import('../../src/prod-capture').ProdCapture;
 }
 
 export function step(

@@ -75,8 +75,8 @@ export interface ChiSquaredResult {
 
 export function chiSquaredTest(observed: number[], expected: number[]): ChiSquaredResult {
   if (observed.length !== expected.length) throw new Error('length mismatch');
-  // POOLING RULE, STATED EXACTLY — because two independent reviewers rebuilt Pass 2 from the
-  // report's chapters and matched 0 of 138 rows, then matched 138/138 only after reading this
+  // POOLING RULE, STATED EXACTLY — because two independent rebuilds rebuilt Pass 2 from the
+  // report's chapters and matched none of the rows, then matched all of them only after reading this
   // function. The rule is NOT "pool every cell with expected < 5". It is: walk inward from the
   // FRONT while the leading expected is < 5, then inward from the BACK while the trailing
   // expected is < 5, and stop. Interior cells are never touched.

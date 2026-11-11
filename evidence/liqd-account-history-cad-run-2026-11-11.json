@@ -1,0 +1,21 @@
+{
+ "read": "2026-11-11 ~12:50 UTC, logged-in capture account, Chrome on liqd.com, read-only",
+ "source": "GET https://liqd.com/api/v1/casino/get-personal-bet-history?page=N&limit=50, pages 384-484",
+ "window": "2026-11-08T22:36:00Z .. 2026-11-09T03:21:30Z (mines capture 1, CAD run)",
+ "rows": 5000,
+ "games": [
+  "Mines"
+ ],
+ "betIds": "5000 unique; sorted-id-list sha256 equals the dataset's CAD-run ids (24f3735d440c3f35559f81168c145cc1b745b9d7c5ba147964d9e3551d361bb1): 5000/5000 match",
+ "currency": "every row: currencyCode USDT, placedCurrencyCode CAD, placedBetAmount 0.10000000",
+ "betamountUSDT": {
+  "min": "0.07084688",
+  "max": "0.07096596",
+  "rowsAt0.1": 0,
+  "sum": "354.52607511"
+ },
+ "payoutUSDT_sum": "353.95401893",
+ "reading": "The account's own bet history records each CAD 0.10 bet as about 0.0709 USDT, never 0.1 USDT. The ledger debit 'amount 0.1 under currencyId 3' in the loss replies is the CAD amount, not a USDT charge.",
+ "payoutsPerBet": "1,979 rows with payout > 0; sorted 'betId,payout(8dp)' list sha256 cfdd4f50cc7bd34ffb9f4982c3ae05f67ad3f09cf71942c6d0bb4030609c48e5 equals the same list built from the capture replies' winningAmountWallet: 1,979/1,979 identical. Sum 353.95401893 USDT both sides.",
+ "reading2": "LIQD's account history records, per bet, the reply's 8-decimal USDT wallet field as the payout, not the CAD amount cut to the cent."
+}

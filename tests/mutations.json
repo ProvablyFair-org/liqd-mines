@@ -19,7 +19,7 @@
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 8,
     "expectStatus": "FAIL",
-    "guard": "Step 8 exact-floor8 identity must reject a doubled house edge. Until 2026-09-09 it did NOT: floor8CreditUnits spelled the retention factor as the BigInt literal `99n/100n`, so the arm reported 0 violations under this mutation while the floating-point residual arm beside it counted 3,104 errors — the strictest test in the suite was measuring a constant the audit had stopped using. The factor is now EDGE_NUM/EDGE_DEN, derived from HOUSE_EDGE, and the arm reports 3,104 violations here."
+    "guard": "Step 8 exact-floor8 identity must reject a doubled house edge. Until 2026-09-09 it did NOT: floor8WalletUnits spelled the retention factor as the BigInt literal `99n/100n`, so the arm reported 0 violations under this mutation while the floating-point residual arm beside it counted 3,104 errors — the strictest test in the suite was measuring a constant the audit had stopped using. The factor is now EDGE_NUM/EDGE_DEN, derived from HOUSE_EDGE, and the arm reports 3,104 violations here."
   },
   {
     "name": "M02 HOUSE_EDGE 0.01 -> 0.0100001 (edge shifted in the 5th decimal)",
@@ -28,9 +28,9 @@
     "replace": "export const HOUSE_EDGE = 0.0100001;",
     "runner": "verify",
     "expect": "NOT PROVABLY FAIR",
-    "expectStep": 8,
+    "expectStep": 22,
     "expectStatus": "FAIL",
-    "guard": "Step 8 must reject an edge shift 1000x smaller than the doubled-edge case. Both the 2e-8 band and the BigInt floor8 identity are load-bearing — and the identity only became load-bearing on 2026-09-09, when EDGE_NUM was given a 1e-8 scale so a 5th-decimal shift moves the numerator instead of rounding back onto 99. Measured after the fix: 3,104 floor8 violations."
+    "guard": "Step 22 (f) must reject an edge shift 1000x smaller than the doubled-edge case: LIQD's wallet rule floors the multiplier to 8 decimals, so a 5th-decimal edge shift moves floor8(mult) by tens of units and every USDT wallet field off the rule. Re-targeted 2026-11-09 from Step 8: on production Step 8 holds the recorded CAD amount, floored to the cent at a 0.10 stake, and a shift of 1e-7 relative cannot cross a cent there. The BigInt scale of EDGE_NUM (1e8) is what makes the shift visible at all (survivor M27)."
   },
   {
     "name": "M03 exact multiplier drops the (1 - edge) factor entirely",
@@ -44,7 +44,7 @@
     "guard": "Step 8 must reject a reference that pays the fair (0%-edge) multiplier"
   },
   {
-    "name": "M04 minesMultiplierExact(4,2) -> NaN (reviewer mutation R: NaN in our OWN reference)",
+    "name": "M04 minesMultiplierExact(4,2) -> NaN (NaN in our OWN reference)",
     "file": "src/config.ts",
     "find": "export function minesMultiplierExact(mineCount: number, tilesRevealed: number): number {\n  let p = 1;",
     "replace": "export function minesMultiplierExact(mineCount: number, tilesRevealed: number): number {\n  if (mineCount === 4 && tilesRevealed === 2) return NaN;\n  let p = 1;",
@@ -55,7 +55,7 @@
     "guard": "Step 10 full-grid sweep must HARD-FAIL on a non-finite reference cell. Math.abs(NaN - 0.99) > 1e-9 is FALSE, so before 2026-09-09 this printed '300/300 clean' and the suite returned 21/21 Full Pass"
   },
   {
-    "name": "M05 minesMultiplierExact(4,2) -> 1 (reviewer mutation O: a 70% reference cell)",
+    "name": "M05 minesMultiplierExact(4,2) -> 1 (a 70% reference cell)",
     "file": "src/config.ts",
     "find": "export function minesMultiplierExact(mineCount: number, tilesRevealed: number): number {\n  let p = 1;",
     "replace": "export function minesMultiplierExact(mineCount: number, tilesRevealed: number): number {\n  if (mineCount === 4 && tilesRevealed === 2) return 1;\n  let p = 1;",
@@ -63,19 +63,19 @@
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 10,
     "expectStatus": "FLAG",
-    "guard": "Step 10 must FLAG (not hard-fail) a formula DEVIATION at a cell no captured bet ever won — a different fault class from a NaN (M04, which hard-fails Step 10). That discrimination is the point of this entry and it is what expectStep/expectStatus assert. The overall VERDICT is nonetheless NOT PROVABLY FAIR, through a different step: corrupting the reference formula also makes outputs/audit-figures.json disagree with its own recomputation, which Step 19 hard-fails. That is correct — a repo whose committed figure artifact is not what its code produces should not ship — and it is stronger than the reviewer acceptance line written before that artifact existed. Step 10 FLAG is the assertion; the verdict is a consequence. Step 10 FLAGged at baseline from 2026-10-02 to 2026-10-15 (the cap half, no longer scored since 2026-10-15) and PASSes at baseline now; the entry still requires the FLAG REASONS code GRID-OFF, which the unmutated run does not print.",
+    "guard": "Step 10 must FLAG (not hard-fail) a formula DEVIATION at a cell no captured bet ever won — a different fault class from a NaN (M04, which hard-fails Step 10). That discrimination is the point of this entry and it is what expectStep/expectStatus assert. The overall VERDICT is nonetheless NOT PROVABLY FAIR, through a different step: corrupting the reference formula also makes outputs/audit-figures.json disagree with its own recomputation, which Step 19 hard-fails. That is correct — a repo whose committed figure artifact is not what its code produces should not ship — and it is stronger than an acceptance line that checks the step alone. Step 10 FLAG is the assertion; the verdict is a consequence. Step 10 FLAGged at baseline from 2026-10-02 to 2026-10-15 (the cap half, no longer scored since 2026-10-15) and PASSes at baseline now; the entry still requires the FLAG REASONS code GRID-OFF, which the unmutated run does not print.",
     "expectDetail": "GRID-OFF"
   },
   {
-    "name": "M06 minesMultiplierExact(1,1) -> NaN (a LIVE-witnessed cell)",
+    "name": "M06 minesMultiplierExact(1,2) -> NaN (a production-witnessed cell)",
     "file": "src/config.ts",
     "find": "export function minesMultiplierExact(mineCount: number, tilesRevealed: number): number {\n  let p = 1;",
-    "replace": "export function minesMultiplierExact(mineCount: number, tilesRevealed: number): number {\n  if (mineCount === 1 && tilesRevealed === 1) return NaN;\n  let p = 1;",
+    "replace": "export function minesMultiplierExact(mineCount: number, tilesRevealed: number): number {\n  if (mineCount === 1 && tilesRevealed === 2) return NaN;\n  let p = 1;",
     "runner": "verify",
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 8,
     "expectStatus": "FAIL",
-    "guard": "Step 8's per-bet residual test is NaN-blind without an explicit finite guard: `Math.abs(NaN) > 2e-8` is false, so the bet scored as an EXACT payout"
+    "guard": "Step 8's non-finite reference guard must hard-FAIL when the auditor's own exact multiplier is NaN at a cell production won at ((1, 2): 223 wins). Re-targeted 2026-11-09 from (1, 1), which production did not play. Step 8's per-bet residual test is NaN-blind without an explicit finite guard: `Math.abs(NaN) > 2e-8` is false, so the bet scored as an EXACT payout"
   },
   {
     "name": "M07 displayed multiplier floored to 1 decimal instead of 2",
@@ -86,7 +86,7 @@
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 7,
     "expectStatus": "FAIL",
-    "guard": "Step 7 must reject a display-multiplier reference that no longer matches the operator's floored field. Re-expressed 2026-09-10 (QA-03): the mutation used to edit the float form `Math.floor(multExact * 100) / 100`, which no longer exists — the floor is now exact integer division. Flooring to one decimal instead of two is the same defect in the new arithmetic."
+    "guard": "Step 7 must reject a display-multiplier reference that no longer matches the operator's floored field. Re-expressed 2026-09-10 : the mutation used to edit the float form `Math.floor(multExact * 100) / 100`, which no longer exists — the floor is now exact integer division. Flooring to one decimal instead of two is the same defect in the new arithmetic."
   },
   {
     "name": "M08 GRID 25 -> 26 (wrong board size)",
@@ -144,7 +144,7 @@
     "guard": "Proves Step 17's Pass-2 binding is LOAD-BEARING: the chi-squared statistics in the simulation artifact are genuinely re-derived from the dataset's revealed serverSeeds, not merely read"
   },
   {
-    "name": "M14 floor8 credit numerator shifted down 1% at the USE site (a 1% under-credit in the reference)",
+    "name": "M14 floor8 wallet field numerator shifted down 1% at the USE site (a 1% under-payment in the reference)",
     "file": "tests/steps/payouts.ts",
     "find": "  let num = EDGE_NUM, den = EDGE_DEN;\n  for (let i = 0; i < k; i++) { num *= BigInt(GRID - i); den *= BigInt(GRID - mineCount - i); }",
     "replace": "  let num = EDGE_NUM - 1000000n, den = EDGE_DEN;\n  for (let i = 0; i < k; i++) { num *= BigInt(GRID - i); den *= BigInt(GRID - mineCount - i); }",
@@ -152,13 +152,13 @@
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 8,
     "expectStatus": "FAIL",
-    "guard": "Step 8's BigInt rational floor8 identity must be the thing that fires, independently of the floating-point 2e-8 residual band next to it. Retargeted 2026-09-09: the numerator used to be a literal `99n` inside tests/steps/payouts.ts (and duplicated at two more sites), which is exactly the defect item H-H closed — it is now derived once from HOUSE_EDGE as EDGE_NUM, so the mutation moves with it."
+    "guard": "Step 8's BigInt rational floor8 identity must be the thing that fires, independently of the floating-point 2e-8 residual band next to it. Retargeted 2026-09-09: the numerator used to be a literal `99n` inside tests/steps/payouts.ts (and duplicated at two more sites), which is exactly the hard-coded-edge defect — it is now derived once from HOUSE_EDGE as EDGE_NUM, so the mutation moves with it."
   },
   {
-    "name": "M16 mocha fixture serverSeed nibble changed (8b2f -> 8b2e)",
+    "name": "M16 mocha fixture serverSeed nibble changed (…d804 -> …d805)",
     "file": "tests/mines/rngTests.ts",
-    "find": "'8b2fc7e909d2fff439692f648a9df0ba'",
-    "replace": "'8b2ec7e909d2fff439692f648a9df0ba'",
+    "find": "'c5777675456c54fb9096287dfb1cd804'",
+    "replace": "'c5777675456c54fb9096287dfb1cd805'",
     "runner": "mocha",
     "expect": "failing",
     "guard": "Mocha reference vectors — the hardcoded capture vectors must be genuine; a suite that stays green with a corrupted fixture is testing nothing. (No scored Step applies: this runner prints no step lines.)"
@@ -172,7 +172,7 @@
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 6,
     "expectStatus": "FAIL",
-    "guard": "Step 6 is the step that notices. A neutered comparator makes Step 5 pass VACUOUSLY (0 mismatches over 6,900 bets, because nothing is compared) — it is the whole-dataset wrong-client-seed control in Step 6 that collapses, because every substituted seed now \"reproduces\" the layout. This entry exists to prove that control is load-bearing and not decoration."
+    "guard": "Step 6 is the step that notices. A neutered comparator makes Step 5 pass VACUOUSLY (0 mismatches over 6,574 bets, because nothing is compared) — it is the whole-dataset wrong-client-seed control in Step 6 that collapses, because every substituted seed now \"reproduces\" the layout. This entry exists to prove that control is load-bearing and not decoration."
   },
   {
     "name": "M18 inverseCriticalZ returns 0 (the derived Bonferroni z-critical destroyed)",
@@ -186,26 +186,26 @@
     "guard": "Step 16 derives its FWER thresholds from alpha and MINE_COUNTS rather than reading bonferroniZCritical out of the artifact. Destroying the derivation must therefore break the step — if it did not, the threshold being read from the artifact would be indistinguishable from it being derived."
   },
   {
-    "name": "M22 EXPECTED_BETS re-derived from the dataset instead of pinned (the H-G regression)",
+    "name": "M22 EXPECTED_BETS moved off the delivered capture",
     "file": "src/pins.ts",
-    "find": "export const EXPECTED_BETS = 6900;",
-    "replace": "export const EXPECTED_BETS = 6850;",
+    "find": "export const EXPECTED_BETS = 6574;",
+    "replace": "export const EXPECTED_BETS = 6573;",
     "runner": "verify",
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 11,
     "expectStatus": "FAIL",
-    "guard": "Step 11 must hard-FAIL when the pinned population no longer matches the delivered capture, and Step 12 with it. This proves the population pin is what those steps actually assert against: moving the pin off the capture must break the audit, because if it did not the constant would be decoration and the population would once again be whatever the dataset's own header said it was. Origin: QA round 3 item H-G and framework gate-population D1/D2, where dropping a trailing epoch and doctoring the header to agree returned Conditional Pass, exit 0."
+    "guard": "Step 11 must hard-FAIL when the pinned population no longer matches the delivered dataset, and Step 12 with it. This proves the population pin is what those steps actually assert against: moving the pin off the dataset must break the audit, because if it did not the constant would be decoration and the population would be whatever the dataset's own header said it was."
   },
   {
-    "name": "M23 EXPECTED_EPOCH_SIZE moved off 50",
+    "name": "M23 a planned epoch size moved off 200 (phase A epochs declared 199 rounds long)",
     "file": "src/pins.ts",
-    "find": "export const EXPECTED_EPOCH_SIZE = 50;",
-    "replace": "export const EXPECTED_EPOCH_SIZE = 49;",
+    "find": "{ capture: 1, phase: 'A', phaseId: 'A', epochs: 25, size: 200,",
+    "replace": "{ capture: 1, phase: 'A', phaseId: 'A', epochs: 25, size: 199,",
     "runner": "verify",
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 12,
     "expectStatus": "FAIL",
-    "guard": "Step 12 must assert the epoch size against the CODE constant, and the three pins must stay mutually consistent (EXPECTED_SEEDS x EXPECTED_EPOCH_SIZE == EXPECTED_BETS). Before 2026-09-09 the epoch size was a bare literal 50 compared against seeds.length — both operands from inside the file being scored."
+    "guard": "Step 12 must assert every epoch's size against the CODE plan (src/pins.ts PHASE_BLOCKS / EPOCH_PLAN), and the pins must stay mutually consistent (Σ epoch sizes == EXPECTED_BETS). With phase A declared at 199 rounds per epoch the 25 phase A epochs are off plan and the step FAILs (Steps 4 and 11 with it)."
   },
   {
     "name": "M26 EDGE_NUM shifted one 1e-8 unit off (1 - HOUSE_EDGE)",
@@ -216,10 +216,10 @@
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 10,
     "expectStatus": "FAIL",
-    "guard": "Step 10 must hard-FAIL when the BigInt retention factor does not exactly represent the audited edge — the factor Step 8's floor8 credit identity divides by. Deliberately scored in a step rather than thrown at import: a run that dies in module initialisation prints no verdict, and NOT RUN is not CAUGHT."
+    "guard": "Step 10 must hard-FAIL when the BigInt retention factor does not exactly represent the audited edge — the factor Step 8's floor8 wallet field identity divides by. Deliberately scored in a step rather than thrown at import: a run that dies in module initialisation prints no verdict, and NOT RUN is not CAUGHT."
   },
   {
-    "name": "M30 QA-03 display multiplier reverts to float multiply-then-floor",
+    "name": "M30 display multiplier reverts to float multiply-then-floor",
     "file": "src/config.ts",
     "find": "  const cents = minesMultiplierDisplayCents(mineCount, tilesRevealed);\n  return cents === null ? NaN : Number(cents) / 100;",
     "replace": "  return Math.floor(minesMultiplierExact(mineCount, tilesRevealed) * 100) / 100;",
@@ -227,7 +227,7 @@
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 19,
     "expectStatus": "FAIL",
-    "guard": "The defect QA-03 closed, re-armed as a registry entry. `Math.floor(multExact * 100)` understates 31 of the 300 reference cells by a cent — at m=1,k=10 the exact multiplier is 33/20 = 1.65 but the binary64 product lands on 1.6499999999999997 and floors to 1.64. Step 7 CANNOT see it: the 31 affected cells are all at reveal depths the capture never won at, so every captured `multiplier` field agrees under either arithmetic (3,104/3,104, measured). The guard that fires is Step 19, which re-derives outputs/audit-figures.json and compares it to the copy on disk — the reference grid is IN that artifact, so a change to the grid arithmetic is a change to the evidence. That is the point of the entry: it names the step that actually catches a defect the payout steps are blind to, so nobody later assumes Step 7 was covering this."
+    "guard": "The defect closed, re-armed as a registry entry. `Math.floor(multExact * 100)` understates 31 of the 300 reference cells by a cent — at m=1,k=10 the exact multiplier is 33/20 = 1.65 but the binary64 product lands on 1.6499999999999997 and floors to 1.64. Step 7 CANNOT see it: the 31 affected cells are all at reveal depths the capture never won at, so every captured `multiplier` field agrees under either arithmetic (3,104/3,104, measured). The guard that fires is Step 19, which re-derives outputs/audit-figures.json and compares it to the copy on disk — the reference grid is IN that artifact, so a change to the grid arithmetic is a change to the evidence. That is the point of the entry: it names the step that actually catches a defect the payout steps are blind to, so nobody later assumes Step 7 was covering this."
   },
   {
     "name": "M12 modulo-bias rejection removed (maxFair = 2^32)",
@@ -241,10 +241,10 @@
     "guard": "Step 5's draw-bias arm (MINES-08) must reject an adapter whose draw is no longer the declared rejection design. Until 2026-09-23 this was a DECLARED SURVIVOR: the capture never takes the branch (0 of 172,500 draws, 2.024e-4 expected), so every layout recomputes identically with it deleted. Two things now catch it inside a verify run: the per-range bias is computed from maxFairFor, the one ceiling the draw reads, and must be exactly 0 for a rejection design (with maxFair = 2^32 the remainder is non-zero at 21 of the 25 ranges); and the branch is exercised on a deterministic vector (nonce 760455, cursor 12, range 13 must draw 6; with the branch gone it draws 1). Note what the 2^-32 bound alone would NOT catch: a plain chunk % range is biased by less than 2^-32 at every range 1..25, so the gate is the declared design's exact-zero, not the bound. This settles the AUDITOR'S draw. Whether the operator's server takes the branch remains ASSUMED (MANIFEST DL-3) — no client-side capture can witness it."
   },
   {
-    "name": "M33 EXPECTED_SEEDS moved off 138 (epoch count no longer the pinned population)",
+    "name": "M33 EXPECTED_SEEDS moved off 36 (epoch count no longer the pinned population)",
     "file": "src/pins.ts",
-    "find": "export const EXPECTED_SEEDS = 138;",
-    "replace": "export const EXPECTED_SEEDS = 139;",
+    "find": "export const EXPECTED_SEEDS = 36;",
+    "replace": "export const EXPECTED_SEEDS = 37;",
     "runner": "verify",
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 3,
@@ -297,7 +297,7 @@
     "expectDetail": "NON-MONOTONE"
   },
   {
-    "name": "M38 July maxOdds declaration lowered to 20x (below the largest quoted multiplier, 24.75x): disclosed, not scored",
+    "name": "M38 the 10,000x reference threshold of Step 10's cap disclosure lowered to 20x (below the largest multiplier displayed on production): disclosed, not scored",
     "file": "src/config.ts",
     "find": "export const MAX_ODDS_DECLARED = 10000;",
     "replace": "export const MAX_ODDS_DECLARED = 20;",
@@ -305,7 +305,7 @@
     "expect": "PROVABLY FAIR — Full Pass",
     "expectStep": 10,
     "expectStatus": "PASS",
-    "guard": "Step 10's cap half (MINES-14, DL-7) is disclosure, not scoring, since 2026-10-15: payout caps are excluded from the audit (profile owner, 2026-10-15) and LIQD states Mines has had no multiplier cap since the end of August 2026. With the July declaration lowered below the largest quoted multiplier, Step 10 must stay PASS and the verdict Full Pass: the exclusion holds for the quoted-multiplier figure as well as the settings figure. A PASSing step prints no detail line, so no detail marker is asserted here; that the excluded figures are still computed is M58's assertion. Until 2026-10-15 this entry required the FLAG REASONS code QUOTED-ABOVE-CAP and Conditional Pass."
+    "guard": "Step 10's cap half (MINES-14, DL-7) is disclosure, not scoring: payout caps are excluded from the audit (profile owner, 2026-10-15) and the production build's settings records carry no maxOdds key. With the disclosure threshold lowered below the largest multiplier displayed on production, Step 10 must stay PASS and the verdict Full Pass. A PASSing step prints no detail line, so no detail marker is asserted here; that the excluded figures are still computed is M58's assertion."
   },
   {
     "name": "M39 HMAC salt drops the client seed (client seed no longer enters the draw)",
@@ -316,18 +316,18 @@
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 14,
     "expectStatus": "FLAG",
-    "guard": "Step 14 recomputes the 500 Phase-D rounds under the ten pfaudit- client seeds actually used; a reference in which the client seed no longer enters the HMAC message must stop reproducing them."
+    "guard": "Step 14 recomputes every production round under its epoch's own client seed (36 seeds, 6,574 rounds); a reference in which the client seed no longer enters the HMAC message must stop reproducing them."
   },
   {
-    "name": "M40 depth-5 display multiplier at mineCount 3 corrupted (the Phase-E cash-out rung)",
+    "name": "M40 depth-5 display multiplier at mineCount 12 corrupted (a production cash-out rung)",
     "file": "src/config.ts",
     "find": "export function minesMultiplier(mineCount: number, tilesRevealed: number): number {\n",
-    "replace": "export function minesMultiplier(mineCount: number, tilesRevealed: number): number {\n  if (mineCount === 3 && tilesRevealed === 5) return 2;\n",
+    "replace": "export function minesMultiplier(mineCount: number, tilesRevealed: number): number {\n  if (mineCount === 12 && tilesRevealed === 5) return 2;\n",
     "runner": "verify",
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 15,
     "expectStatus": "FAIL",
-    "guard": "Step 15 checks every Phase-E win's served multiplier at the depth actually opened; a wrong (3,5) display reference must fail it."
+    "guard": "Step 15 checks every production win's served multiplier at the depth actually opened; a wrong (12, 5) display reference (5 wins at 40.86x) must fail it. Until 2026-11-09 the corrupted cell was the review Phase-E rung (3, 5)."
   },
   {
     "name": "M41 mine layout depends on the mine count beyond truncation (m=3 draws positions 2..4)",
@@ -338,7 +338,7 @@
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 18,
     "expectStatus": "FAIL",
-    "guard": "Step 18 recomputes all 200 Phase-C $10.00 hands (mineCount 3) against the wager-free reference; a reference that no longer reproduces them must fail it."
+    "guard": "Step 18 recomputes every production round against the wager-free reference, the 1,000 rounds at mineCount 3 among them; a reference that no longer reproduces them must fail it. Until 2026-11-09 the step recomputed the review Phase-C $10.00 hands."
   },
   {
     "name": "M42 recomputed mine SET shifted by one draw (layout no longer the committed one)",
@@ -360,7 +360,7 @@
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 21,
     "expectStatus": "FLAG",
-    "guard": "Step 21 re-recomputes all 400 Phase-E layouts whatever positions were opened; a shuffle that no longer moves any tile must stop reproducing them."
+    "guard": "Step 21 re-recomputes all 6,574 production layouts whatever positions were opened; a shuffle that no longer moves any tile must stop reproducing them. Until 2026-11-09 the step covered the 400 review Phase-E rounds."
   },
   {
     "name": "M44 vendored site verifier derive.js: one-byte logic edit (tiles start at 2, not 1)",
@@ -382,7 +382,7 @@
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 17,
     "expectStatus": "FAIL",
-    "guard": "Step 17 served-config test: the early window's replayed outcomes must equal the 6,900 recorded outcomes, so a replay that is not the captured play fails the binding."
+    "guard": "Step 17 served-config test: the early window's replayed outcomes must equal the 6,574 recorded outcomes, so a replay that is not the captured play fails the binding."
   },
   {
     "name": "M46 served-config pooled-z gate moved past every attainable value (the over-gate FAIL branch is reachable)",
@@ -418,81 +418,81 @@
     "guard": "Step 19: every pinned artifact of record must be un-ignored by name in .gitignore."
   },
   {
-    "name": "M49 Step 22 display rule replaced by the operator-fitted binary64 display (floor(multF*100)): the audit adopts the operator's arithmetic as its rule",
-    "file": "tests/steps/supplement.ts",
-    "find": "return r ? (100n * r.num) / r.den : null;",
-    "replace": "return r ? BigInt(Math.floor(minesMultiplierExact(m, k) * 100)) : null;",
+    "name": "M49 Step 22 wallet rule replaced by exact math (floor8(stake × exact), no floor8 of the multiplier first): the audit's rule no longer the one LIQD's wallet fields follow",
+    "file": "tests/steps/raw-capture.ts",
+    "find": "  const mult8 = (100_000_000n * r.num) / r.den;\n  return (stakeUnits * mult8) / 100_000_000n;",
+    "replace": "  return (stakeUnits * r.num) / r.den;",
     "runner": "verify",
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 22,
     "expectStatus": "FAIL",
-    "guard": "Step 22 (g): the served display is scored against floor2(exact) — Step 7's rule. A rule fitted to the operator's 2026-09-26 output (Math.floor(multF×100)/100, 1.64 at (1,10) where the exact multiplier is 33/20 = 1.65) must FAIL: on the scored 2026-10-03 capture, whose 393 displays all equal floor2(exact), it puts the (1,10) wins one cent ABOVE the rule, and on the dated 2026-09-26 history (arm k) it closes the declared 29-win DL-15 gap to 0. Until 2026-10-03 the entry asserted only the second."
+    "guard": "Step 22 (f): every production wallet field is held to LIQD's measured rule floor8(betAmountWallet × floor8(exact)). Swapping in exact math as the rule puts the 62 disclosed wins one 1e-8 unit BELOW the rule, and Step 22 must FAIL on them: the disclosure is a disclosure only against the rule the wallet fields actually follow, never a loosened gate."
   },
   {
-    "name": "M50 supplement plan moved off the capture (mineCount 12 depths 2,3,4,5 -> 2,3,4,6) (MINES-15)",
+    "name": "M50 production plan moved off the capture (mineCount 12 depths 2,3,4,5 -> 2,3,4,6) (MINES-15)",
     "file": "src/pins.ts",
     "find": "12: [2, 3, 4, 5] };",
     "replace": "12: [2, 3, 4, 6] };",
     "runner": "verify",
     "expect": "NOT PROVABLY FAIR",
-    "expectStep": 22,
+    "expectStep": 15,
     "expectStatus": "FAIL",
-    "guard": "Step 22 (b): exactly 50 rounds at every planned (mineCount, depth) and none outside the plan, against SUPPLEMENT_DEPTHS in source."
+    "guard": "Step 15: every production round must sit at a setting of the plan bound in source (src/pins.ts PROD_DEPTHS → SETTINGS_PLAN); with (12, 5) moved to (12, 6) the rounds played at (12, 5) in phases A and D are off plan and the step FAILs (Step 9 FLAGs with it)."
   },
   {
-    "name": "M51 declared per-step multipliers 0 -> 1 (the 'not served on the wire' declaration no longer matches the responses) (MINES-17)",
+    "name": "M51 declared per-step multipliers 3 -> 4 (the declaration no longer matches the replies) (MINES-17)",
     "file": "src/pins.ts",
-    "find": "export const SUPPLEMENT_DECLARED_PER_STEP_MULTIPLIERS = 0;",
-    "replace": "export const SUPPLEMENT_DECLARED_PER_STEP_MULTIPLIERS = 1;",
+    "find": "export const PROD_DECLARED_PER_STEP_MULTIPLIERS = 3;",
+    "replace": "export const PROD_DECLARED_PER_STEP_MULTIPLIERS = 4;",
     "runner": "verify",
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 22,
     "expectStatus": "FAIL",
-    "guard": "Step 22 (f): the count of reveals carrying a multiplier must equal the declaration (measured 0 of 3,314 on the scored 2026-10-03 capture; 0 of 3,418 on 2026-09-26)."
+    "guard": "Step 22 (e): the count of open-tile replies carrying a multiplier must equal the declaration (measured 3 of 19,498 on production: the 3 rounds LIQD settled by itself)."
   },
   {
-    "name": "M52 dated-history DL-14 count 50 -> 49 (the published history line no longer bound to the pinned 2026-09-26 data)",
+    "name": "M52 disclosed wallet-rounding count 62 -> 61 (the published disclosure no longer bound to the raw capture)",
     "file": "src/pins.ts",
-    "find": "export const SUPPLEMENT_HISTORY_CREDIT_UNIT_BELOW = 50;",
-    "replace": "export const SUPPLEMENT_HISTORY_CREDIT_UNIT_BELOW = 49;",
+    "find": "export const PROD_WALLET_BELOW_EXACT = 62;",
+    "replace": "export const PROD_WALLET_BELOW_EXACT = 61;",
     "runner": "verify",
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 22,
     "expectStatus": "FAIL",
-    "guard": "Step 22 (k), re-targeted 2026-10-03: on the 2026-09-26 capture, kept as dated history, the credits one 1e-8 unit below floor8(stake × exact) must number exactly the declaration (measured 50 of 404). Until 2026-10-03 the same edit was made to SUPPLEMENT_DISCLOSED_CREDIT_UNIT_BELOW, when that capture was the scored one; that constant now declares the scored 2026-10-03 capture's gap, 0 (M55)."
+    "guard": "Step 22 (f): the wins paid one 1e-8 unit below exact math must number exactly the declaration (measured 62 of 1,979). A disclosure that no longer describes the data is a FAIL, not a rounding."
   },
   {
-    "name": "M53 a credit ABOVE the rule (the rule lowered by 1e-8 at mineCount 12 only, so every (12,k) win reads as one unit over-credited while the declared gap is untouched)",
-    "file": "tests/steps/supplement.ts",
-    "find": "return (BigInt(Math.round(stake * 1e8)) * r.num) / r.den;",
-    "replace": "return (BigInt(Math.round(stake * 1e8)) * r.num) / r.den - (m === 12 ? 1n : 0n);",
+    "name": "M53 a wallet field ABOVE LIQD's rule (the rule lowered by 1e-8 at mineCount 12 only, so every (12,k) win reads as one unit overpaid)",
+    "file": "tests/steps/raw-capture.ts",
+    "find": "  return (stakeUnits * mult8) / 100_000_000n;",
+    "replace": "  return (stakeUnits * mult8) / 100_000_000n - (m === 12 ? 1n : 0n);",
     "runner": "verify",
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 22,
     "expectStatus": "FAIL",
-    "guard": "Step 22 (g): no win may be credited above floor8(stake × exact); a win above the rule is a FAIL whatever the declared gap says."
+    "guard": "Step 22 (f): no win may be paid above LIQD's measured rule; a wallet field above it is a FAIL whatever the disclosure says."
   },
   {
-    "name": "M54 Step 22 credit rule replaced by the operator-fitted binary64 model (Math.floor(stake*multF*1e8)): two rules for one game again",
-    "file": "tests/steps/supplement.ts",
-    "find": "return (BigInt(Math.round(stake * 1e8)) * r.num) / r.den;",
-    "replace": "return BigInt(creditModelBinary64(stake, m, k));",
+    "name": "M54 Step 22 wallet rule takes the DISPLAYED (2-decimal) multiplier: the audit adopts a rule the wallet fields do not follow",
+    "file": "tests/steps/raw-capture.ts",
+    "find": "  const mult8 = (100_000_000n * r.num) / r.den;",
+    "replace": "  const mult8 = ((100n * r.num) / r.den) * 1_000_000n;",
     "runner": "verify",
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 22,
     "expectStatus": "FAIL",
-    "guard": "Step 22 (g): every supplement credit is scored against floor8(stake × exact) — Step 8's rule. Scoring it against the model fitted to the operator's 2026-09-26 output (Math.floor(stake×multF×1e8)) must FAIL rather than pass silently: on the scored 2026-10-03 capture the wins at (1,10) and (1,15), credited exactly at the rule, read as one unit ABOVE the fitted model, and on the dated 2026-09-26 history (arm k) the declared 50-win DL-14 gap vanishes. Until 2026-10-03 the entry asserted only the second."
+    "guard": "Step 22 (f): a rule built on the floored display multiplier sits below LIQD's wallet fields wherever the display understates the multiplier, so those wallet fields read as ABOVE the rule and the step must FAIL — the audit may not pick a rule the data does not follow."
   },
   {
-    "name": "M55 the scored capture's declared credit gap set back to the 2026-09-26 figure (SUPPLEMENT_DISCLOSED_CREDIT_UNIT_BELOW 0 -> 50): a gap the 2026-10-03 data does not have",
+    "name": "M55 disclosed wallet-rounding total set to 0 units: the disclosure claims exact wallet fields the data does not have",
     "file": "src/pins.ts",
-    "find": "export const SUPPLEMENT_DISCLOSED_CREDIT_UNIT_BELOW = 0;",
-    "replace": "export const SUPPLEMENT_DISCLOSED_CREDIT_UNIT_BELOW = 50;",
+    "find": "export const PROD_WALLET_BELOW_EXACT_TOTAL_UNITS = 62;",
+    "replace": "export const PROD_WALLET_BELOW_EXACT_TOTAL_UNITS = 0;",
     "runner": "verify",
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 22,
     "expectStatus": "FAIL",
-    "guard": "Step 22 (g), re-targeted 2026-10-03. Until then this entry reverted the switch SUPPLEMENT_CREDIT_GAP_IS_OPERATOR_FLAG (true -> false), the one line that held the 2026-09-26 capture's 50 short credits at FLAG, and expected Step 22 PASS. When Step 22 moved to the 2026-10-03 capture, which credits all 393 wins at the rule, the switch could no longer change anything — no short credit is left for it to hold — and it was removed: a short credit on the scored capture now FAILs through the zero-gap declaration. The entry now asserts that declaration is bound to the data: declaring the 2026-09-26 count on the 2026-10-03 capture must FAIL Step 22, so a stale DL-14 figure cannot ride along with a new capture."
+    "guard": "Step 22 (f): the disclosed total (62 units, 0.00000062 USDT) is bound to the data; declaring it away must FAIL Step 22, so the report cannot state that every wallet field is exact."
   },
   {
     "name": "M56 next-seed chain walked in reverse epoch order (Step 2 compares each link against the wrong neighbour)",
@@ -503,30 +503,30 @@
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 2,
     "expectStatus": "FAIL",
-    "guard": "Step 2 (QA 2026-10-02, A7 — until then no mutation named Step 2): each nextHashedServerSeed must be compared with the FOLLOWING epoch's hashedServerSeed, in epoch order, recomputed from the raw fields. A chain walked in the wrong order must FAIL the step rather than pass on a vacuous comparison."
+    "guard": "Step 2 (until then no mutation named Step 2): each nextHashedServerSeed must be compared with the FOLLOWING epoch's hashedServerSeed, in epoch order, recomputed from the raw fields. A chain walked in the wrong order must FAIL the step rather than pass on a vacuous comparison."
   },
   {
-    "name": "M57 supplement settings declaration given a maxOdds 10000 key the data does not carry",
+    "name": "M57 production settings declaration given a maxOdds 10000 key the data does not carry",
     "file": "src/pins.ts",
-    "find": "  value: '{\"minOdds\":1.01,\"houseEdge\":1,\"minBet\":0.01,\"maxBet\":10000,\"maxExposure\":50000,\"maxExposureUsdc\":50000,\"maxBetUsdc\":\"10000.00000000\",\"exposureSource\":\"global\",\"maxBetSource\":\"game\"}',",
-    "replace": "  value: '{\"minOdds\":1.01,\"maxOdds\":10000,\"houseEdge\":1,\"minBet\":0.01,\"maxBet\":10000,\"maxExposure\":50000,\"maxExposureUsdc\":50000,\"maxBetUsdc\":\"10000.00000000\",\"exposureSource\":\"global\",\"maxBetSource\":\"game\"}',",
+    "find": "  { capture: 1, records: 2608, value: '{\"minOdds\":1.01,\"houseEdge\":1,",
+    "replace": "  { capture: 1, records: 2608, value: '{\"minOdds\":1.01,\"maxOdds\":10000,\"houseEdge\":1,",
     "runner": "verify",
     "expect": "NOT PROVABLY FAIR",
     "expectStep": 22,
     "expectStatus": "FAIL",
-    "guard": "Step 22 (j), QA 2026-10-02, A4: the supplement build's settings declaration in src/pins.ts is bound to the records it describes — since 2026-10-03 the scored 2026-10-03 capture's 607. Editing it so the build appears to carry the declared cap (which would turn Step 10's settings half green) must FAIL Step 22. Re-targeted 2026-10-03: until then the edit was made to the 2026-09-26 value, which is now the dated-history declaration SUPPLEMENT_HISTORY_GAME_SETTINGS."
+    "guard": "Step 22 (i): the production settings declaration in src/pins.ts is bound to the 3,886 records it describes. Editing it so the build appears to carry a multiplier cap must FAIL Step 22."
   },
   {
-    "name": "M58 the excluded cap half re-scored (supplement settings without maxOdds pushed back into Step 10's FLAG REASONS)",
+    "name": "M58 the excluded cap half re-scored (production settings without maxOdds pushed back into Step 10's FLAG REASONS)",
     "file": "tests/steps/payouts.ts",
     "find": "  // Cap half not scored (2026-10-15): payout caps excluded, no multiplier cap on the scored build.\n",
-    "replace": "  if (!suppCapAgree) flagReasons.push('SUPPLEMENT-SETTINGS-NO-DECLARED-CAP');\n",
+    "replace": "  if (settingsWithMaxOdds === 0) flagReasons.push('PROD-SETTINGS-NO-DECLARED-CAP');\n",
     "runner": "verify",
     "expect": "PROVABLY FAIR — Conditional Pass",
     "expectStep": 10,
     "expectStatus": "FLAG",
-    "guard": "Step 10, 2026-10-15: the cap half is excluded from scoring, not deleted. Its supplement-settings figure is still computed on the scored 2026-10-03 build (607 records, no maxOdds key) — re-scoring it must FLAG Step 10 with SUPPLEMENT-SETTINGS-NO-DECLARED-CAP and return the verdict to Conditional Pass, the state from 2026-10-03 to 2026-10-15. This proves the Full Pass comes from the exclusion and from nothing else. Until 2026-10-15 the entry forced suppCapAgree true and expected Full Pass.",
-    "expectDetail": "SUPPLEMENT-SETTINGS-NO-DECLARED-CAP"
+    "guard": "Step 10, 2026-10-15: the cap half is excluded from scoring, not deleted. Its settings figure is still computed on the production build (3,886 records, no maxOdds key) — re-scoring it must FLAG Step 10 with PROD-SETTINGS-NO-DECLARED-CAP and return the verdict to Conditional Pass. This proves the Full Pass comes from the exclusion and from nothing else.",
+    "expectDetail": "PROD-SETTINGS-NO-DECLARED-CAP"
   },
   {
     "name": "M-C3i one unreached cell (mines 7, 9 reveals) priced 2 % below the claim, table + record regenerated",
@@ -539,7 +539,7 @@
     "expectExit": 5,
     "expectStep": 10,
     "expectStatus": "OVERSTATED",
-    "guard": "Step 10 (MINES-19), FIXPASS2 C3(i): one setting misses the published figure by more than the band and nothing else changes. Mines 7 cashed out after 9 reveals (no captured round in the three datasets reached it: m = 7 was played to 1 reveal only) is priced 2 % lower where the RTP table prices it, 97.02 % against the 99 % held. With the table re-written and re-pinned and the record re-emitted and re-pinned (regen), the run must end RTP FIGURE OVERSTATED, exit 5: Until 2026-10-15 Step 10 FLAGged at baseline (Conditional Pass, exit 2) and that FLAG must not pre-empt it; since 2026-10-15 the baseline is Full Pass, exit 0. Measured 14 Oct before this entry existed: exit 5, Step 10 OVERSTATED. Mines has no paytable file: the price is the formula, so the cell is lowered at the one place the table reads it."
+    "guard": "Step 10 (MINES-19), case i: one setting misses the published figure by more than the band and nothing else changes. Mines 7 cashed out after 9 reveals (no production round reached it: m = 7 was not played on production) is priced 2 % lower where the RTP table prices it, 97.02 % against the 99 % held. With the table re-written and re-pinned and the record re-emitted and re-pinned (regen), the run must end RTP FIGURE OVERSTATED, exit 5: Until 2026-10-15 Step 10 FLAGged at baseline (Conditional Pass, exit 2) and that FLAG must not pre-empt it; since 2026-10-15 the baseline is Full Pass, exit 0. Measured 14 Oct before this entry existed: exit 5, Step 10 OVERSTATED. Mines has no paytable file: the price is the formula, so the cell is lowered at the one place the table reads it."
   },
   {
     "name": "M-C3ii published figure raised to 99.25 % at its source (src/config.ts PUBLISHED_RTP), table + record regenerated",
@@ -552,6 +552,127 @@
     "expectExit": 5,
     "expectStep": 10,
     "expectStatus": "OVERSTATED",
-    "guard": "Step 10 (MINES-19), FIXPASS2 C3(ii): the published figure raised at its one source, src/config.ts PUBLISHED_RTP, which Step 10's closed-form check compares against and from which src/rtp-settings.ts now takes the claim (until 14 Oct the claim was a second literal '0.99', so this edit left the rule passing and Step 10's own FLAG deciding the run: Conditional Pass, exit 2). Every one of the 300 cells (99 %) is 0.25 pp below 99.25 %. With the table and record regenerated the run must end RTP FIGURE OVERSTATED, exit 5, Step 10 re-scored OVERSTATED."
+    "guard": "Step 10 (MINES-19), case ii: the published figure raised at its one source, src/config.ts PUBLISHED_RTP, which Step 10's closed-form check compares against and from which src/rtp-settings.ts now takes the claim (until 14 Oct the claim was a second literal '0.99', so this edit left the rule passing and Step 10's own FLAG deciding the run: Conditional Pass, exit 2). Every one of the 300 cells (99 %) is 0.25 pp below 99.25 %. With the table and record regenerated the run must end RTP FIGURE OVERSTATED, exit 5, Step 10 re-scored OVERSTATED."
+  },
+  {
+    "runner": "verify",
+    "name": "M59 a round LIQD settled by itself dropped from the declaration (3 -> 2 declared self-settled rounds)",
+    "file": "src/pins.ts",
+    "find": "['Z6B5Y_EKOsIi9rFGBZ8XX', '4FlJdIKXL00eGGkh2OQkS', 'I_uwyzpsU5tyFl4_rmzfZ']",
+    "replace": "['Z6B5Y_EKOsIi9rFGBZ8XX', '4FlJdIKXL00eGGkh2OQkS']",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 22,
+    "expectStatus": "FAIL",
+    "guard": "Step 22 (e): the rounds settled in the open-tile reply (autoFinish) must be exactly the declared ones; a round settled without a cash-out that the declaration does not name FAILs the step."
+  },
+  {
+    "runner": "verify",
+    "name": "M60 disclosed booked-below-unrounded count of capture 2 moved (603 -> 602 wins)",
+    "file": "src/pins.ts",
+    "find": "{ capture: 2, wins: 603, droppedUnits: 349221236n },",
+    "replace": "{ capture: 2, wins: 602, droppedUnits: 349221236n },",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 8,
+    "expectStatus": "FAIL",
+    "guard": "Step 8: the per-capture count of wins booked below the unrounded amount, and the amount the cent floor dropped, are bound to the data (src/pins.ts BOOKED_BELOW_UNROUNDED). A published disclosure figure that the data does not give must FAIL the step."
+  },
+  {
+    "runner": "verify",
+    "name": "M61 Pass-2 early window constant moved off the smallest epoch (100 -> 200)",
+    "file": "src/pins.ts",
+    "find": "export const PASS2_EARLY_WINDOW = 100;",
+    "replace": "export const PASS2_EARLY_WINDOW = 200;",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 17,
+    "expectStatus": "FAIL",
+    "guard": "Step 17: the first-draw early window is a code constant that must equal both the committed artifact's window and the smallest epoch of the plan; a window longer than the shortest epoch would count nonces that epoch never played as served."
+  },
+  {
+    "runner": "verify",
+    "name": "M62 phase C win floor raised above the wins captured (100 -> 110)",
+    "file": "src/pins.ts",
+    "find": "export const PHASE_C_MIN_WINS = 100;",
+    "replace": "export const PHASE_C_MIN_WINS = 110;",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 18,
+    "expectStatus": "FAIL",
+    "guard": "Step 18 (MINES-12): the elevated-stake phase must carry at least the floor of wins; with the floor above the 109 captured the step must FAIL, which shows the floor is asserted and not printed."
+  },
+  {
+    "runner": "verify",
+    "name": "M63 Phase D seed floor raised above the seeds captured (2 -> 6)",
+    "file": "tests/steps/phase-d.ts",
+    "find": "const PHASE_D_SEED_FLOOR = 2;",
+    "replace": "const PHASE_D_SEED_FLOOR = 6;",
+    "expect": "PROVABLY FAIR — Conditional Pass",
+    "expectStep": 14,
+    "expectStatus": "FLAG",
+    "guard": "Step 14 (MINES-06): Phase D must be played under at least the floor of distinct player-set client seeds; with the floor above the 5 captured the step must FLAG."
+  },
+  {
+    "runner": "verify",
+    "name": "M64 top-up plan moved off the capture (50 -> 51 rounds per mine count) (MINES-15)",
+    "file": "src/pins.ts",
+    "find": "export const TOPUP_PER_MINE_COUNT = 50;",
+    "replace": "export const TOPUP_PER_MINE_COUNT = 51;",
+    "expect": "PROVABLY FAIR — Conditional Pass",
+    "expectStep": 9,
+    "expectStatus": "FLAG",
+    "guard": "Step 9 (MINES-15): every setting of the plan must hold exactly its planned rounds and every mine count at least the floor; with the top-up declared at 51 rounds per mine count the 19 top-up settings are off plan and the step must FLAG."
+  },
+  {
+    "runner": "verify",
+    "name": "M65 declared ledger debits of capture 1 moved (3,021 -> 3,020 records)",
+    "file": "src/pins.ts",
+    "find": "{ capture: 1, records: 3021, amountNotWalletStake: 3021 },",
+    "replace": "{ capture: 1, records: 3020, amountNotWalletStake: 3021 },",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 22,
+    "expectStatus": "FAIL",
+    "guard": "Step 22 (k): the ledger debits LIQD sent (betTransaction on the settling open-tile reply of every loss and self-settled round) are bound to the data per capture (src/pins.ts PROD_LEDGER_DEBITS); a declaration that no longer counts them FAILs."
+  },
+  {
+    "runner": "verify",
+    "name": "M66 Step 22 (k) holds each ledger debit to the round's USDT stake instead of its stake in the booking fiat",
+    "file": "tests/steps/raw-capture.ts",
+    "find": "const facts = Number(bt.amount) === Number(s.betAmount) && Number(bt.amount) === Number(rec.placeRaw?.betAmount)",
+    "replace": "const facts = decimalUnits(bt.amount, 8) === decimalUnits(rec.placeRaw?.betAmountWallet, 8)",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 22,
+    "expectStatus": "FAIL",
+    "guard": "Step 22 (k): on capture 1 every ledger debit says 0.1 under the wallet's currency id while the round's USDT stake was about 0.0709; reading the record as the USDT stake does not describe the data and must FAIL."
+  },
+  {
+    "runner": "verify",
+    "name": "M67 declared count of capture 1 ledger debits that are not the USDT stake set to 0 (the CAD-run mismatch declared away)",
+    "file": "src/pins.ts",
+    "find": "{ capture: 1, records: 3021, amountNotWalletStake: 3021 },",
+    "replace": "{ capture: 1, records: 3021, amountNotWalletStake: 0 },",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 22,
+    "expectStatus": "FAIL",
+    "guard": "Step 22 (k): that the CAD run's debit amounts are not the USDT stake (3,021 of 3,021) is a declared fact bound to the data; declaring it away must FAIL."
+  },
+  {
+    "runner": "verify",
+    "name": "M68 Step 2 LIQD-clock arm requires the commitment strictly earlier (the one same-second epoch no longer passes)",
+    "file": "tests/steps/commitment.ts",
+    "find": "Number.isFinite(tr) && tp <= tr) {",
+    "replace": "Number.isFinite(tr) && tp < tr) {",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 2,
+    "expectStatus": "FAIL",
+    "guard": "Step 2, LIQD's clock: the arm is scored, not printed. The Date header has one-second resolution and one epoch's commitment and rotation share a second (capture 1, epoch 0); a strict rule reads 35 of 36 and must FAIL the step, which shows the comparison decides the status."
+  },
+  {
+    "runner": "verify",
+    "name": "M69 Step 22 (j) expects the verifier request to name the round (betId added to the permitted inputs)",
+    "file": "tests/steps/raw-capture.ts",
+    "find": "const VERIFY_INPUT_KEYS = 'clientSeed,mineCount,nonce,serverSeed';",
+    "replace": "const VERIFY_INPUT_KEYS = 'betId,clientSeed,mineCount,nonce,serverSeed';",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 22,
+    "expectStatus": "FAIL",
+    "guard": "Step 22 (j): the request body keys are enumerated, so the claim that LIQD's verifier was sent only seeds, nonce and mine count is checked on 6,574 of 6,574 requests; a key list the requests do not have must FAIL."
   }
 ]

@@ -1,0 +1,9 @@
+{
+  "read": "2026-11-11 ~11:20 UTC, from a liqd.com page in Chrome, fetch() on the same origin",
+  "request": {"method": "POST", "url": "https://liqd.com/api/v1/fast-games/provably-fair/verify/mine", "body": {"serverSeed": "c5777675456c54fb9096287dfb1cd804", "clientSeed": "audit5065faa79b0b", "nonce": 0, "mineCount": 1}, "round": "betId k09hZxP4ZhUYw3SuDhspz (first verify record of the first mines capture)"},
+  "loggedIn": {"credentials": "include", "status": 200, "body": "{\"mines\":[24],\"openTiles\":[2,21]}"},
+  "loggedOut": {"credentials": "omit", "status": 200, "body": "{\"mines\":[24],\"openTiles\":[2,21]}"},
+  "controlNoSession": {"request": "GET /api/v1/user/get-user with credentials omit", "status": 401, "error": "ACCESS_TOKEN_EXPIRED_OR_NOT_PASSED"},
+  "captured2026_11_09": {"status": 200, "body": "{\"mines\":[24],\"openTiles\":[2,21]}"},
+  "note": "A plain curl with no browser gets a Cloudflare 'Security Check' page, so the call has to be made from a browser on liqd.com; no login is needed."
+}
