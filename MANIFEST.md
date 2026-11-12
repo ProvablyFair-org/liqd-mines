@@ -1,6 +1,6 @@
 # LIQD Mines — Consolidated Audit Overview
 
-**Audit ID:** `PF-2026-LQ02` · **Auditor:** ProvablyFair.org · **Release:** `v1.1.0` · **Framework:** 1.1 · **Game:** Mines (`gameId` `fast-games-13`), LIQD.com · **Captured against:** `liqd.com` (production, logged-in browser session) · **Booked in:** CAD (8–9 November 2026) and USD (10 November 2026), the account's display currency on each day; wallet currency USDT · **Report:** `https://audit.provablyfair.org/casino/liqd/games/mines/overview`
+**Audit ID:** `PF-2026-LQ02` · **Auditor:** ProvablyFair.org · **Release:** `v1.1.1` · **Framework:** 1.1 · **Game:** Mines (`gameId` `fast-games-13`), LIQD.com · **Captured against:** `liqd.com` (production, logged-in browser session) · **Booked in:** CAD (8–9 November 2026) and USD (10 November 2026), the account's display currency on each day; wallet currency USDT · **Report:** `https://audit.provablyfair.org/casino/liqd/games/mines/overview`
 
 **Scored steps:** 22 · **Unit tests:** **43 passing** (the zero-install runner fails unless exactly `EXPECTED_UNIT_TESTS` = 43 pass)
 
@@ -85,7 +85,7 @@ Wins per multi-reveal setting, phases A and D together, each out of 275 (Step 15
 
 **Identity.** The scored dataset is [data/mines-prod-full-6574bets.json](data/mines-prod-full-6574bets.json), SHA-256 `4d684d5e035e0be384685a2b44b9f5ab13b3f638e58686310cd778945c31741b`. `src/pins.ts` defines the expected digest, and `loadDataset()` in `src/loader.ts` checks it at the top of `src/simulate.ts`, `src/write-figures.ts` and `tests/verify.ts`, before any work; a mismatch aborts. Each row carries its `phase`, `phaseId`, `capture`, `captureEpoch` and the `fiatCurrency` it was booked in; Step 11 checks those tags against the plan, Step 22 against the raw captures.
 
-**The raw captures.** The dataset was converted in the private workshop from the three files the capture runner exported, which ship beside it byte-identical and pinned (`src/pins.ts` `PROD_CAPTURES`):
+**The raw captures.** The dataset was converted from the three files the capture runner exported, which ship beside it byte-identical and pinned (`src/pins.ts` `PROD_CAPTURES`):
 
 | Capture | File in `data/` | SHA-256 | Lines | Requests: place-bet / open-tile / cash-out |
 |---|---|---|---:|---|
@@ -473,7 +473,9 @@ LIQD Mines uses the **Client Seed + Server Seed** model: the server seed is secr
 
 ## Release history
 
-**`v1.1.0`** (prepared 10 November 2026 in the private workshop; not tagged or published) — the audit scored on production data.
+**`v1.1.1`** (12 November 2026) — wording errata, no change to data, code or results: the release history and the raw-captures paragraph of this file, and two source comments (`src/pins.ts`, `src/prod-capture.ts`), now state the facts only; the release number is updated in `README.md`, `SUMMARY.md`, this file, `package.json` and `RELEASE-MANIFEST.json`, `standalone-manifest.json` re-pins the edited source files, and `evidence.md` E22 states the new `RELEASE-MANIFEST.json` hash. The data, `outputs/`, the 22 steps and the verdict are those of `v1.1.0`.
+
+**`v1.1.0`** (released 11 November 2026) — the production audit release: the audit scored on production data.
 
 - **Data.** `data/mines-prod-full-6574bets.json` (6,574 rounds, 8–10 November 2026, `liqd.com`) is the scored dataset, converted from the three raw captures in `data/`; all pinned in `src/pins.ts` with the population plan (`PHASE_BLOCKS`, `EPOCH_PLAN`, `SETTINGS_PLAN`).
 - **Steps.** All 22 steps score the production dataset. Step 2 scores three chains and three anchors; Steps 4 and 12 the per-phase epoch sizes; Step 8 the booked amount per fiat and the cent-cut disclosure; Step 9 the 60 planned (phase, setting) pairs and every mine count; Step 14 phase D's player-set seeds; Step 15 the multi-reveal rounds of phases A and D; Step 17 the 36 seeds; Step 18 phase C at the elevated stake; Step 22 the raw captures: row binding, every reveal, the self-settled rounds, the wallet field and LIQD's verifier.
@@ -482,4 +484,4 @@ LIQD Mines uses the **Client Seed + Server Seed** model: the server seed is secr
 - **Money, provenance and limits.** Money claims are the amounts LIQD reported (the wallet field in the reply, the booked amount); LIQD's 3,886 ledger debits are read in Step 22 (k) and stated in DL-5 with LIQD's account bet history for the three runs (E24, E25); rulings 1 and 2 are stated under [Rulings](#rulings); LIQD's verifier inputs are enumerated in Step 22 (j), LIQD's Date header is checked in Step 2, and LIQD's verifier was read without a login on one round (E23) (DL-6); the 5,148,297× arithmetic against the served round limit is in DL-7.
 - **Verdict.** PROVABLY FAIR — Full Pass, 22/22, `npm test` exit 0.
 
-**`v1.0.1`** and **`v1.0.0`** (first released 21 October 2026) are the earlier releases of this audit; the wording errata prepared after `v1.0.1` are carried in this release's sources.
+**`v1.0.1`** and **`v1.0.0`** (first released 21 October 2026) are the earlier releases of this audit; the wording errata made after `v1.0.1` are included in `v1.1.0`.

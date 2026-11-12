@@ -3,7 +3,7 @@
   "auditIdStatus": "confirmed by ProvablyFair.org",
   "game": "mines",
   "casino": "liqd",
-  "release": "v1.1.0",
+  "release": "v1.1.1",
   "framework": "1.1",
   "datasetSha256": "4d684d5e035e0be384685a2b44b9f5ab13b3f638e58686310cd778945c31741b",
   "artifacts": {
@@ -43,6 +43,6 @@
     "node": "22.23.1",
     "command": "npm ci && npm test"
   },
-  "supersedes": "v1.0.1",
+  "supersedes": "v1.1.0",
   "signature": "SHA256:gEujiJm2pRyq7lQsfYQfQ1r97H/J7GdaKHbOW8GtikY"
 }

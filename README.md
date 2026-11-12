@@ -1,6 +1,6 @@
 # LIQD Mines — Provably Fair Audit
 
-**Auditor:** [ProvablyFair.org](https://www.provablyfair.org) · **Audit ID:** `PF-2026-LQ02` · **Release:** `v1.1.0`, [RELEASE-MANIFEST.json](RELEASE-MANIFEST.json) · **Capture:** 8–10 November 2026 on `liqd.com` (production)
+**Auditor:** [ProvablyFair.org](https://www.provablyfair.org) · **Audit ID:** `PF-2026-LQ02` · **Release:** `v1.1.1`, [RELEASE-MANIFEST.json](RELEASE-MANIFEST.json) · **Capture:** 8–10 November 2026 on `liqd.com` (production)
 
 **Result: PROVABLY FAIR — Full Pass.** 6,574 production rounds verified: every mine layout, seed commitment, reveal and reported win amount. 22 of 22 scored checks passed, zero flags, zero hard failures.
 

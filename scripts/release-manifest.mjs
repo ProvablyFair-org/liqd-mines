@@ -32,8 +32,8 @@ const CHECK = process.argv.includes('--check');
 
 /**
  * The facts no file in this package can supply. `auditIdStatus` records that ProvablyFair.org has confirmed the audit
- * ID. `v1.1.0` scores the audit on the three production captures of 8–10 November 2026 on liqd.com (6,574 rounds) and
- * supersedes `v1.0.1` (errata to `v1.0.0`), the last tagged release. The environment is production, so it carries no qualifier. `signature` is the fingerprint of
+ * ID. `v1.1.0` scores the audit on the three production captures of 8–10 November 2026 on liqd.com (6,574 rounds);
+ * `v1.1.1` is wording errata to `v1.1.0` and supersedes it. The environment is production, so it carries no qualifier. `signature` is the fingerprint of
  * the SSH key that signs the release commit and tag.
  */
 const DECLARED = {
@@ -41,11 +41,11 @@ const DECLARED = {
   auditIdStatus: 'confirmed by ProvablyFair.org',
   game: 'mines',
   casino: 'liqd',
-  release: 'v1.1.0',
+  release: 'v1.1.1',
   framework: '1.1',
   environmentStage: 'production',
   environmentQualifier: null,
-  supersedes: 'v1.0.1',
+  supersedes: 'v1.1.0',
   signature: 'SHA256:gEujiJm2pRyq7lQsfYQfQ1r97H/J7GdaKHbOW8GtikY',
 };
 

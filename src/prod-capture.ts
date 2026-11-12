@@ -2,7 +2,7 @@
  * The RAW production captures (liqd.com, 8–10 November 2026), read as recorded.
  *
  * data/mines-prod-full-6574bets.json is the scored dataset: one row per round in the package's Bet
- * shape, converted from these files in the private workshop. The Bet type has no field for the USDT
+ * shape, converted from these files. The Bet type has no field for the USDT
  * wallet amounts, the tiles each round PLANNED to open, the per-reveal replies or LIQD's own
  * verifier replies — they live here, in the captures the runner exported, vendored byte-identical
  * and pinned by SHA-256 (src/pins.ts PROD_CAPTURES). Step 22 binds the scored dataset to these files

@@ -193,7 +193,7 @@ export const PASS2_EARLY_WINDOW = 100;
  *  THE RAW PRODUCTION CAPTURES — vendored byte-identical, pinned, bound row by row (Step 22)
  * ══════════════════════════════════════════════════════════════════════════════════════
  * The files the runner exported from the logged-in liqd.com tab (src/prod-capture.ts describes their
- * events). The dataset was converted from them in the private workshop; Step 22 requires every scored
+ * events). The dataset was converted from them; Step 22 requires every scored
  * row to equal the settling reply recorded here, and reads from here what the Bet type has no field
  * for: the USDT wallet amounts, each round's planned tile order, the per-reveal replies and LIQD's
  * verifier replies. Lines, events by type and requests by name were measured on 10 November 2026.

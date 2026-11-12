@@ -1,6 +1,6 @@
 # Summary
 
-LIQD Mines — Provably Fair Audit, `PF-2026-LQ02`, release `v1.1.0`. Contents of the published report, in reading order.
+LIQD Mines — Provably Fair Audit, `PF-2026-LQ02`, release `v1.1.1`. Contents of the published report, in reading order.
 
 * [Introduction and result](README.md)
 * [Audit overview](MANIFEST.md)
