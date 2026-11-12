@@ -17,7 +17,7 @@
  *
  * Paths: array elements become `[*]`. Ported in shape from an earlier ProvablyFair.org package.
  */
-import { EXPECTED_BETS, EXPECTED_SEEDS, EXPECTED_PHASE_ID_BETS, PROD_CAPTURES } from './pins';
+import { EXPECTED_BETS, EXPECTED_SEEDS, EXPECTED_PHASE_ID_BETS, PROD_CAPTURES, EXPECTED_STEPS } from './pins';
 import { GRID, MINE_COUNTS } from './config';
 import { ENFORCED_ROUNDS_PER_CONFIG } from './false-alarm';
 
@@ -127,11 +127,11 @@ const PROVENANCE: Record<string, Domain> = {
 const RESULTS: Record<string, Domain> = {
   'totalBets': exactly(EXPECTED_BETS, 'src/pins.ts EXPECTED_BETS'),
   'totalSeeds': exactly(EXPECTED_SEEDS, 'src/pins.ts EXPECTED_SEEDS'),
-  // 22 scored steps.
-  'steps[*].step': intIn(1, 22, 'a scored step number'),
-  'summary.passed': intIn(0, 22, 'scored steps'), 'summary.flags': intIn(0, 22, 'scored steps'),
-  'summary.operatorFlags': intIn(0, 22, 'scored steps'), 'summary.captureFlags': intIn(0, 22, 'scored steps'),
-  'summary.hardFail': intIn(0, 22, 'scored steps'),
+  // The scored steps, src/pins.ts EXPECTED_STEPS (23).
+  'steps[*].step': intIn(1, EXPECTED_STEPS, 'a scored step number'),
+  'summary.passed': intIn(0, EXPECTED_STEPS, 'scored steps'), 'summary.flags': intIn(0, EXPECTED_STEPS, 'scored steps'),
+  'summary.operatorFlags': intIn(0, EXPECTED_STEPS, 'scored steps'), 'summary.captureFlags': intIn(0, EXPECTED_STEPS, 'scored steps'),
+  'summary.hardFail': intIn(0, EXPECTED_STEPS, 'scored steps'),
 };
 
 const FIGURES: Record<string, Domain> = {

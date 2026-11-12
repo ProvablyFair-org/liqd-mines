@@ -261,6 +261,45 @@ export const PROD_REQUESTS: Readonly<Record<string, number>> = (() => {
 })();
 export const PROD_WINS = PROD_CAPTURES.reduce((a, c) => a + c.wins, 0);
 
+/**
+ * ══════════════════════════════════════════════════════════════════════════════════════
+ *  THE BALANCE CHECK — a fourth raw capture, scored by Step 23 alone (src/balance-check.ts)
+ * ══════════════════════════════════════════════════════════════════════════════════════
+ * 12 November 2026, liqd.com, the same account, one run of the runner (build 5585376e3fe5), booked in
+ * USD at the served rate 1.00000000; the account's USDT wallet read before each place-bet and after each
+ * settle. Not part of the scored dataset: its 100 rounds answer one question, which amount of a win moves
+ * the balance. Lines, events by type, requests by name, rounds and wins per phase were measured on
+ * 12 November 2026; Step 23 FAILs unless the file is exactly this.
+ *
+ *   BC1   50 rounds   0.10 USD   1 mine, 2 tiles    45 wins, 5 losses
+ *   BC2   50 rounds   0.01 USD   3 mines, 5 tiles   26 wins, 24 losses
+ */
+export interface BalancePhasePin {
+  phaseId: string;
+  rounds: number;
+  wins: number;
+  mineCount: number;
+  depth: number;
+  /** The stake of every round, in 1e-8 units (the booked USD stake and the USDT wallet stake are this same number). */
+  stakeUnits: bigint;
+}
+export const BALANCE_CHECK_CAPTURE: Readonly<{
+  file: string; sha256: string; lines: number;
+  events: Readonly<Record<string, number>>; requests: Readonly<Record<string, number>>;
+  runnerBuild: string; fiat: string; rate: string; readField: string; readCurrency: string;
+  phases: ReadonlyArray<BalancePhasePin>;
+}> = {
+  file: 'data/liqd-mines-prod-capture-2026-11-12T17-38-16-806Z.ndjson',
+  sha256: '9ee1a9213837b1dbd0229b9df5e0273cbefedf0211e199a81bfcb96c50bebbda', lines: 1275,
+  events: { meta: 1, option: 1, pre: 1, rotate: 3, epoch: 2, intent: 100, step: 964, bet: 100, 'bets-done': 1, verify: 100, done: 1, 'export-note': 1 },
+  requests: { 'settle-check': 200, 'balance-read': 300, 'place-bet': 100, 'open-tile': 293, 'cash-out': 71 },
+  runnerBuild: '5585376e3fe5', fiat: 'USD', rate: '1.00000000', readField: 'user.wallets[0].amount', readCurrency: 'USDT',
+  phases: [
+    { phaseId: 'BC1', rounds: 50, wins: 45, mineCount: 1, depth: 2, stakeUnits: 10_000_000n },
+    { phaseId: 'BC2', rounds: 50, wins: 26, mineCount: 3, depth: 5, stakeUnits: 1_000_000n },
+  ],
+};
+
 
 /**
  * ROUNDS LIQD SETTLED BY ITSELF — DECLARED, asserted against the data by Step 22. When a round opens
@@ -306,7 +345,8 @@ export const PROD_DECLARED_PER_STEP_MULTIPLIERS = 3;
  *     the sum dropped IS the amount by which the wallet fields exceed the booked wins: capture 2
  *     books 137.39 USD of wins against 140.88221236 USDT of wallet fields. On capture 1 the wallet fields are in
  *     USDT at the served CAD rate and the two totals are in different currencies; they are reported
- *     side by side and not converted. No balances were captured, so which amount moved the balance is not verified.
+ *     side by side and not converted. The three captures read no balance; which amount moves the balance is answered by
+ *     the balance check (BALANCE_CHECK_CAPTURE, Step 23): the wallet field, on 71 of 71 wins at two settings.
  */
 export const PROD_WALLET_BELOW_EXACT = 62;
 export const PROD_WALLET_BELOW_EXACT_TOTAL_UNITS = 62;
@@ -347,7 +387,7 @@ export const PROD_GAME_SETTINGS: ReadonlyArray<{ capture: number; records: numbe
  * meta.stakeCurrency USDT); transactionType "bet", status "success", betId the round's id. On capture 1
  * the amount (0.1, under the wallet's currency id) is not the round's USDT stake (betAmountWallet about
  * 0.0709) on 3,021 of 3,021; on captures 2 and 3 the two are equal. The audit does not use these
- * records to infer a balance (MANIFEST DL-5). A count or a fact that moves FAILs Step 22.
+ * records to infer a balance (MANIFEST DL-5, closed by Step 23 on the balance check). A count or a fact that moves FAILs Step 22.
  */
 export const PROD_LEDGER_DEBITS: ReadonlyArray<{ capture: number; records: number; amountNotWalletStake: number }> = [
   { capture: 1, records: 3021, amountNotWalletStake: 3021 },
@@ -383,7 +423,7 @@ export const AUDIT_ID = 'PF-2026-LQ02';
  * step numbers) with this constant before it prints any verdict, and exits 1 without one when they
  * differ. Changing the suite's step count means changing this number, in a diff.
  */
-export const EXPECTED_STEPS = 22;
+export const EXPECTED_STEPS = 23;
 
 /**
  * Unit specs `npm test` must report as PASSING. The zero-install runner (scripts/standalone-runtime.cjs)
@@ -391,7 +431,7 @@ export const EXPECTED_STEPS = 22;
  * silently skipped or cancelled describe block cannot leave `npm test` green. Changing the unit
  * suite means changing this number, in a diff.
  */
-export const EXPECTED_UNIT_TESTS = 43;
+export const EXPECTED_UNIT_TESTS = 48;
 
 /**
  * ARTIFACTS OF RECORD — every artifact the report quotes, SHA-256 pinned (MINES-27).
@@ -424,7 +464,7 @@ export const ARTIFACT_PINS: ReadonlyArray<{ file: string; sha256: string }> = [
   { file: 'outputs/deep-replay-report.json', sha256: '6de3935092af3db155c9e608f7f5993b68b31ac25364ad24ac0c0ce021c8d6bc' },
   { file: 'outputs/bootstrap-replay-report.json', sha256: '2064e369b17b74d7798dfa5440cbc8f4a71427cb49212fbd270e4aedb3c68d4e' },
   { file: 'outputs/audit-figures.json', sha256: '5319211bcaf7011b2c88f8e264705ba583cfc2a7e8c68a634a436c187d3d6d9e' },
-  { file: 'outputs/verification-results.json', sha256: 'e1142b07f920b2702a46d9b5e240cdcfc829bc77d9946f879632deb240cbfb33' },
+  { file: 'outputs/verification-results.json', sha256: '9fc853b0e91029465cfbbadeb359254acf28547aa4ac970577ea6d7f8b3f0253' },
 ];
 
 /**

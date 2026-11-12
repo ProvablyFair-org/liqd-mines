@@ -2,7 +2,7 @@
  * Which ProvablyFair.org Mines profile check each scored step implements.
  *
  * WHY THIS FILE EXISTS. The framework's Mines game profile (Framework 1.1, profile 1.0.2)
- * declares checks MINES-01 … MINES-30. This suite scores 22 steps under its own numbering, which
+ * declares checks MINES-01 … MINES-30. This suite scores 23 steps under its own numbering, which
  * every chapter cites by number and which therefore cannot be renumbered to match. Without a
  * written mapping the only way to relate the two was to read all the steps by hand and type the
  * answer into the profile — where it went stale the moment a step changed, silently, because
@@ -53,7 +53,7 @@ const NO_RUNG = 'PARTIAL: the profile asks for per-step multipliers on every int
   + '(src/pins.ts PROD_DECLARED_PER_STEP_MULTIPLIERS, asserted against the data by Step 22). The cash-out rung is '
   + 'checked on every win';
 
-/** Scored step number → the profile checks it implements. Every step 1..22 has an entry. */
+/** Scored step number → the profile checks it implements. Every step 1..23 has an entry. */
 export const STEP_CLAIMS: Record<number, StepClaims> = {
   1: {
     claims: [{
@@ -318,23 +318,27 @@ export const STEP_CLAIMS: Record<number, StepClaims> = {
       { id: 'MINES-15', coverage: 'full', note: 'every planned (phase, setting) pair is checked for a witnessing win and the ones without are enumerated in the detail; all pairs outside phase D (25 rounds per setting) must be witnessed' },
     ],
   },
+  23: {
+    claims: [{
+      id: 'MINES-16', coverage: 'partial',
+      note: 'the balance check of 12 November 2026 (src/pins.ts BALANCE_CHECK_CAPTURE, a fourth raw capture, not the '
+        + 'scored dataset): 100 rounds at two settings, (1 mine, 2 tiles) at 0.10 and (3 mines, 5 tiles) at 0.01, booked in '
+        + 'USD at the served rate 1.00000000, with the account\'s USDT wallet read before each place-bet and after each '
+        + 'settle. Every round\'s balance delta is held to the reply: a win where the booked amount and the wallet field '
+        + 'differ must move the balance by the wallet field (71 of 71), a loss by -stake (29 of 29), and the balance must '
+        + 'not move between rounds (0 of 99); a movement other than the wallet field FLAGs (profile policy FLAG), a file '
+        + 'other than the declared one FAILs. PARTIAL because no mines reply carries a balance field, so the 6,574 scored '
+        + 'rounds have no consecutive-bet balance delta: the reconciliation covers the 100 rounds of the balance check, '
+        + 'at two settings and two stakes, and not the CAD booking of capture 1',
+    }],
+  },
 };
 
 /**
  * Checks this casino's design makes inapplicable. The reason is the declaration: a check that
  * simply never appears is a gap, and one that says why it cannot apply is an answer.
  */
-export const NOT_APPLICABLE: Array<{ id: string; reason: string }> = [
-  {
-    id: 'MINES-16',
-    reason: 'applies={path: money.balanceField, notNull: true} is false — no reply of the mines game carries a balance '
-      + 'field to reconcile against (the raw captures\' only key matching /balance/i is the runner\'s own balanceGuard '
-      + 'setting in its meta), so there is no consecutive-bet balance delta. This is the package\'s declared limitation '
-      + 'DL-5 (MANIFEST.md). What IS verified per round is the operator\'s settle record in both currencies: the booked '
-      + 'fiat amount (Step 8) and the USDT wallet debit and wallet field, betAmountWallet on every place-bet reply and '
-      + 'winningAmountWallet on every win (Step 22) — which the profile does not count as a balance ledger',
-  },
-];
+export const NOT_APPLICABLE: Array<{ id: string; reason: string }> = [];
 
 /**
  * Profile checks of kind `package-check`: decided by something in the package other than a scored

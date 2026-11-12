@@ -35,7 +35,37 @@ const RAW_RELS = [
   'data/liqd-mines-prod-capture-2026-11-09T04-45-17-843Z.ndjson',
   'data/liqd-mines-prod-capture-2026-11-10T06-06-19-772Z.ndjson',
   'data/liqd-mines-prod-capture-2026-11-10T10-27-49-259Z.ndjson',
+  // raw: 4 — the balance-check capture of 12 November 2026 (src/pins.ts BALANCE_CHECK_CAPTURE), scored by Step 23.
+  'data/liqd-mines-prod-capture-2026-11-12T17-38-16-806Z.ndjson',
 ];
+
+/** Balance-check forgeries: shift a wallet read by `d` 1e-8 units, keeping the runner's 8-decimal string form. */
+const shift8 = (v: unknown, d: bigint): string => {
+  const [i, f = ''] = String(v).split('.');
+  const u = BigInt(i) * 100_000_000n + BigInt(f.padEnd(8, '0')) + d;
+  return `${u / 100_000_000n}.${String(u % 100_000_000n).padStart(8, '0')}`;
+};
+/**
+ * Shift every wallet read from the round `fromKey` on (the runner's summary and the raw balance-read replies alike)
+ * by `d`. With `onlyAfterOfFirst` that round's read before its bet is left as captured, so its own movement
+ * changes by `d` and every later round's does not.
+ */
+function shiftReads(evs: any[], fromKey: string, d: bigint, onlyAfterOfFirst: boolean): void {
+  const order = evs.filter(e => e.t === 'bet' && e.rec?.balanceCheck).map(e => String(e.rec.key));
+  const from = order.indexOf(fromKey);
+  const keys = new Set(order.slice(from));
+  for (const e of evs) {
+    if (e.t === 'bet' && keys.has(String(e.rec?.key))) {
+      const bc = e.rec.balanceCheck, first = String(e.rec.key) === fromKey;
+      if (!(first && onlyAfterOfFirst)) bc.before.amount = shift8(bc.before.amount, d);
+      bc.after.amount = shift8(bc.after.amount, d);
+      bc.after.amounts = bc.after.amounts.map((x: string) => shift8(x, d));
+    }
+    if (e.t === 'step' && e.name === 'balance-read' && keys.has(String(e.key))) {
+      if (!(String(e.key) === fromKey && onlyAfterOfFirst && e.when === 'before')) e.amount = shift8(e.amount, d);
+    }
+  }
+}
 const SIM_REL = 'outputs/simulation-results.json';
 const FIG_REL = 'outputs/audit-figures.json';
 
@@ -364,6 +394,38 @@ const FORGERIES: Forgery[] = [
     mutate: (evs: any[]) => {
       const ev = evs.find(e => e.t === 'verify');
       ev.request.body = JSON.stringify({ ...JSON.parse(ev.request.body), betId: ev.betId });
+    },
+  },
+  // ── The balance check (12 November 2026, Step 23) ───────────────────────────
+  {
+    id: 'R11', name: 'balance-check capture — one BC1 win made to move the balance by its booked amount (0.10 − 0.10 = 0) instead of its wallet field (+0.00760869), every later read shifted to match',
+    origin: 'in-house 2026-11-12 — the claim is that the wallet field reaches the balance; a capture in which one win paid the cent-cut figure must not pass',
+    target: 'raw', raw: 4, expect: 'PROVABLY FAIR — Conditional Pass', step: 23, status: 'FLAG',
+    mutate: (evs: any[]) => {
+      const bet = evs.find(e => e.t === 'bet' && e.rec?.phaseId === 'BC1' && e.rec?.settleRaw?.result === 'won');
+      const s = bet.rec.settleRaw, u = (v: unknown) => BigInt(Math.round(Number(v) * 1e8));
+      const d = (u(s.winningAmount) - u(s.betAmount)) - (BigInt(String(s.winningAmountWallet).replace('.', '')) - u(bet.rec.placeRaw.betAmountWallet));
+      shiftReads(evs, String(bet.rec.key), d, true);
+    },
+  },
+  {
+    id: 'R12', name: 'balance-check capture — 0.00000001 USDT credited between two rounds (every read from round 51 on raised by one unit; every round\'s own movement unchanged)',
+    origin: 'in-house 2026-11-12 — a balance that moves outside the rounds would make the per-round comparison prove nothing about what was paid',
+    target: 'raw', raw: 4, expect: 'PROVABLY FAIR — Conditional Pass', step: 23, status: 'FLAG',
+    mutate: (evs: any[]) => {
+      const bets = evs.filter(e => e.t === 'bet' && e.rec?.balanceCheck);
+      shiftReads(evs, String(bets[50].rec.key), 1n, false);
+    },
+  },
+  {
+    id: 'R13', name: 'balance-check capture — one round\'s summary (rec.balanceCheck.after) edited, its raw balance-read replies left as captured',
+    origin: 'in-house 2026-11-12 — the runner\'s per-round summary must be the reads it was made from',
+    target: 'raw', raw: 4, expect: 'NOT PROVABLY FAIR', step: 23, status: 'FAIL',
+    mutate: (evs: any[]) => {
+      const bet = evs.find(e => e.t === 'bet' && e.rec?.balanceCheck);
+      const bc = bet.rec.balanceCheck;
+      bc.after.amount = shift8(bc.after.amount, 1n);
+      bc.after.amounts = bc.after.amounts.map((x: string) => shift8(x, 1n));
     },
   },
   // ── Dataset: phases, fiat and player-set seeds (10 November 2026) ───────────

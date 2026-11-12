@@ -33,7 +33,7 @@ const CHECK = process.argv.includes('--check');
 /**
  * The facts no file in this package can supply. `auditIdStatus` records that ProvablyFair.org has confirmed the audit
  * ID. `v1.1.0` scores the audit on the three production captures of 8–10 November 2026 on liqd.com (6,574 rounds);
- * `v1.1.1` is wording errata to `v1.1.0` and supersedes it. The environment is production, so it carries no qualifier. `signature` is the fingerprint of
+ * `v1.1.1` is wording errata to `v1.1.0`; `v1.2.0` adds the balance check of 12 November 2026 (Step 23) and supersedes `v1.1.1`. The environment is production, so it carries no qualifier. `signature` is the fingerprint of
  * the SSH key that signs the release commit and tag.
  */
 const DECLARED = {
@@ -41,11 +41,11 @@ const DECLARED = {
   auditIdStatus: 'confirmed by ProvablyFair.org',
   game: 'mines',
   casino: 'liqd',
-  release: 'v1.1.1',
+  release: 'v1.2.0',
   framework: '1.1',
   environmentStage: 'production',
   environmentQualifier: null,
-  supersedes: 'v1.1.0',
+  supersedes: 'v1.1.1',
   signature: 'SHA256:gEujiJm2pRyq7lQsfYQfQ1r97H/J7GdaKHbOW8GtikY',
 };
 
@@ -57,11 +57,17 @@ const RAW_CAPTURES = [
   'data/liqd-mines-prod-capture-2026-11-10T06-06-19-772Z.ndjson',
   'data/liqd-mines-prod-capture-2026-11-10T10-27-49-259Z.ndjson',
 ];
+/**
+ * The balance-check capture of 12 November 2026 (src/pins.ts BALANCE_CHECK_CAPTURE), scored by Step 23. Not part of the
+ * scored dataset, so it does not enter `capturedAt`, which is the window of the dataset's three captures.
+ */
+const BALANCE_CHECK = 'data/liqd-mines-prod-capture-2026-11-12T17-38-16-806Z.ndjson';
 
 /** Every file whose bytes the release is a claim about. Order is the manifest's order. */
 const ARTIFACTS = [
   DATASET,
   ...RAW_CAPTURES,
+  BALANCE_CHECK,
   'outputs/simulation-results.json',
   'outputs/simulation-provenance.json',
   'outputs/bootstrap-nulls.float64le',

@@ -2,8 +2,8 @@
  * LIQD Mines — Verification suite
  * Run: npm run verify
  *
- * Loads the scored production dataset (SHA-256 guarded) and the three raw production captures it was
- * converted from (SHA-256 guarded), runs all scored steps, and writes THIS
+ * Loads the scored production dataset (SHA-256 guarded), the three raw production captures it was
+ * converted from and the balance-check capture of 12 November (SHA-256 guarded), runs all scored steps, and writes THIS
  * RUN's results — pass or fail — under `outputs/run/`, leaving every committed artifact
  * byte-identical.
  *
@@ -67,6 +67,7 @@ import * as simulation  from './steps/simulation';
 import * as statistical from './steps/statistical';
 import * as standardization from './steps/standardization';
 import * as rawCapture  from './steps/raw-capture';
+import * as balance     from './steps/balance';
 import { runWorkerIfRequested } from '../src/replay-pool';
 
 // REPLAY WORKER BRANCH (src/replay-pool.ts). Steps 16–17 replay the simulation of record and the
@@ -154,6 +155,7 @@ const results = [
   ...simulation.run(ctx),     // Steps 16–17
   ...standardization.run(ctx),// Steps 18–21
   ...rawCapture.run(ctx),     // Step  22 — the raw production captures, bound row by row
+  ...balance.run(ctx),        // Step  23 — the balance check of 12 November: which amount reaches the balance
 ];
 
 // ── Every step ran (G-EXEC) ─────────────────────────────────────────────────────

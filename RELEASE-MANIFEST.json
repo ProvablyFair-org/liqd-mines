@@ -3,7 +3,7 @@
   "auditIdStatus": "confirmed by ProvablyFair.org",
   "game": "mines",
   "casino": "liqd",
-  "release": "v1.1.1",
+  "release": "v1.2.0",
   "framework": "1.1",
   "datasetSha256": "4d684d5e035e0be384685a2b44b9f5ab13b3f638e58686310cd778945c31741b",
   "artifacts": {
@@ -11,6 +11,7 @@
     "data/liqd-mines-prod-capture-2026-11-09T04-45-17-843Z.ndjson": "f4a35b0635fd8a196d31ebccd64fa3b617ab127716def789a0f1529b9ffe7d60",
     "data/liqd-mines-prod-capture-2026-11-10T06-06-19-772Z.ndjson": "3b8f81d5de58ccbf60fc809a53a34174d2c088aa78aba67ab1a0742a6d866141",
     "data/liqd-mines-prod-capture-2026-11-10T10-27-49-259Z.ndjson": "795825a548d786946d8ab0d9331dcd80d86a59b5b73dcea197707482bf177376",
+    "data/liqd-mines-prod-capture-2026-11-12T17-38-16-806Z.ndjson": "9ee1a9213837b1dbd0229b9df5e0273cbefedf0211e199a81bfcb96c50bebbda",
     "outputs/simulation-results.json": "50bef42d729a973376dee69e274900a037d6baa1d4b17a600c144beb46b329e6",
     "outputs/simulation-provenance.json": "036f4b3c0c4f9d241206bff2317a3d8632c3547844335653cdd89f9ed8532a86",
     "outputs/bootstrap-nulls.float64le": "c8a946c806faa4e8896d68a70f66c6f20fa282571cfc4e14ef29fd29dae160a0",
@@ -18,15 +19,15 @@
     "outputs/deep-replay-report.json": "6de3935092af3db155c9e608f7f5993b68b31ac25364ad24ac0c0ce021c8d6bc",
     "outputs/bootstrap-replay-report.json": "2064e369b17b74d7798dfa5440cbc8f4a71427cb49212fbd270e4aedb3c68d4e",
     "outputs/audit-figures.json": "5319211bcaf7011b2c88f8e264705ba583cfc2a7e8c68a634a436c187d3d6d9e",
-    "outputs/verification-results.json": "e1142b07f920b2702a46d9b5e240cdcfc829bc77d9946f879632deb240cbfb33",
+    "outputs/verification-results.json": "9fc853b0e91029465cfbbadeb359254acf28547aa4ac970577ea6d7f8b3f0253",
     "outputs/rtp-claim-table.json": "cfd654a112dec6815da92ae700e5fbc47afe9756a335627c5701e23c08fb4211"
   },
   "verdict": "PROVABLY FAIR — Full Pass",
   "scored": {
-    "passed": 22,
+    "passed": 23,
     "flags": 0,
     "hardFail": 0,
-    "of": 22
+    "of": 23
   },
   "capturedAt": {
     "from": "2026-11-08T22:36:18.578Z",
@@ -43,6 +44,6 @@
     "node": "22.23.1",
     "command": "npm ci && npm test"
   },
-  "supersedes": "v1.1.0",
+  "supersedes": "v1.1.1",
   "signature": "SHA256:gEujiJm2pRyq7lQsfYQfQ1r97H/J7GdaKHbOW8GtikY"
 }

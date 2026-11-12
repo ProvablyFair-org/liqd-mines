@@ -231,6 +231,11 @@ loss: no wallet win (winningAmountWallet absent or 0)
   the served rate is 1.00000000 (the USD captures) the wallet stake equals the
   fiat stake and the two can be compared directly: a win at 24 mines, 1 tile on
   a 0.10 stake is booked 2.47 and carries 2.47500000 in the wallet field.
+- The wallet field is the amount that reached the balance on the balance check
+  of 12 November 2026 (100 rounds booked in USD at the rate 1.00000000, at 1
+  mine, 2 tiles on 0.10 and 3 mines, 5 tiles on 0.01): the account's USDT
+  balance moved by it on 71 of 71 wins and by minus the stake on 29 of 29
+  losses (MANIFEST.md, Step 23).
 
 ### 3.6 Exchange rate
 

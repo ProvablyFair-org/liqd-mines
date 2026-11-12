@@ -13,7 +13,7 @@
  * value both amounts in LIQD's replies are floored from). The wallet field in the reply is floored to
  * 8 dp, which lowers its RTP by a stake-dependent amount far below the band; the booked amount is
  * floored to the cent, which at a 0.10 stake costs up to 7 points (Step 10's settlement-floor arm).
- * Which amount reaches the balance is not verified. Neither floor is in this table.
+ * Which amount reaches the balance: the wallet field (Step 23, the balance check of 12 November 2026). Neither floor is in this table.
  * CLAIM. Flat 1 % house edge = RTP 99/100: one of the figures the live page shows the player (liqd.com
  * "Edge: 1.00%", "99% RTP at every setting", read 2026-10-01, evidence/rtp-page-labels-2026-10-01.json),
  * the same as HOUSE_EDGE = 0.01 and the published 99.0000 % (src/config.ts:10, :43; declaration

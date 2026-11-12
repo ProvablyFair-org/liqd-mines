@@ -674,5 +674,60 @@
     "expectStep": 22,
     "expectStatus": "FAIL",
     "guard": "Step 22 (j): the request body keys are enumerated, so the claim that LIQD's verifier was sent only seeds, nonce and mine count is checked on 6,574 of 6,574 requests; a key list the requests do not have must FAIL."
+  },
+  {
+    "runner": "verify",
+    "name": "M70 Step 23 classifier swapped: a balance movement equal to the wallet field is counted as the booked amount",
+    "file": "src/balance-check.ts",
+    "find": "else cls = moved === wallet ? 'wallet' : moved === booked ? 'booked' : 'neither';",
+    "replace": "else cls = moved === wallet ? 'booked' : moved === booked ? 'wallet' : 'neither';",
+    "expect": "PROVABLY FAIR — Conditional Pass",
+    "expectStep": 23,
+    "expectStatus": "FLAG",
+    "guard": "Step 23: the answer is computed, not declared. With the two predictions swapped the 71 wins where the booked amount and the wallet field differ read as moved by the booked amount, and the step must FLAG (MINES-16 policy FLAG), which moves the verdict to Conditional Pass."
+  },
+  {
+    "runner": "verify",
+    "name": "M71 Step 23 loss rule expects no debit (a loss moving the balance by 0 instead of -stake)",
+    "file": "tests/steps/balance.ts",
+    "find": "const lossesStake = losses.filter(r => r.moved !== null && r.walletStake !== null && r.moved === -r.walletStake).length;",
+    "replace": "const lossesStake = losses.filter(r => r.moved !== null && r.walletStake !== null && r.moved === 0n).length;",
+    "expect": "PROVABLY FAIR — Conditional Pass",
+    "expectStep": 23,
+    "expectStatus": "FLAG",
+    "guard": "Step 23: every loss is held to a movement of exactly -stake (29 of 29). A rule the data does not follow must FLAG the step."
+  },
+  {
+    "runner": "verify",
+    "name": "M72 Step 23 between-round chain compares a round's read before its bet with its own read after its settle",
+    "file": "src/balance-check.ts",
+    "find": "const a = rounds[i - 1].after, b = rounds[i].before;",
+    "replace": "const a = rounds[i].after, b = rounds[i].before;",
+    "expect": "PROVABLY FAIR — Conditional Pass",
+    "expectStep": 23,
+    "expectStatus": "FLAG",
+    "guard": "Step 23: the between-round arm pairs each round's read before its place-bet with the PREVIOUS round's read after its settle (99 pairs, 0 changes). Paired within one round it sees every round's own movement as a change between rounds and must FLAG."
+  },
+  {
+    "runner": "verify",
+    "name": "M73 Step 23 declared served rate moved off 1 (1.00000000 -> 1.41000000, the CAD run's rate)",
+    "file": "src/pins.ts",
+    "find": "fiat: 'USD', rate: '1.00000000', readField:",
+    "replace": "fiat: 'USD', rate: '1.41000000', readField:",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 23,
+    "expectStatus": "FAIL",
+    "guard": "Step 23 compares the booked amount and the wallet field only where they are amounts of one unit: every round must be booked in USD at the served rate 1.00000000 with betAmount = betAmountWallet. A declaration the rounds do not meet must FAIL the step, not FLAG it."
+  },
+  {
+    "runner": "verify",
+    "name": "M74 Step 23 declared wins of phase BC1 moved (45 -> 44)",
+    "file": "src/pins.ts",
+    "find": "{ phaseId: 'BC1', rounds: 50, wins: 45,",
+    "replace": "{ phaseId: 'BC1', rounds: 50, wins: 44,",
+    "expect": "NOT PROVABLY FAIR",
+    "expectStep": 23,
+    "expectStatus": "FAIL",
+    "guard": "Step 23 coverage is bound to src/pins.ts BALANCE_CHECK_CAPTURE (G-BIND), never to the file's own meta: a declared count the capture does not have must FAIL."
   }
 ]
